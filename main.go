@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"mysqldb-go-interface/mysqldb"
+	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 
 	"github.com/pkg/errors"
 )
