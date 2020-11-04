@@ -21,12 +21,13 @@ The documents look as follows:
 # Usage
 # Build
 
-Run ```docker-compose up --build --force-recreate -d main-server``` to generate and start all containers.
+- Run ```docker-compose up --build --force-recreate -d main-server``` to generate and start all containers.
 
-In order to access the db run: ```docker exec -it user-db bash -c "mysql -uroot -p123secure user_database```
-To run bootstrap, the migartion files need to be copied manually the db folder. The destination shall be the root of the golang source.
+- In order to access the db run: ```docker exec -it user-db bash -c "mysql -uroot -p123secure user_database```
 
-Example Dockerfile command: ```RUN git clone https://github.com/artofimagination/mysql-user-db-go-interface $GOPATH/src/user-db-mysql && cp -r $GOPATH/src/user-db-mysql/db $GOPATH/src/load-tester/```
+- To run bootstrap in your code, the migration files need to be copied manually from the db folder. The destination shall be the root of the golang source.
+
+- Example Dockerfile command: ```RUN git clone https://github.com/artofimagination/mysql-user-db-go-interface $GOPATH/src/user-db-mysql && cp -r $GOPATH/src/user-db-mysql/db $GOPATH/src/load-tester/```
 
 ## Execution examples
 
