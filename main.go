@@ -136,15 +136,8 @@ func checkUserPass(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	passwords, ok := r.URL.Query()["password"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'password' is missing")
-		return
-	}
 
-	password := passwords[0]
-
-	err := mysqldb.CheckEmailAndPassword(email, password)
+	_, err := mysqldb.EmailExists(email)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {

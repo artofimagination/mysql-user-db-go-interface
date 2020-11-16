@@ -1,16 +1,15 @@
 package mysqldb
 
 import (
+	"encoding/json"
+
+	"github.com/artofimagination/mysql-user-db-go-interface/models"
+
 	"github.com/google/uuid"
 )
 
-type UserSettings struct {
-	ID                uuid.UUID `json:"id,omitempty"`
-	Enable2StepsVerif bool      `json:"two_steps_verif,omitempty"`
-}
-
 func AddSettings() (*uuid.UUID, error) {
-	queryString := "INSERT INTO user_settings (id, two_steps_verif) VALUES (UUID_TO_BIN(?), ?)"
+	queryString := "INSERT INTO user_settings (id, settings) VALUES (UUID_TO_BIN(?), ?)"
 	db, err := ConnectSystem()
 	if err != nil {
 		return nil, err
@@ -19,12 +18,16 @@ func AddSettings() (*uuid.UUID, error) {
 	defer db.Close()
 
 	newID, err := uuid.NewUUID()
-
 	if err != nil {
 		return nil, err
 	}
 
-	query, err := db.Query(queryString, newID, false)
+	binary, err := json.Marshal(models.Settings{})
+	if err != nil {
+		return nil, err
+	}
+
+	query, err := db.Query(queryString, newID, binary)
 	if err != nil {
 		return nil, err
 	}
@@ -33,9 +36,9 @@ func AddSettings() (*uuid.UUID, error) {
 	return &newID, nil
 }
 
-func GetSettings(settingsID *uuid.UUID) (*UserSettings, error) {
-	settings := UserSettings{}
-	queryString := "SELECT two_steps_verif FROM user_settings WHERE id = UUID_TO_BIN(?)"
+func GetSettings(settingsID *uuid.UUID) (*models.UserSetting, error) {
+	settings := models.UserSetting{}
+	queryString := "SELECT settings FROM user_settings WHERE id = UUID_TO_BIN(?)"
 	db, err := ConnectSystem()
 	if err != nil {
 		return nil, err
@@ -48,7 +51,12 @@ func GetSettings(settingsID *uuid.UUID) (*UserSettings, error) {
 		return nil, err
 	}
 
-	if err := query.Scan(&settings.Enable2StepsVerif); err != nil {
+	settingsJSON := json.RawMessage{}
+	if err := query.Scan(&settingsJSON); err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(settingsJSON, &settings.Settings); err != nil {
 		return nil, err
 	}
 
