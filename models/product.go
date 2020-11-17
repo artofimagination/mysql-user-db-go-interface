@@ -25,6 +25,7 @@ type Privilege struct {
 }
 
 type Privileges []Privilege
+type UserProducts map[uuid.UUID]int
 type ProductUsers map[uuid.UUID]int
 
 func (l Privileges) IsValidPrivilege(privilege int) bool {
