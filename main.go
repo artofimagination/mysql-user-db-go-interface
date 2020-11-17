@@ -154,6 +154,7 @@ func main() {
 	http.HandleFunc("/get-settings", getSettings)
 	http.HandleFunc("/delete-settings", deleteSettings)
 
+	mysqldb.DBConnection = "root:123secure@tcp(user-db:3306)/user_database?parseTime=true"
 	if err := mysqldb.BootstrapSystem(); err != nil {
 		log.Fatalf("System bootstrap failed. %s", errors.WithStack(err))
 	}

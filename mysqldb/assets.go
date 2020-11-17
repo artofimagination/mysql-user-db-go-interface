@@ -36,16 +36,6 @@ func AddAsset() (*uuid.UUID, error) {
 	return &newID, nil
 }
 
-func convertToJSONRaw(references *models.References) (*json.RawMessage, error) {
-	refBytes, err := json.Marshal(&references)
-	if err != nil {
-		return nil, err
-	}
-
-	refRaw := json.RawMessage(refBytes)
-	return &refRaw, nil
-}
-
 func UpdateAsset(asset *models.Asset) error {
 	queryString := "UPDATE user_assets set refs = ? where id = UUID_TO_BIN(?)"
 	db, err := ConnectSystem()
@@ -54,7 +44,7 @@ func UpdateAsset(asset *models.Asset) error {
 	}
 
 	defer db.Close()
-	refRaw, err := convertToJSONRaw(&asset.References)
+	refRaw, err := ConvertToJSONRaw(&asset.References)
 	if err != nil {
 		return err
 	}
