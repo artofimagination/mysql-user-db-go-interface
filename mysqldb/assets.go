@@ -11,7 +11,7 @@ import (
 
 func AddAsset() (*uuid.UUID, error) {
 	queryString := "INSERT INTO user_assets (id, refs) VALUES (UUID_TO_BIN(?), ?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func AddAsset() (*uuid.UUID, error) {
 
 func UpdateAsset(asset *models.Asset) error {
 	queryString := "UPDATE user_assets set refs = ? where id = UUID_TO_BIN(?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func UpdateAsset(asset *models.Asset) error {
 func GetAsset(assetID *uuid.UUID) (*models.Asset, error) {
 	asset := models.Asset{}
 	queryString := "SELECT BIN_TO_UUID(id), refs FROM user_assets WHERE id = UUID_TO_BIN(?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func GetAsset(assetID *uuid.UUID) (*models.Asset, error) {
 
 func DeleteAsset(assetID *uuid.UUID) error {
 	query := "DELETE FROM user_assets WHERE id=UUID_TO_BIN(?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}

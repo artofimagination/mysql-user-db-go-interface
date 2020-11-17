@@ -17,7 +17,7 @@ func GetUserByEmail(email string) (*models.User, error) {
 
 	var user models.User
 	queryString := "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func UpdateAssetID(user *models.User) error {
 func GetUserByID(ID uuid.UUID) (*models.User, error) {
 	var user models.User
 	queryString := "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where id = UUID_TO_BIN(?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func GetUserByID(ID uuid.UUID) (*models.User, error) {
 
 func addUserAssetID(user *models.User) error {
 	queryString := "UPDATE users set user_assets_id = UUID_TO_BIN(?) where id = UUID_TO_BIN(?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func addUserAssetID(user *models.User) error {
 
 func UserExists(username string) (bool, error) {
 	var user models.User
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return false, err
 	}
@@ -122,7 +122,7 @@ func EmailExists(email string) (bool, error) {
 
 	var user models.User
 	queryString := "select email from users where email = ?"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return false, err
 	}
@@ -156,7 +156,7 @@ func AddUser(name string, email string, passwd string) error {
 	email = strings.ReplaceAll(email, " ", "")
 
 	queryString := "INSERT INTO users (id, name, email, password, user_settings_id, user_assets_id) VALUES (UUID_TO_BIN(UUID()), ?, ?, ?, UUID_TO_BIN(?), UUID_TO_BIN(?))"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func AddUser(name string, email string, passwd string) error {
 
 func deleteUserEntry(email string) error {
 	query := "DELETE FROM users WHERE email=?"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}

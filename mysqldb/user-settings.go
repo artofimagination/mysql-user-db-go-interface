@@ -10,7 +10,7 @@ import (
 
 func AddSettings() (*uuid.UUID, error) {
 	queryString := "INSERT INTO user_settings (id, settings) VALUES (UUID_TO_BIN(?), ?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func AddSettings() (*uuid.UUID, error) {
 func GetSettings(settingsID *uuid.UUID) (*models.UserSetting, error) {
 	settings := models.UserSetting{}
 	queryString := "SELECT settings FROM user_settings WHERE id = UUID_TO_BIN(?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func GetSettings(settingsID *uuid.UUID) (*models.UserSetting, error) {
 
 func DeleteSettings(settingsID *uuid.UUID) error {
 	query := "DELETE FROM user_settings WHERE id=UUID_TO_BIN(?)"
-	db, err := ConnectSystem()
+	db, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}

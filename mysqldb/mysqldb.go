@@ -12,10 +12,18 @@ import (
 	migrate "github.com/rubenv/sql-migrate"
 )
 
+type DBInterfaceCommon interface {
+	BootstrapSystem() error
+	ConnectSystem() (*sql.DB, error)
+}
+
+type MYSQLInterface struct {
+}
+
 var DBConnection = ""
+var DBInterface DBInterfaceCommon
 
-func BootstrapSystem() error {
-
+func (MYSQLInterface) BootstrapSystem() error {
 	fmt.Printf("Executing MYSQL migration\n")
 	migrations := &migrate.FileMigrationSource{
 		Dir: "db/migrations/mysql",
@@ -45,7 +53,7 @@ func BootstrapSystem() error {
 	return nil
 }
 
-func ConnectSystem() (*sql.DB, error) {
+func (MYSQLInterface) ConnectSystem() (*sql.DB, error) {
 	db, err := sql.Open("mysql", DBConnection)
 
 	// if there is an error opening the connection, handle it
