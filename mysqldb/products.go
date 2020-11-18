@@ -32,48 +32,37 @@ func deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
 }
 
 func AddProduct(product *models.Product, productUsers *models.ProductUsers) error {
-	queryString := "INSERT INTO products (id, name, public, details) VALUES (UUID_TO_BIN(UUID()), ?, ?, ?)"
-	db, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		switch err {
-		case nil:
-			err = tx.Commit()
-		default:
-			err = tx.Rollback()
-		}
-	}()
+	// Prepare data
+	queryString := "INSERT INTO products (id, name, public, details) VALUES (UUID_TO_BIN(?), ?, ?, ?)"
 
 	jsonRaw, err := ConvertToJSONRaw(product.Details)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(queryString, product.Name, product.Public, jsonRaw)
+	// Execute transaction
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	if err := addProductUsers(&product.ID, productUsers, tx); err != nil {
-		return err
+	_, err = tx.Exec(queryString, product.ID, product.Name, product.Public, jsonRaw)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	return err
+	if err := addProductUsers(&product.ID, productUsers, tx); err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	return tx.Commit()
 }
 
-func getProduct(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
+func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	queryString := "SELECT BIN_TO_UUID(id), name, public, details FROM products WHERE id = UUID_TO_BIN(?)"
 	details := json.RawMessage{}
 	product := models.Product{}
+
 	query, err := tx.Query(queryString, ID)
 	if err != nil {
 		return nil, err
@@ -93,32 +82,17 @@ func getProduct(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 }
 
 func GetProductByID(ID uuid.UUID) (*models.Product, error) {
-	db, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	defer func() {
-		switch err {
-		case nil:
-			err = tx.Commit()
-		default:
-			err = tx.Rollback()
-		}
-	}()
-
-	product, err := getProduct(ID, tx)
+	product, err := getProductByID(ID, tx)
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return product, nil
+	return product, tx.Commit()
 }
 
 func getUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
@@ -151,73 +125,44 @@ func getUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, erro
 // The function first gets all rows matching with the user DI from users_products table,
 // then gets all products based on the product ids from the first query result.
 func GetProductsByUserID(userID uuid.UUID) (*[]models.Product, error) {
-	db, err := DBInterface.ConnectSystem()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		switch err {
-		case nil:
-			err = tx.Commit()
-		default:
-			err = tx.Rollback()
-		}
-	}()
 
 	ownershipMap, err := getUserProductIDs(userID, tx)
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	products := []models.Product{}
 	for productID := range *ownershipMap {
-		product, err := getProduct(productID, tx)
+		product, err := getProductByID(productID, tx)
 		if err != nil {
-			return nil, err
+			return nil, RollbackWithErrorStack(tx, err)
 		}
 		products = append(products, *product)
 	}
 
-	return &products, nil
+	return &products, tx.Commit()
 }
 
 func DeleteProduct(productID *uuid.UUID) error {
 	queryString := "DELETE FROM products where id = UUID_TO_BIN(?)"
-	db, err := DBInterface.ConnectSystem()
+
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		switch err {
-		case nil:
-			err = tx.Commit()
-		default:
-			err = tx.Rollback()
-		}
-	}()
 
 	if err := deleteProductUsersByProductID(productID, tx); err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
 	_, err = tx.Exec(queryString, productID)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	return nil
+	return tx.Commit()
 }

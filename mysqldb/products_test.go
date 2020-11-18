@@ -25,12 +25,6 @@ func createTestProductList(quantity int) (*[]models.Product, error) {
 }
 
 func createTestProductData() (*models.Product, error) {
-	// Create test data
-	productID, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-
 	details := models.Details{
 		ClientUI:       true,
 		SupportClients: true,
@@ -38,13 +32,12 @@ func createTestProductData() (*models.Product, error) {
 		Requires3D:     true,
 	}
 
-	product := models.Product{
-		ID:      productID,
-		Name:    "Test",
-		Public:  true,
-		Details: details,
+	product, err := models.NewProduct("Test", true, &details)
+	if err != nil {
+		return nil, err
 	}
-	return &product, nil
+
+	return product, nil
 }
 
 func addProductsToMock(products *[]models.Product) (*sqlmock.Rows, error) {
@@ -112,7 +105,7 @@ func TestAddProduct_ValidProductAndProductUsers(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO products").WithArgs(product.Name, product.Public, jsonRaw).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO products").WithArgs(product.ID, product.Name, product.Public, jsonRaw).WillReturnResult(sqlmock.NewResult(1, 1))
 	for userID, privilege := range *productUsers {
 		mock.ExpectExec("INSERT INTO users_products").WithArgs(product.ID, userID, privilege).WillReturnResult(sqlmock.NewResult(1, 1))
 	}

@@ -7,24 +7,16 @@ import (
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// GetUserByEmail returns the user defined by the email.
-func GetUserByEmail(email string) (*models.User, error) {
+func getUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
 	email = strings.ReplaceAll(email, " ", "")
 
 	var user models.User
 	queryString := "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
-	db, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
 
-	query, err := db.Query(queryString, email)
-
+	query, err := tx.Query(queryString, email)
 	if err != nil {
 		return nil, err
 	}
@@ -35,20 +27,40 @@ func GetUserByEmail(email string) (*models.User, error) {
 		return nil, err
 	}
 
-	return &user, nil
+	return &user, err
+}
+
+// GetUserByEmail returns the user defined by the email.
+func GetUserByEmail(email string) (*models.User, error) {
+	tx, err := DBInterface.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := getUserByEmail(email, tx)
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	return user, tx.Commit()
 }
 
 // Adds a new assetID if there is non assigned yet.
 // This only can happen if the user was generated before introduction of assets.
 func UpdateAssetID(user *models.User) error {
-	assetID, err := AddAsset()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
+	assetID, err := AddAsset(tx)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
 	user.AssetsID = *assetID
-	if err := addUserAssetID(user); err != nil {
-		return err
+	if err := addUserAssetID(user, tx); err != nil {
+		return RollbackWithErrorStack(tx, err)
 	}
 	return nil
 }
@@ -57,63 +69,53 @@ func UpdateAssetID(user *models.User) error {
 func GetUserByID(ID uuid.UUID) (*models.User, error) {
 	var user models.User
 	queryString := "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where id = UUID_TO_BIN(?)"
-	db, err := DBInterface.ConnectSystem()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
-	query, err := db.Query(queryString, ID)
-
+	query, err := tx.Query(queryString, ID)
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 	defer query.Close()
 
 	query.Next()
 	if err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID); err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return &user, nil
+	return &user, tx.Commit()
 }
 
-func addUserAssetID(user *models.User) error {
+func addUserAssetID(user *models.User, tx *sql.Tx) error {
 	queryString := "UPDATE users set user_assets_id = UUID_TO_BIN(?) where id = UUID_TO_BIN(?)"
-	db, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return err
-	}
-
-	defer db.Close()
-
-	query, err := db.Query(queryString, user.AssetsID, user.ID)
+	query, err := tx.Query(queryString, user.AssetsID, user.ID)
 	if err != nil {
 		return err
 	}
 
 	defer query.Close()
-	return nil
+	return err
 }
 
 func UserExists(username string) (bool, error) {
 	var user models.User
-	db, err := DBInterface.ConnectSystem()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return false, err
 	}
-	defer db.Close()
 
 	queryString := "SELECT name FROM users WHERE name = ?"
-	queryUser := db.QueryRow(queryString, username)
+	queryUser := tx.QueryRow(queryString, username)
 	err = queryUser.Scan(&user.Name)
 	switch {
 	case err == sql.ErrNoRows:
-		return false, nil
+		return false, tx.Commit()
 	case err != nil:
-		return false, err
+		return false, RollbackWithErrorStack(tx, err)
 	default:
-		return true, err
+		return true, RollbackWithErrorStack(tx, err)
 	}
 }
 
@@ -122,22 +124,24 @@ func EmailExists(email string) (bool, error) {
 
 	var user models.User
 	queryString := "select email from users where email = ?"
-	db, err := DBInterface.ConnectSystem()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return false, err
 	}
-	defer db.Close()
 
-	queryEmail := db.QueryRow(queryString, email)
+	queryEmail := tx.QueryRow(queryString, email)
+	if err != nil {
+		return false, RollbackWithErrorStack(tx, err)
+	}
 
 	err = queryEmail.Scan(&user.Email)
 	switch {
 	case err == sql.ErrNoRows:
-		return false, nil
+		return false, tx.Commit()
 	case err != nil:
-		return false, err
+		return false, RollbackWithErrorStack(tx, err)
 	default:
-		return true, err
+		return true, RollbackWithErrorStack(tx, err)
 	}
 }
 
@@ -156,52 +160,39 @@ func AddUser(name string, email string, passwd string) error {
 	email = strings.ReplaceAll(email, " ", "")
 
 	queryString := "INSERT INTO users (id, name, email, password, user_settings_id, user_assets_id) VALUES (UUID_TO_BIN(UUID()), ?, ?, ?, UUID_TO_BIN(?), UUID_TO_BIN(?))"
-	db, err := DBInterface.ConnectSystem()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	defer db.Close()
-
-	settingsID, err := AddSettings()
+	settingsID, err := AddSettings(tx)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	assetID, err := AddAsset()
+	assetID, err := AddAsset(tx)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwd), 16)
 	if err != nil {
-		if err := DeleteSettings(settingsID); err != nil {
-			return errors.Wrap(errors.WithStack(err), "Failed to revert settings creation")
-		}
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	query, err := db.Query(queryString, name, email, hashedPassword, &settingsID, &assetID)
+	query, err := tx.Query(queryString, name, email, hashedPassword, &settingsID, &assetID)
 	if err != nil {
-		if err := DeleteSettings(settingsID); err != nil {
-			return errors.Wrap(errors.WithStack(err), "Failed to revert settings creation")
-		}
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
 	defer query.Close()
-	return nil
+	return tx.Commit()
 }
 
-func deleteUserEntry(email string) error {
+func deleteUserEntry(email string, tx *sql.Tx) error {
 	query := "DELETE FROM users WHERE email=?"
-	db, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
 
-	_, err = db.Exec(query, email)
+	_, err := tx.Exec(query, email)
 	if err != nil {
 		return err
 	}
@@ -211,18 +202,24 @@ func deleteUserEntry(email string) error {
 
 func DeleteUser(email string) error {
 	email = strings.ReplaceAll(email, " ", "")
-	user, err := GetUserByEmail(email)
+
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	if err := deleteUserEntry(email); err != nil {
-		return err
+	user, err := getUserByEmail(email, tx)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	if err := DeleteSettings(&user.SettingsID); err != nil {
-		return err
+	if err := deleteUserEntry(email, tx); err != nil {
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	return nil
+	if err := deleteSettings(&user.SettingsID, tx); err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	return tx.Commit()
 }

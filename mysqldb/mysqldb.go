@@ -14,7 +14,7 @@ import (
 
 type DBInterfaceCommon interface {
 	BootstrapSystem() error
-	ConnectSystem() (*sql.DB, error)
+	ConnectSystem() (*sql.Tx, error)
 }
 
 type MYSQLInterface struct {
@@ -54,13 +54,26 @@ func (MYSQLInterface) BootstrapSystem() error {
 	return nil
 }
 
-func (MYSQLInterface) ConnectSystem() (*sql.DB, error) {
-	db, err := sql.Open("mysql", DBConnection)
+func RollbackWithErrorStack(tx *sql.Tx, errorStack error) error {
+	if err := tx.Rollback(); err != nil {
+		errorString := fmt.Sprintf("%s\n%s\n", errorStack.Error(), err.Error())
+		return errors.Wrap(errors.WithStack(errors.New(errorString)), "Failed to rollback changes")
+	}
+	return errorStack
+}
 
-	// if there is an error opening the connection, handle it
+func (MYSQLInterface) ConnectSystem() (*sql.Tx, error) {
+	db, err := sql.Open("mysql", DBConnection)
 	if err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	return tx, nil
 }

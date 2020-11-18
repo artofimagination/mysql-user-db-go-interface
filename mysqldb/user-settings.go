@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"database/sql"
 	"encoding/json"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
@@ -8,14 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func AddSettings() (*uuid.UUID, error) {
+func AddSettings(tx *sql.Tx) (*uuid.UUID, error) {
 	queryString := "INSERT INTO user_settings (id, settings) VALUES (UUID_TO_BIN(?), ?)"
-	db, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return nil, err
-	}
-
-	defer db.Close()
 
 	newID, err := uuid.NewUUID()
 	if err != nil {
@@ -27,7 +22,7 @@ func AddSettings() (*uuid.UUID, error) {
 		return nil, err
 	}
 
-	query, err := db.Query(queryString, newID, binary)
+	query, err := tx.Query(queryString, newID, binary)
 	if err != nil {
 		return nil, err
 	}
@@ -39,39 +34,44 @@ func AddSettings() (*uuid.UUID, error) {
 func GetSettings(settingsID *uuid.UUID) (*models.UserSetting, error) {
 	settings := models.UserSetting{}
 	queryString := "SELECT settings FROM user_settings WHERE id = UUID_TO_BIN(?)"
-	db, err := DBInterface.ConnectSystem()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
-	query := db.QueryRow(queryString, *settingsID)
-
+	query := tx.QueryRow(queryString, *settingsID)
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	settingsJSON := json.RawMessage{}
 	if err := query.Scan(&settingsJSON); err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	if err := json.Unmarshal(settingsJSON, &settings.Settings); err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return &settings, nil
+	return &settings, tx.Commit()
 }
 
 func DeleteSettings(settingsID *uuid.UUID) error {
-	query := "DELETE FROM user_settings WHERE id=UUID_TO_BIN(?)"
-	db, err := DBInterface.ConnectSystem()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	_, err = db.Exec(query, *settingsID)
+	if err := deleteSettings(settingsID, tx); err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+	return tx.Commit()
+}
+
+func deleteSettings(settingsID *uuid.UUID, tx *sql.Tx) error {
+	query := "DELETE FROM user_settings WHERE id=UUID_TO_BIN(?)"
+
+	_, err := tx.Exec(query, *settingsID)
 	if err != nil {
 		return err
 	}

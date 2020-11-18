@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 
@@ -9,14 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func AddAsset() (*uuid.UUID, error) {
+func AddAsset(tx *sql.Tx) (*uuid.UUID, error) {
+	// Prepare data
 	queryString := "INSERT INTO user_assets (id, refs) VALUES (UUID_TO_BIN(?), ?)"
-	db, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return nil, err
-	}
-
-	defer db.Close()
 
 	newID, err := uuid.NewUUID()
 	if err != nil {
@@ -27,7 +23,8 @@ func AddAsset() (*uuid.UUID, error) {
 	if err != nil {
 		return nil, err
 	}
-	query, err := db.Query(queryString, newID, binary)
+
+	query, err := tx.Query(queryString, newID, binary)
 	if err != nil {
 		return nil, err
 	}
@@ -37,64 +34,65 @@ func AddAsset() (*uuid.UUID, error) {
 }
 
 func UpdateAsset(asset *models.Asset) error {
+	// Prepare data
 	queryString := "UPDATE user_assets set refs = ? where id = UUID_TO_BIN(?)"
-	db, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return err
-	}
 
-	defer db.Close()
 	refRaw, err := ConvertToJSONRaw(&asset.References)
 	if err != nil {
 		return err
 	}
 
-	query, err := db.Query(queryString, refRaw, asset.ID)
+	// Execute transaction
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
+	query, err := tx.Query(queryString, refRaw, asset.ID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
 	defer query.Close()
-	return nil
+	return tx.Commit()
 }
 
 func GetAsset(assetID *uuid.UUID) (*models.Asset, error) {
 	asset := models.Asset{}
 	queryString := "SELECT BIN_TO_UUID(id), refs FROM user_assets WHERE id = UUID_TO_BIN(?)"
-	db, err := DBInterface.ConnectSystem()
+
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
-	query := db.QueryRow(queryString, *assetID)
+	query := tx.QueryRow(queryString, *assetID)
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	refs := json.RawMessage{}
 	if err := query.Scan(&asset.ID, &refs); err != nil {
-		return nil, errors.Wrap(errors.WithStack(err), fmt.Sprintf("Asset %s not found", assetID.String()))
+		return nil, RollbackWithErrorStack(tx, errors.Wrap(errors.WithStack(err), fmt.Sprintf("Asset %s not found", assetID.String())))
 	}
 
 	if err := json.Unmarshal(refs, &asset.References); err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return &asset, nil
+	return &asset, tx.Commit()
 }
 
 func DeleteAsset(assetID *uuid.UUID) error {
 	query := "DELETE FROM user_assets WHERE id=UUID_TO_BIN(?)"
-	db, err := DBInterface.ConnectSystem()
+	tx, err := DBInterface.ConnectSystem()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
-	_, err = db.Exec(query, *assetID)
+	_, err = tx.Exec(query, *assetID)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
-	return nil
+	return tx.Commit()
 }

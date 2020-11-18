@@ -36,3 +36,18 @@ func (l Privileges) IsValidPrivilege(privilege int) bool {
 	}
 	return false
 }
+
+func NewProduct(name string, public bool, details *Details) (*Product, error) {
+	var p Product
+	newID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	p.ID = newID
+	p.Name = name
+	p.Public = public
+	p.Details = *details
+
+	return &p, nil
+}
