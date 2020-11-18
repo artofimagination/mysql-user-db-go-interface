@@ -155,6 +155,7 @@ func main() {
 	http.HandleFunc("/delete-settings", deleteSettings)
 
 	mysqldb.DBConnection = "root:123secure@tcp(user-db:3306)/user_database?parseTime=true"
+	mysqldb.MigrationDirectory = "$GOPATH/src/mysql-user-db-go-interface/db/migrations/mysql"
 
 	dbInterface := mysqldb.MYSQLInterface{}
 	if err := dbInterface.BootstrapSystem(); err != nil {

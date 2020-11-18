@@ -22,11 +22,12 @@ type MYSQLInterface struct {
 
 var DBConnection = ""
 var DBInterface DBInterfaceCommon
+var MigrationDirectory = ""
 
 func (MYSQLInterface) BootstrapSystem() error {
 	fmt.Printf("Executing MYSQL migration\n")
 	migrations := &migrate.FileMigrationSource{
-		Dir: "db/migrations/mysql",
+		Dir: MigrationDirectory,
 	}
 	fmt.Printf("Getting migration files\n")
 
