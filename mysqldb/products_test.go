@@ -329,8 +329,13 @@ func TestGetProductsByUserID_ValidID(t *testing.T) {
 	}
 
 	rowsUserProducts := sqlmock.NewRows([]string{"products_id", "privilege"})
+	// Ranging through map is random, need to collect product ID-s ina fixed order in order to
+	// have the correct order of sql mock expectations.
+	orderedProductIDs := make([]uuid.UUID, 0)
 	for productID, privilege := range userProducts {
+
 		rowsUserProducts.AddRow(productID, privilege)
+		orderedProductIDs = append(orderedProductIDs, productID)
 	}
 
 	rowsProducts, err := addProductsToMock(products)
@@ -341,7 +346,7 @@ func TestGetProductsByUserID_ValidID(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery("SELECT BIN_TO_UUID(products_id), privilege FROM users_products where users_id = UUID_TO_BIN(?)").WithArgs(userID).WillReturnRows(rowsUserProducts)
-	for productID := range userProducts {
+	for _, productID := range orderedProductIDs {
 		mock.ExpectQuery("SELECT BIN_TO_UUID(id), name, public, details FROM products WHERE id = UUID_TO_BIN(?)").WithArgs(productID).WillReturnRows(rowsProducts)
 	}
 	mock.ExpectCommit()
