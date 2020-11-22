@@ -5,10 +5,10 @@ import (
 )
 
 type Product struct {
-	ID      uuid.UUID `json:"id" validation:"required"`
-	Name    string    `json:"name" validation:"required"`
-	Public  bool      `json:"public" validation:"required"`
-	Details Details   `json:"details" validation:"required"`
+	ID      uuid.UUID `validation:"required"`
+	Name    string    `validation:"required"`
+	Public  bool      `validation:"required"`
+	Details Details   `validation:"required"`
 }
 
 type Details struct {
@@ -19,9 +19,9 @@ type Details struct {
 }
 
 type Privilege struct {
-	ID          int    `json:"id" validation:"required"`
-	Name        string `json:"name" validation:"required"`
-	Description string `json:"description" validation:"required"`
+	ID          int    `validation:"required"`
+	Name        string `validation:"required"`
+	Description string `validation:"required"`
 }
 
 type Privileges []Privilege

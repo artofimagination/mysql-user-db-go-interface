@@ -11,21 +11,21 @@ type LeaveType string
 
 const (
 	Avatar            = "avatar"
-	ProfileBackGround = "profile-background"
+	ProfileBackground = "profile-background"
 )
 
 var NullUUID = uuid.MustParse("00000000-0000-0000-0000-000000000000")
 
 type Asset struct {
-	ID         uuid.UUID  `json:"id" validation:"required"`
-	References References `json:"refs" validation:"required"`
+	ID         uuid.UUID  `validation:"required"`
+	References References `validation:"required"`
 	Path       string
 }
 
 // Assets structure contains the identification of all user related documents images.
 type References struct {
 	AvatarID          uuid.UUID `json:"avatar_id,omitempty"`
-	ProfileBackGround uuid.UUID `json:"profile_backgr,omitempty"`
+	ProfileBackground uuid.UUID `json:"profile_backgr,omitempty"`
 }
 
 func (r *Asset) GetPath(typeString string) (string, error) {
@@ -35,8 +35,8 @@ func (r *Asset) GetPath(typeString string) (string, error) {
 	switch typeString {
 	case Avatar:
 		ID = r.References.AvatarID
-	case ProfileBackGround:
-		ID = r.References.ProfileBackGround
+	case ProfileBackground:
+		ID = r.References.ProfileBackground
 	default:
 		return defaultPath, errors.New("Unknown asset reference type")
 	}
