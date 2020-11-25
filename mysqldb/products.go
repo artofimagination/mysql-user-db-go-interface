@@ -8,11 +8,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func addProductUsers(productID *uuid.UUID, productUsers *models.ProductUsers, tx *sql.Tx) error {
-	queryString := "INSERT INTO users_products (users_id, products_id, privilege) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
+var AddProductUsersQuery = "INSERT INTO users_products (users_id, products_id, privilege) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
 
-	for userID, privilege := range *productUsers {
-		_, err := tx.Exec(queryString, productID, userID, privilege)
+func (MYSQLFunctionInterface) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
+	for userID, privilege := range productUsers {
+		_, err := tx.Exec(AddProductUsersQuery, productID, userID, privilege)
 		if err != nil {
 			return err
 		}
@@ -31,46 +31,38 @@ func deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
 	return nil
 }
 
-func AddProduct(product *models.Product, productUsers *models.ProductUsers) error {
-	// Prepare data
-	queryString := "INSERT INTO products (id, name, public, details) VALUES (UUID_TO_BIN(?), ?, ?, ?)"
+var AddProductQuery = "INSERT INTO products (id, name, public, details, product_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)"
 
+func (MYSQLFunctionInterface) AddProduct(product *models.Product, tx *sql.Tx) error {
+	// Prepare data
 	jsonRaw, err := ConvertToJSONRaw(product.Details)
 	if err != nil {
 		return err
 	}
 
 	// Execute transaction
-	tx, err := DBInterface.ConnectSystem()
+	_, err = tx.Exec(AddProductQuery, product.ID, product.Name, product.Public, jsonRaw, product.AssetsID)
 	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(queryString, product.ID, product.Name, product.Public, jsonRaw)
-	if err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	if err := addProductUsers(&product.ID, productUsers, tx); err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
 
 	return tx.Commit()
 }
 
+var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assets_id) FROM products WHERE id = UUID_TO_BIN(?)"
+
 func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
-	queryString := "SELECT BIN_TO_UUID(id), name, public, details FROM products WHERE id = UUID_TO_BIN(?)"
 	details := json.RawMessage{}
 	product := models.Product{}
 
-	query, err := tx.Query(queryString, ID)
+	query, err := tx.Query(GetProductByIDQuery, ID)
 	if err != nil {
 		return nil, err
 	}
 	defer query.Close()
 
 	query.Next()
-	if err := query.Scan(&product.ID, &product.Name, &product.Public, &details); err != nil {
+	if err := query.Scan(&product.ID, &product.Name, &product.Public, &details, &product.AssetsID); err != nil {
 		return nil, err
 	}
 
@@ -82,7 +74,7 @@ func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 }
 
 func GetProductByID(ID uuid.UUID) (*models.Product, error) {
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -95,10 +87,10 @@ func GetProductByID(ID uuid.UUID) (*models.Product, error) {
 	return product, tx.Commit()
 }
 
-func getUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
-	queryString := "SELECT BIN_TO_UUID(products_id), privilege FROM users_products where users_id = UUID_TO_BIN(?)"
+var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privilege FROM users_products where users_id = UUID_TO_BIN(?)"
 
-	rows, err := tx.Query(queryString, userID)
+func getUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
+	rows, err := tx.Query(GetUserProductIDsQuery, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +117,7 @@ func getUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, erro
 // The function first gets all rows matching with the user DI from users_products table,
 // then gets all products based on the product ids from the first query result.
 func GetProductsByUserID(userID uuid.UUID) (*[]models.Product, error) {
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -147,10 +139,34 @@ func GetProductsByUserID(userID uuid.UUID) (*[]models.Product, error) {
 	return &products, tx.Commit()
 }
 
+var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assests_id) FROM products WHERE name = ?"
+
+func (MYSQLFunctionInterface) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
+	details := json.RawMessage{}
+	product := models.Product{}
+
+	query, err := tx.Query(GetProductByNameQuery, name)
+	if err != nil {
+		return nil, err
+	}
+	defer query.Close()
+
+	query.Next()
+	if err := query.Scan(&product.ID, &product.Name, &product.Public, &details, &product.AssetsID); err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(details, &product.Details); err != nil {
+		return nil, err
+	}
+
+	return &product, nil
+}
+
 func DeleteProduct(productID *uuid.UUID) error {
 	queryString := "DELETE FROM products where id = UUID_TO_BIN(?)"
 
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
@@ -165,4 +181,36 @@ func DeleteProduct(productID *uuid.UUID) error {
 	}
 
 	return tx.Commit()
+}
+
+var GetPrivilegesQuery = "SELECT id, name, description from privileges"
+
+func (MYSQLFunctionInterface) GetPrivileges() (models.Privileges, error) {
+	tx, err := DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := tx.Query(GetPrivilegesQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	privileges := make(models.Privileges, 0)
+	for rows.Next() {
+		privilege := models.Privilege{}
+		err := rows.Scan(&privilege.ID, &privilege.Name, &privilege.Description)
+		if err != nil {
+			return nil, err
+		}
+		privileges = append(privileges, privilege)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return privileges, nil
 }

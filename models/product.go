@@ -1,22 +1,33 @@
 package models
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 )
 
 type Product struct {
-	ID      uuid.UUID `validation:"required"`
-	Name    string    `validation:"required"`
-	Public  bool      `validation:"required"`
-	Details Details   `validation:"required"`
+	ID       uuid.UUID `validation:"required"`
+	Name     string    `validation:"required"`
+	Public   bool      `validation:"required"`
+	AssetsID uuid.UUID `validation:"required"`
+	Details  Details   `validation:"required"`
 }
 
-type Details struct {
-	SupportClients bool `json:"support_clients" validation:"required"`
-	ClientUI       bool `json:"client_ui" validation:"required"`
-	ProjectUI      bool `json:"project_ui" validation:"required"`
-	Requires3D     bool `json:"requires_3d" validation:"required"`
-}
+const (
+	SupportClients = "support_clients"
+	ClientUI       = "client_ui"
+	ProjectUI      = "project_ui"
+	Requires3D     = "requires_3d"
+	HasTrial       = "has_trial"
+	IsFree         = "is_free"
+)
+
+type Details map[string]interface{}
+
+// Errors called in multiple places (for example in unittests).
+
+var ErrProductDetailsNotInitialised = "Details map not initialised"
 
 type Privilege struct {
 	ID          int    `validation:"required"`
@@ -37,9 +48,25 @@ func (l Privileges) IsValidPrivilege(privilege int) bool {
 	return false
 }
 
-func NewProduct(name string, public bool, details *Details) (*Product, error) {
+func (l Privileges) IsOwnerPrivilege(privilege int) bool {
+	for _, value := range l {
+		if value.ID == privilege && value.Name == "Owner" {
+			return true
+		}
+	}
+	return false
+}
+
+// NewProduct creates a new product instance where details describe the configuration of the product
+// and references contain all asset references.
+func (RepoInterface) NewProduct(name string, public bool, details Details, assetsID *uuid.UUID) (*Product, error) {
 	var p Product
-	newID, err := uuid.NewUUID()
+
+	if details == nil {
+		return nil, errors.New(ErrProductDetailsNotInitialised)
+	}
+
+	newID, err := Interface.NewUUID()
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +74,8 @@ func NewProduct(name string, public bool, details *Details) (*Product, error) {
 	p.ID = newID
 	p.Name = name
 	p.Public = public
-	p.Details = *details
+	p.Details = details
+	p.AssetsID = *assetsID
 
 	return &p, nil
 }

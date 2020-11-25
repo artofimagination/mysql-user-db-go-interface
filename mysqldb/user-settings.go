@@ -9,32 +9,27 @@ import (
 	"github.com/google/uuid"
 )
 
-func AddSettings(tx *sql.Tx) (*uuid.UUID, error) {
-	queryString := "INSERT INTO user_settings (id, settings) VALUES (UUID_TO_BIN(?), ?)"
+var AddUserSettingsQuery = "INSERT INTO user_settings (id, settings) VALUES (UUID_TO_BIN(?), ?)"
 
-	newID, err := uuid.NewUUID()
+func (MYSQLFunctionInterface) AddSettings(settings *models.UserSetting, tx *sql.Tx) error {
+
+	binary, err := json.Marshal(settings.Settings)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	binary, err := json.Marshal(models.Settings{})
+	_, err = tx.Exec(AddUserSettingsQuery, settings.ID, binary)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	query, err := tx.Query(queryString, newID, binary)
-	if err != nil {
-		return nil, err
-	}
-
-	defer query.Close()
-	return &newID, nil
+	return nil
 }
 
 func GetSettings(settingsID *uuid.UUID) (*models.UserSetting, error) {
 	settings := models.UserSetting{}
 	queryString := "SELECT settings FROM user_settings WHERE id = UUID_TO_BIN(?)"
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +52,7 @@ func GetSettings(settingsID *uuid.UUID) (*models.UserSetting, error) {
 }
 
 func DeleteSettings(settingsID *uuid.UUID) error {
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}

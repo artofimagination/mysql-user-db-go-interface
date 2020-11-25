@@ -6,25 +6,46 @@ import (
 	"log"
 	"time"
 
+	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	// Need to register mysql drivers with database/sql
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	migrate "github.com/rubenv/sql-migrate"
 )
 
-type DBInterfaceCommon interface {
+// Common interface for DB connection. Needed in order to allow mock and custom DB interface implementation.
+type DBConnectorCommon interface {
 	BootstrapSystem() error
 	ConnectSystem() (*sql.Tx, error)
 }
 
-type MYSQLInterface struct {
+// MYSQL Interface implementation
+type MYSQLConnector struct {
+}
+
+// Data handling common function interface. Needed in order to allow mock and custom functionality implementations.
+type FunctionInterfaceCommon interface {
+	GetUserByEmail(email string, tx *sql.Tx) (*models.User, error)
+	AddUser(user *models.User, tx *sql.Tx) error
+	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
+	AddSettings(settings *models.UserSetting, tx *sql.Tx) error
+	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)
+	AddProduct(product *models.Product, tx *sql.Tx) error
+	AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error
+	GetPrivileges() (models.Privileges, error)
+}
+
+// MYSQL Interface implementation
+type MYSQLFunctionInterface struct {
 }
 
 var DBConnection = ""
-var DBInterface DBInterfaceCommon
+var DBConnector DBConnectorCommon
+var FunctionInterface FunctionInterfaceCommon
 var MigrationDirectory = ""
 
-func (MYSQLInterface) BootstrapSystem() error {
+func (MYSQLConnector) BootstrapSystem() error {
 	fmt.Printf("Executing MYSQL migration\n")
 	migrations := &migrate.FileMigrationSource{
 		Dir: MigrationDirectory,
@@ -62,7 +83,7 @@ func RollbackWithErrorStack(tx *sql.Tx, errorStack error) error {
 	return errorStack
 }
 
-func (MYSQLInterface) ConnectSystem() (*sql.Tx, error) {
+func (MYSQLConnector) ConnectSystem() (*sql.Tx, error) {
 	db, err := sql.Open("mysql", DBConnection)
 	if err != nil {
 		return nil, err

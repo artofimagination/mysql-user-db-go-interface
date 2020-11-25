@@ -7,14 +7,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type LeaveType string
-
 const (
-	Avatar            = "avatar"
-	ProfileBackground = "profile-background"
+	UserAvatar     = "user_avatar"
+	UserBackground = "user_background"
+
+	ProductDescription = "product_description"
 )
 
-var NullUUID = uuid.MustParse("00000000-0000-0000-0000-000000000000")
+var DefaultImagePath = ""
+var DefaultURL = ""
+
+// Errors called in multiple places (for example in unittests).
+
+var ErrAssetRefNotInitialised = "Asset references not initialised"
 
 type Asset struct {
 	ID         uuid.UUID  `validation:"required"`
@@ -23,57 +28,67 @@ type Asset struct {
 }
 
 // Assets structure contains the identification of all user related documents images.
-type References struct {
-	AvatarID          uuid.UUID `json:"avatar_id,omitempty"`
-	ProfileBackground uuid.UUID `json:"profile_backgr,omitempty"`
-}
+type References map[string]string
 
-func (r *Asset) GetPath(typeString string) (string, error) {
-	defaultPath := "/assets/images/avatar.jpg"
-	var ID uuid.UUID
+func (RepoInterface) NewAsset(references References, generatePath func(assetID *uuid.UUID) string) (*Asset, error) {
+	var a Asset
 
-	switch typeString {
-	case Avatar:
-		ID = r.References.AvatarID
-	case ProfileBackground:
-		ID = r.References.ProfileBackground
-	default:
-		return defaultPath, errors.New("Unknown asset reference type")
+	if references == nil {
+		return nil, errors.New(ErrAssetRefNotInitialised)
 	}
 
-	if ID == NullUUID {
-		return defaultPath, nil
+	newID, err := Interface.NewUUID()
+	if err != nil {
+		return nil, err
 	}
 
-	return fmt.Sprintf("%s/%s.jpg", r.Path, ID), nil
+	a.ID = newID
+	a.References = references
+	a.Path = generatePath(&a.ID)
+
+	return &a, nil
 }
 
-func (r *Asset) SetID(typeString string) error {
-	if r.References.AvatarID != NullUUID {
+func (r *Asset) GetImagePath(typeString string) string {
+	path, ok := r.References[typeString]
+	if !ok {
+		return DefaultImagePath
+	}
+
+	return path
+}
+
+func (r *Asset) SetImagePath(typeString string) error {
+	if _, ok := r.References[typeString]; ok {
 		return nil
 	}
 
-	newID, err := uuid.NewUUID()
+	newID, err := Interface.NewUUID()
 	if err != nil {
 		return err
 	}
 
-	switch typeString {
-	case "avatar":
-		r.References.AvatarID = newID
-	default:
-		return errors.New("Unknown asset reference type")
-	}
+	r.References[typeString] = fmt.Sprintf("%s/%s.jpg", r.Path, newID.String())
 
 	return nil
 }
 
-func (r *Asset) ClearID(typeString string) error {
-	switch typeString {
-	case "avatar":
-		r.References.AvatarID = NullUUID
-	default:
+func (r *Asset) SetURL(typeString string, url string) {
+	r.References[typeString] = url
+}
+
+func (r *Asset) GetURL(typeString string) string {
+	path, ok := r.References[typeString]
+	if !ok {
+		return DefaultURL
+	}
+	return path
+}
+
+func (r *Asset) ClearAsset(typeString string) error {
+	if _, ok := r.References[typeString]; !ok {
 		return errors.New("Unknown asset reference type")
 	}
+	delete(r.References, typeString)
 	return nil
 }

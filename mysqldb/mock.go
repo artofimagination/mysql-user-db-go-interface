@@ -6,12 +6,12 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 )
 
-type DBInterfaceMock struct {
+type DBConnectorMock struct {
 	Mock sqlmock.Sqlmock
 	DB   *sql.DB
 }
 
-func (i DBInterfaceMock) ConnectSystem() (*sql.Tx, error) {
+func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 	tx, err := i.DB.Begin()
 	if err != nil {
 		return nil, err
@@ -19,6 +19,6 @@ func (i DBInterfaceMock) ConnectSystem() (*sql.Tx, error) {
 	return tx, nil
 }
 
-func (DBInterfaceMock) BootstrapSystem() error {
+func (DBConnectorMock) BootstrapSystem() error {
 	return nil
 }

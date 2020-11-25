@@ -10,32 +10,32 @@ import (
 	"github.com/pkg/errors"
 )
 
-func AddAsset(tx *sql.Tx) (*uuid.UUID, error) {
+const (
+	UserAssets    = "user"
+	ProductAssets = "product"
+)
+
+var AddAssetQuery = "INSERT INTO ?_assets (id, refs) VALUES (UUID_TO_BIN(?), ?)"
+
+func (MYSQLFunctionInterface) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
 	// Prepare data
-	queryString := "INSERT INTO user_assets (id, refs) VALUES (UUID_TO_BIN(?), ?)"
-
-	newID, err := uuid.NewUUID()
+	binary, err := json.Marshal(asset.References)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	binary, err := json.Marshal(models.References{})
+	// Execute transaction
+	_, err = tx.Exec(AddAssetQuery, assetType, asset.ID, binary)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	query, err := tx.Query(queryString, newID, binary)
-	if err != nil {
-		return nil, err
-	}
-
-	defer query.Close()
-	return &newID, nil
+	return nil
 }
 
-func UpdateAsset(asset *models.Asset) error {
+func UpdateAsset(assetType string, asset *models.Asset) error {
 	// Prepare data
-	queryString := "UPDATE user_assets set refs = ? where id = UUID_TO_BIN(?)"
+	queryString := "UPDATE ?_assets set refs = ? where id = UUID_TO_BIN(?)"
 
 	refRaw, err := ConvertToJSONRaw(&asset.References)
 	if err != nil {
@@ -43,12 +43,12 @@ func UpdateAsset(asset *models.Asset) error {
 	}
 
 	// Execute transaction
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	query, err := tx.Query(queryString, refRaw, asset.ID)
+	query, err := tx.Query(queryString, assetType, refRaw, asset.ID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
@@ -57,16 +57,16 @@ func UpdateAsset(asset *models.Asset) error {
 	return tx.Commit()
 }
 
-func GetAsset(assetID *uuid.UUID) (*models.Asset, error) {
+func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
 	asset := models.Asset{}
-	queryString := "SELECT BIN_TO_UUID(id), refs FROM user_assets WHERE id = UUID_TO_BIN(?)"
+	queryString := "SELECT BIN_TO_UUID(id), refs FROM ?_assets WHERE id = UUID_TO_BIN(?)"
 
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	query := tx.QueryRow(queryString, *assetID)
+	query := tx.QueryRow(queryString, assetType, *assetID)
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
@@ -83,14 +83,14 @@ func GetAsset(assetID *uuid.UUID) (*models.Asset, error) {
 	return &asset, tx.Commit()
 }
 
-func DeleteAsset(assetID *uuid.UUID) error {
-	query := "DELETE FROM user_assets WHERE id=UUID_TO_BIN(?)"
-	tx, err := DBInterface.ConnectSystem()
+func DeleteAsset(assetType string, assetID *uuid.UUID) error {
+	query := "DELETE FROM ?_assets WHERE id=UUID_TO_BIN(?)"
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(query, *assetID)
+	_, err = tx.Exec(query, assetType, *assetID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}

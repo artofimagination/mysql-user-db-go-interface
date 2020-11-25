@@ -7,7 +7,7 @@ import (
 // UpdateProject updates the selected project.
 func UpdateProject(project models.Project) error {
 	query := "UPDATE projects set user_id = ?, features_id = ?, name = ?, config = ? where id = ?"
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
@@ -22,7 +22,7 @@ func UpdateProject(project models.Project) error {
 // AddProject adds a new project to the database.
 func AddProject(project models.Project) error {
 	query := "INSERT INTO projects (id, user_id, features_id, name, config) VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(?), ?, ?, ?)"
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func AddProject(project models.Project) error {
 func GetProjectByName(name string) (*models.Project, error) {
 	var project models.Project
 	queryString := "select BIN_TO_UUID(id), name, config from projects where name = ?"
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}

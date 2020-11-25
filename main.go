@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/artofimagination/mysql-user-db-go-interface/controllers"
+	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -39,11 +42,19 @@ func insertUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	password := passwords[0]
-
-	err := mysqldb.AddUser(name, email, password)
+	models.Interface = models.RepoInterface{}
+	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	user, err := controllers.CreateUser(name, email, password,
+		func(*uuid.UUID) string {
+			return "testPath"
+		}, func(string) ([]byte, error) {
+			return []byte{}, nil
+		})
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
+		return
 	}
+	fmt.Fprintln(w, user)
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) {
@@ -55,8 +66,14 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
+	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
 
-	result, err := mysqldb.GetUserByEmail(email)
+	result, err := mysqldb.FunctionInterface.GetUserByEmail(email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -73,8 +90,14 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
+	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
 
-	resultUser, err := mysqldb.GetUserByEmail(email)
+	resultUser, err := mysqldb.FunctionInterface.GetUserByEmail(email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -98,7 +121,7 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-
+	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
 	err := mysqldb.DeleteUser(email)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
@@ -114,8 +137,14 @@ func deleteSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
+	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
 
-	resultUser, err := mysqldb.GetUserByEmail(email)
+	resultUser, err := mysqldb.FunctionInterface.GetUserByEmail(email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -137,8 +166,14 @@ func checkUserPass(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
+	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
 
-	_, err := mysqldb.EmailExists(email)
+	_, err = mysqldb.FunctionInterface.GetUserByEmail(email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -158,8 +193,8 @@ func main() {
 	mysqldb.DBConnection = "root:123secure@tcp(user-db:3306)/user_database?parseTime=true"
 	mysqldb.MigrationDirectory = fmt.Sprintf("%s/src/mysql-user-db-go-interface/db/migrations/mysql", os.Getenv("GOPATH"))
 
-	mysqldb.DBInterface = mysqldb.MYSQLInterface{}
-	if err := mysqldb.DBInterface.BootstrapSystem(); err != nil {
+	mysqldb.DBConnector = mysqldb.MYSQLConnector{}
+	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
 		log.Fatalf("System bootstrap failed. %s", errors.WithStack(err))
 	}
 

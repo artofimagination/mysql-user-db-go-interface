@@ -2,23 +2,42 @@ package mysqldb
 
 import (
 	"database/sql"
+	"fmt"
+	"log"
 	"strings"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
+	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func getUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
+var ErrNoUserWithEmail = errors.New("There is no user associated with this email")
+
+var ErrSQLDuplicateNameEntryString = "Duplicate entry '%s' for key 'users.name'"
+var ErrSQLDuplicateEmailEntryString = "Duplicate entry '%s' for key 'users.email'"
+var ErrDuplicateNameEntry = errors.New("User with this name already exists")
+var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
+
+var GetUserByEmailQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
+
+// GetUserByEmail returns the user defined by the email.
+func (MYSQLFunctionInterface) GetUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
 	email = strings.ReplaceAll(email, " ", "")
 
 	var user models.User
-	queryString := "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
+	query, err := tx.Query(GetUserByEmailQuery, email)
+	switch {
+	case err == sql.ErrNoRows:
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, ErrNoUserWithEmail
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
 
-	query, err := tx.Query(queryString, email)
-	if err != nil {
-		return nil, err
 	}
 	defer query.Close()
 
@@ -26,50 +45,14 @@ func getUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
 	if err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID); err != nil {
 		return nil, err
 	}
-
-	return &user, err
-}
-
-// GetUserByEmail returns the user defined by the email.
-func GetUserByEmail(email string) (*models.User, error) {
-	tx, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := getUserByEmail(email, tx)
-	if err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
-
-	return user, tx.Commit()
-}
-
-// Adds a new assetID if there is non assigned yet.
-// This only can happen if the user was generated before introduction of assets.
-func UpdateAssetID(user *models.User) error {
-	tx, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return err
-	}
-
-	assetID, err := AddAsset(tx)
-	if err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	user.AssetsID = *assetID
-	if err := addUserAssetID(user, tx); err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-	return nil
+	return &user, tx.Commit()
 }
 
 // GetUserByID returns the user defined by it uuid.
 func GetUserByID(ID uuid.UUID) (*models.User, error) {
 	var user models.User
 	queryString := "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where id = UUID_TO_BIN(?)"
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -88,20 +71,9 @@ func GetUserByID(ID uuid.UUID) (*models.User, error) {
 	return &user, tx.Commit()
 }
 
-func addUserAssetID(user *models.User, tx *sql.Tx) error {
-	queryString := "UPDATE users set user_assets_id = UUID_TO_BIN(?) where id = UUID_TO_BIN(?)"
-	query, err := tx.Query(queryString, user.AssetsID, user.ID)
-	if err != nil {
-		return err
-	}
-
-	defer query.Close()
-	return err
-}
-
 func UserExists(username string) (bool, error) {
 	var user models.User
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return false, err
 	}
@@ -124,7 +96,7 @@ func EmailExists(email string) (bool, error) {
 
 	var user models.User
 	queryString := "select email from users where email = ?"
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return false, err
 	}
@@ -153,40 +125,33 @@ func IsPasswordCorrect(password string, user *models.User) bool {
 	return true
 }
 
+var InsertUserQuery = "INSERT INTO users (id, name, email, password, user_settings_id, user_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, ?, UUID_TO_BIN(?), UUID_TO_BIN(?))"
+
 // AddUser creates a new user entry in the DB.
 // Whitespaces in the email are automatically deleted
-// Email is a unique attribute, so the function checks for existing email, before adding a new entry
-func AddUser(name string, email string, passwd string) error {
-	email = strings.ReplaceAll(email, " ", "")
-
-	queryString := "INSERT INTO users (id, name, email, password, user_settings_id, user_assets_id) VALUES (UUID_TO_BIN(UUID()), ?, ?, ?, UUID_TO_BIN(?), UUID_TO_BIN(?))"
-	tx, err := DBInterface.ConnectSystem()
-	if err != nil {
-		return err
-	}
-
-	settingsID, err := AddSettings(tx)
-	if err != nil {
+// Email/Name are unique in DB. Duplicates will return error.
+func (MYSQLFunctionInterface) AddUser(user *models.User, tx *sql.Tx) error {
+	_, err := tx.Exec(InsertUserQuery, user.ID, user.Name, user.Email, user.Password, user.SettingsID, user.AssetsID)
+	switch {
+	case err == fmt.Errorf(ErrSQLDuplicateNameEntryString, user.Name):
+		log.Println(err)
+		if err := RollbackWithErrorStack(tx, err); err != nil {
+			return err
+		}
+		return ErrDuplicateNameEntry
+	case err == fmt.Errorf(ErrSQLDuplicateEmailEntryString, user.Email):
+		log.Println(err)
+		if err := RollbackWithErrorStack(tx, err); err != nil {
+			return err
+		}
+		return ErrDuplicateEmailEntry
+	case err != nil:
+		log.Println(err)
 		return RollbackWithErrorStack(tx, err)
+	default:
+		log.Println(err)
+		return tx.Commit()
 	}
-
-	assetID, err := AddAsset(tx)
-	if err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(passwd), 16)
-	if err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	query, err := tx.Query(queryString, name, email, hashedPassword, &settingsID, &assetID)
-	if err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	defer query.Close()
-	return tx.Commit()
 }
 
 func deleteUserEntry(email string, tx *sql.Tx) error {
@@ -203,12 +168,12 @@ func deleteUserEntry(email string, tx *sql.Tx) error {
 func DeleteUser(email string) error {
 	email = strings.ReplaceAll(email, " ", "")
 
-	tx, err := DBInterface.ConnectSystem()
+	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	user, err := getUserByEmail(email, tx)
+	user, err := FunctionInterface.GetUserByEmail(email, tx)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
