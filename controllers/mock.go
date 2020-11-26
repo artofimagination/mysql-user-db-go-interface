@@ -120,18 +120,3 @@ func (i DBConnectorMock) BootstrapSystem() error {
 func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 	return nil, i.err
 }
-
-type test.TestData struct {
-	expected interface{}
-	data     interface{}
-}
-
-type OrderedTestsMap map[string]test.OrderedTests
-
-type test.OrderedTests struct {
-	testDataSet test.DataSet
-	orderedList test.OrderedTestList
-}
-
-type test.DataSet map[string]test.TestData
-type test.OrderedTestList []string
