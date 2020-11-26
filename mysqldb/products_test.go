@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"testing"
 
-	"models"
-
-	"github.com/pkg/errors"
-
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -105,11 +104,11 @@ func createTestProductUsersData() (models.ProductUsers, error) {
 	return owners, nil
 }
 
-func createProductsTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, error) {
+func createProductsTestData(test int) (*test.OrderedTests, DBConnectorMock, error) {
 	dbConnector := DBConnectorMock{}
-	dataSet := testhelpers.OrderedTests{
-		orderedList: make(OrderedTestList, 0),
-		testDataSet: make(TestDataSet, 0),
+	dataSet := test.OrderedTests{
+		orderedList: make(test.OrderedTestList, 0),
+		testDataSet: make(test.DataSet, 0),
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -117,7 +116,7 @@ func createProductsTestData(test int) (*testhelpers.OrderedTests, DBConnectorMoc
 		return nil, dbConnector, err
 	}
 
-	data := testhelpers.TestData{}
+	data := test.TestData{}
 
 	product, err := createTestProductData()
 	if err != nil {
@@ -380,11 +379,11 @@ func createProductsTestData(test int) (*testhelpers.OrderedTests, DBConnectorMoc
 	return &dataSet, dbConnector, nil
 }
 
-func createPrivilegesTestData() (*testhelpers.OrderedTests, DBConnectorMock, error) {
+func createPrivilegesTestData() (*test.OrderedTests, DBConnectorMock, error) {
 	dbConnector := DBConnectorMock{}
-	dataSet := testhelpers.OrderedTests{
-		orderedList: make(OrderedTestList, 0),
-		testDataSet: make(TestDataSet, 0),
+	dataSet := test.OrderedTests{
+		orderedList: make(test.OrderedTestList, 0),
+		testDataSet: make(test.DataSet, 0),
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -392,7 +391,7 @@ func createPrivilegesTestData() (*testhelpers.OrderedTests, DBConnectorMock, err
 		return nil, dbConnector, err
 	}
 
-	data := testhelpers.TestData{}
+	data := test.TestData{}
 
 	privileges := make(models.Privileges, 2)
 	privileges[0].ID = 0
@@ -456,7 +455,7 @@ func TestAddProduct(t *testing.T) {
 		product := testCase.data.(models.Product)
 
 		err = Functions.AddProduct(&product, tx)
-		if err != testCase.expected {
+		if !test.ErrEqual(err, testCase.expected) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, testCase.expected)
 			return
 		}
@@ -485,7 +484,7 @@ func TestAddProductUsers(t *testing.T) {
 		productID := testData["product_id"].(uuid.UUID)
 
 		err = Functions.AddProductUsers(&productID, testData["product_users"].(models.ProductUsers), tx)
-		if err != testCase.expected {
+		if !test.ErrEqual(err, testCase.expected) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, testCase.expected)
 			return
 		}
@@ -513,7 +512,7 @@ func TestDeleteProductUsersByProductID(t *testing.T) {
 		productID := testCase.data.(uuid.UUID)
 
 		err = Functions.deleteProductUsersByProductID(&productID, tx)
-		if err != testCase.expected {
+		if !test.ErrEqual(err, testCase.expected) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, testCase.expected)
 			return
 		}
@@ -543,7 +542,7 @@ func TestGetProductByID(t *testing.T) {
 			return
 		}
 
-		if err != expectedError {
+		if !test.ErrEqual(err, expectedError) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, expectedError)
 			return
 		}
@@ -578,7 +577,7 @@ func TestGetProductByName(t *testing.T) {
 			return
 		}
 
-		if err != expectedError {
+		if !test.ErrEqual(err, expectedError) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, expectedError)
 			return
 		}
@@ -613,7 +612,7 @@ func TestGetUserProductIDs(t *testing.T) {
 			return
 		}
 
-		if err != expectedError {
+		if !test.ErrEqual(err, expectedError) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, expectedError)
 			return
 		}
@@ -643,7 +642,7 @@ func TestGetProductsByUserID(t *testing.T) {
 			return
 		}
 
-		if err != expectedError {
+		if !test.ErrEqual(err, expectedError) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, expectedError)
 			return
 		}
@@ -666,7 +665,7 @@ func TestDeleteProduct(t *testing.T) {
 		data := testCase.data.(uuid.UUID)
 
 		err = Functions.DeleteProduct(&data)
-		if err != testCase.expected {
+		if !test.ErrEqual(err, testCase.expected) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, testCase.expected.(error))
 			return
 		}
@@ -695,7 +694,7 @@ func TestGetPrivileges(t *testing.T) {
 			return
 		}
 
-		if err != expectedError {
+		if !test.ErrEqual(err, expectedError) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, expectedError)
 			return
 		}

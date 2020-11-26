@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
@@ -18,13 +19,13 @@ const (
 	AddUserTest        = 1
 )
 
-func createUsersTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, error) {
+func createUsersTestData(test int) (*test.OrderedTests, DBConnectorMock, error) {
 	dbConnector := DBConnectorMock{}
-	dataSet := testhelpers.OrderedTests{
-		orderedList: make(OrderedTestList, 0),
-		testDataSet: make(TestDataSet, 0),
+	dataSet := test.OrderedTests{
+		orderedList: make(test.OrderedTestList, 0),
+		testDataSet: make(test.DataSet, 0),
 	}
-	data := testhelpers.TestData{}
+	data := test.TestData{}
 
 	userID, err := uuid.NewUUID()
 	if err != nil {
@@ -74,7 +75,7 @@ func createUsersTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, 
 
 	case GetUserByEmailTest:
 		testCase := "valid_email"
-		data = testhelpers.TestData{
+		data = test.TestData{
 			data:     user.Email,
 			expected: make(map[string]interface{}),
 		}
@@ -90,7 +91,7 @@ func createUsersTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, 
 		dataSet.orderedList = append(dataSet.orderedList, testCase)
 
 		testCase = "failed_query"
-		data = testhelpers.TestData{
+		data = test.TestData{
 			data:     user.Email,
 			expected: make(map[string]interface{}),
 		}
@@ -103,7 +104,7 @@ func createUsersTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, 
 		dataSet.orderedList = append(dataSet.orderedList, testCase)
 
 		testCase = "invalid_email"
-		data = testhelpers.TestData{
+		data = test.TestData{
 			data:     user.Email,
 			expected: make(map[string]interface{}),
 		}
@@ -117,7 +118,7 @@ func createUsersTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, 
 	case AddUserTest:
 		testCase := "valid_user"
 		password := []byte{}
-		data = testhelpers.TestData{
+		data = test.TestData{
 			data:     user,
 			expected: nil,
 		}
@@ -130,7 +131,7 @@ func createUsersTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, 
 		dataSet.orderedList = append(dataSet.orderedList, testCase)
 
 		testCase = "duplicate_name"
-		data = testhelpers.TestData{
+		data = test.TestData{
 			data:     user,
 			expected: fmt.Errorf(ErrSQLDuplicateUserNameEntryString, user.Name),
 		}
@@ -141,7 +142,7 @@ func createUsersTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, 
 		dataSet.orderedList = append(dataSet.orderedList, testCase)
 
 		testCase = "duplicate_email"
-		data = testhelpers.TestData{
+		data = test.TestData{
 			data:     user,
 			expected: fmt.Errorf(ErrSQLDuplicateEmailEntryString, user.Email),
 		}
@@ -197,7 +198,7 @@ func TestGetUserByEmail(t *testing.T) {
 			return
 		}
 
-		if !testhelper.Equal(err, expectedError) {
+		if !test.ErrEqual(err, expectedError) {
 			t.Errorf("\n%s test failed.\n  Returned:\n   %+v\n  Expected:\n   %+v", testCaseString, err, expectedError)
 			return
 		}
@@ -229,7 +230,7 @@ func TestAddUser(t *testing.T) {
 		}
 
 		err = Functions.AddUser(&user, tx)
-		if !testhelper.Equal(err, expectedError) {
+		if !test.ErrEqual(err, expectedError) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, expectedError)
 			return
 		}

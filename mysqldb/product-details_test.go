@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"testing"
 
-	"models"
-
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/artofimagination/mysql-user-db-go-interface/models"
+	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
-func createDetailsTestData() (*testhelpers.OrderedTests, DBConnectorMock, error) {
+func createDetailsTestData() (*test.OrderedTests, DBConnectorMock, error) {
 	dbConnector := DBConnectorMock{}
-	dataSet := testhelpers.OrderedTests{
-		orderedList: make(OrderedTestList, 0),
-		testDataSet: make(TestDataSet, 0),
+	dataSet := test.OrderedTests{
+		orderedList: make(test.OrderedTestList, 0),
+		testDataSet: make(test.DataSet, 0),
 	}
 	details := make(models.Details)
 
@@ -39,7 +39,7 @@ func createDetailsTestData() (*testhelpers.OrderedTests, DBConnectorMock, error)
 		return nil, dbConnector, err
 	}
 
-	data := testhelpers.TestData{
+	data := test.TestData{
 		data:     productDetails,
 		expected: nil,
 	}
@@ -89,7 +89,7 @@ func TestAddProductDetails(t *testing.T) {
 		productDetails := testCase.data.(models.ProductDetails)
 
 		err = Functions.AddDetails(&productDetails, tx)
-		if err != testCase.expected {
+		if !test.ErrEqual(err, testCase.expected) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, testCase.expected)
 			return
 		}

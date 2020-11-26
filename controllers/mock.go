@@ -121,17 +121,17 @@ func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 	return nil, i.err
 }
 
-type testhelpers.TestData struct {
+type test.TestData struct {
 	expected interface{}
 	data     interface{}
 }
 
-type OrderedTestsMap map[string]testhelpers.OrderedTests
+type OrderedTestsMap map[string]test.OrderedTests
 
-type testhelpers.OrderedTests struct {
-	testDataSet TestDataSet
-	orderedList OrderedTestList
+type test.OrderedTests struct {
+	testDataSet test.DataSet
+	orderedList test.OrderedTestList
 }
 
-type TestDataSet map[string]testhelpers.TestData
-type OrderedTestList []string
+type test.DataSet map[string]test.TestData
+type test.OrderedTestList []string

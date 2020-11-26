@@ -1,4 +1,4 @@
-package testhelpers
+package test
 
 type OrderedTests struct {
 	testDataSet TestDataSet
@@ -13,7 +13,7 @@ type TestData struct {
 	data     interface{}
 }
 
-func Equal(err1 error, err2 error) bool {
+func ErrEqual(err1 error, err2 error) bool {
 	return (err1 != nil && err2 != nil && err1.Error() != err2.Error()) ||
 		(err1 == nil && err1 != err2) ||
 		(err2 == nil && err1 != err2)

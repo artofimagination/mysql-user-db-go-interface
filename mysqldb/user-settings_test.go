@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"testing"
 
-	"models"
-
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
-func createSettingsTestData() (*testhelpers.OrderedTests, DBConnectorMock, error) {
+func createSettingsTestData() (*test.OrderedTests, DBConnectorMock, error) {
 	dbConnector := DBConnectorMock{}
-	dataSet := testhelpers.OrderedTests{
-		orderedList: make(OrderedTestList, 0),
-		testDataSet: make(TestDataSet, 0),
+	dataSet := test.OrderedTests{
+		orderedList: make(test.OrderedTestList, 0),
+		testDataSet: make(test.DataSet, 0),
 	}
 	settings := make(models.Settings)
 
@@ -39,7 +39,7 @@ func createSettingsTestData() (*testhelpers.OrderedTests, DBConnectorMock, error
 		return nil, dbConnector, err
 	}
 
-	data := testhelpers.TestData{
+	data := test.TestData{
 		data:     setting,
 		expected: nil,
 	}
@@ -89,7 +89,7 @@ func TestAddSettings_ValidUserSetting(t *testing.T) {
 		userSettings := testCase.data.(models.UserSettings)
 
 		err = Functions.AddSettings(&userSettings, tx)
-		if err != testCase.expected {
+		if !test.ErrEqual(err, testCase.expected) {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, testCase.expected)
 			return
 		}
