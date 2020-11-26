@@ -11,22 +11,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-func createAssetTestData() (*testhelpers.OrderedTests, DBConnectorMock, error) {
+func createDetailsTestData() (*testhelpers.OrderedTests, DBConnectorMock, error) {
 	dbConnector := DBConnectorMock{}
 	dataSet := testhelpers.OrderedTests{
 		orderedList: make(OrderedTestList, 0),
 		testDataSet: make(TestDataSet, 0),
 	}
-	references := make(models.References)
+	details := make(models.Details)
 
-	assetID, err := uuid.NewUUID()
+	detailsID, err := uuid.NewUUID()
 	if err != nil {
 		return nil, dbConnector, err
 	}
 
-	asset := models.Asset{
-		ID:         assetID,
-		References: references,
+	productDetails := models.ProductDetails{
+		ID:      detailsID,
+		Details: details,
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -34,19 +34,19 @@ func createAssetTestData() (*testhelpers.OrderedTests, DBConnectorMock, error) {
 		return nil, dbConnector, err
 	}
 
-	binary, err := json.Marshal(asset.References)
+	binary, err := json.Marshal(productDetails.Details)
 	if err != nil {
 		return nil, dbConnector, err
 	}
 
 	data := testhelpers.TestData{
-		data:     asset,
+		data:     productDetails,
 		expected: nil,
 	}
 
-	testCase := "valid_user_asset"
+	testCase := "valid_product_details"
 	mock.ExpectBegin()
-	mock.ExpectExec(AddAssetQuery).WithArgs(UserAssets, asset.ID, binary).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(AddProductDetailsQuery).WithArgs(productDetails.ID, binary).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 	dataSet.testDataSet[testCase] = data
 	dataSet.orderedList = append(dataSet.orderedList, testCase)
@@ -54,7 +54,7 @@ func createAssetTestData() (*testhelpers.OrderedTests, DBConnectorMock, error) {
 	testCase = "failed_query"
 	data.expected = errors.New("This is a failure test")
 	mock.ExpectBegin()
-	mock.ExpectExec(AddAssetQuery).WithArgs(UserAssets, asset.ID, binary).WillReturnError(data.expected.(error))
+	mock.ExpectExec(AddProductDetailsQuery).WithArgs(productDetails.ID, binary).WillReturnError(data.expected.(error))
 	mock.ExpectRollback()
 	dataSet.testDataSet[testCase] = data
 	dataSet.orderedList = append(dataSet.orderedList, testCase)
@@ -68,9 +68,9 @@ func createAssetTestData() (*testhelpers.OrderedTests, DBConnectorMock, error) {
 	return &dataSet, dbConnector, nil
 }
 
-func TestAddAsset(t *testing.T) {
+func TestAddProductDetails(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createAssetTestData()
+	dataSet, dbConnector, err := createDetailsTestData()
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
@@ -86,9 +86,9 @@ func TestAddAsset(t *testing.T) {
 			return
 		}
 		testCase := dataSet.testDataSet[testCaseString]
-		asset := testCase.data.(models.Asset)
+		productDetails := testCase.data.(models.ProductDetails)
 
-		err = Functions.AddAsset(UserAssets, &asset, tx)
+		err = Functions.AddDetails(&productDetails, tx)
 		if err != testCase.expected {
 			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, testCase.expected)
 			return

@@ -2,7 +2,6 @@ package models
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -16,34 +15,27 @@ func TestSetImagePath(t *testing.T) {
 	asset.Path = "test/path"
 	Interface = RepoInterface{}
 
+	newID, err := uuid.NewUUID()
+	if err != nil {
+		t.Errorf("Failed to create details uuid %s", err)
+		return
+	}
+
+	UUIDInterface = UUIDInterfaceMock{
+		uuidMock: newID,
+	}
+
 	// Execute test
-	err := asset.SetImagePath("test")
+	err = asset.SetImagePath("test")
 	if err != nil {
 		t.Errorf("Failed to set path %s", err)
 		return
 	}
 
-	result := strings.Split(asset.References["test"], "/")
-	for index, slice := range result {
-		switch index {
-		case 0:
-			if slice != "test" {
-				t.Errorf("Invalid path returned %s", asset.References["test"])
-				return
-			}
-		case 1:
-			if slice != "path" {
-				t.Errorf("Invalid path returned %s", asset.References["test"])
-				return
-			}
-		case len(result) - 1:
-			uuidString := strings.Split(result[len(result)-1], ".")
-			_, err = uuid.Parse(uuidString[0])
-			if err != nil {
-				t.Errorf("Invalid path returned %s", asset.References["test"])
-				return
-			}
-		}
+	expected := fmt.Sprintf("%s/%s.jpg", asset.Path, newID.String())
+	if !cmp.Equal(asset.References["test"], expected) {
+		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", asset.References["test"], expected)
+		return
 	}
 }
 
@@ -105,12 +97,21 @@ func TestGetURL(t *testing.T) {
 func TestNewAsset_ValidInit(t *testing.T) {
 	// Create test data
 	references := make(References)
+	newID, err := uuid.NewUUID()
+	if err != nil {
+		t.Errorf("Failed to create details uuid %s", err)
+		return
+	}
 	expected := Asset{
+		ID:         newID,
 		References: references,
 		Path:       "testPath",
 	}
 
 	Interface = RepoInterface{}
+	UUIDInterface = UUIDInterfaceMock{
+		uuidMock: newID,
+	}
 
 	// Execute test
 	asset, err := Interface.NewAsset(
@@ -123,7 +124,6 @@ func TestNewAsset_ValidInit(t *testing.T) {
 		return
 	}
 
-	expected.ID = asset.ID
 	if !cmp.Equal(*asset, expected) {
 		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *asset, expected)
 		return
@@ -143,7 +143,7 @@ func TestNewAsset_NilReferences(t *testing.T) {
 			return "testPath"
 		})
 	if err == nil || err.Error() != ErrAssetRefNotInitialised {
-		t.Errorf("Failed to create new asset %s", err)
+		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, ErrAssetRefNotInitialised)
 		return
 	}
 }

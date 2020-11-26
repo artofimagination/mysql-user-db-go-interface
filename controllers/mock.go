@@ -13,7 +13,10 @@ type ModelInterfaceMock struct {
 	settingsID uuid.UUID
 	userID     uuid.UUID
 	productID  uuid.UUID
-	err        error
+
+	productDetails *models.ProductDetails
+
+	err error
 }
 
 func (i ModelInterfaceMock) NewProduct(name string, public bool, details models.Details, assetsID *uuid.UUID) (*models.Product, error) {
@@ -33,8 +36,8 @@ func (i ModelInterfaceMock) NewAsset(references models.References, generatePath 
 	return &a, i.err
 }
 
-func (i ModelInterfaceMock) NewUserSettings(settings models.Settings) (*models.UserSetting, error) {
-	var s models.UserSetting
+func (i ModelInterfaceMock) NewUserSettings(settings models.Settings) (*models.UserSettings, error) {
+	var s models.UserSettings
 	s.ID = i.settingsID
 	return &s, i.err
 }
@@ -57,28 +60,24 @@ func (i ModelInterfaceMock) NewUser(
 	return &u, i.err
 }
 
-func (ModelInterfaceMock) NewUUID() (uuid.UUID, error) {
-	var newID uuid.UUID
-	newID, err := uuid.NewUUID()
-	if err != nil {
-		return newID, err
-	}
-	return newID, nil
+func (i ModelInterfaceMock) NewProductDetails(details models.Details) (*models.ProductDetails, error) {
+	return i.productDetails, i.err
 }
 
 // DBFunctionInterfaceMock overwrites the mysqldb package function implementations with mock code.
 type DBFunctionInterfaceMock struct {
-	user       *models.User
-	product    *models.Product
-	privileges models.Privileges
-	err        error
+	user         *models.User
+	product      *models.Product
+	privileges   models.Privileges
+	userProducts models.UserProducts
+	err          error
 }
 
 func (i DBFunctionInterfaceMock) GetPrivileges() (models.Privileges, error) {
 	return i.privileges, i.err
 }
 
-func (i DBFunctionInterfaceMock) AddSettings(settings *models.UserSetting, tx *sql.Tx) error {
+func (i DBFunctionInterfaceMock) AddSettings(settings *models.UserSettings, tx *sql.Tx) error {
 	return i.err
 }
 
@@ -106,6 +105,10 @@ func (i DBFunctionInterfaceMock) GetProductByName(name string, tx *sql.Tx) (*mod
 	return i.product, i.err
 }
 
+func (i DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.UserProducts, error) {
+	return i.userProducts, i.err
+}
+
 // DBConnectorMock overwrites the mysqldb package implementations for DB connectionwith mock code.
 type DBConnectorMock struct {
 	err error
@@ -117,3 +120,18 @@ func (i DBConnectorMock) BootstrapSystem() error {
 func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 	return nil, i.err
 }
+
+type testhelpers.TestData struct {
+	expected interface{}
+	data     interface{}
+}
+
+type OrderedTestsMap map[string]testhelpers.OrderedTests
+
+type testhelpers.OrderedTests struct {
+	testDataSet TestDataSet
+	orderedList OrderedTestList
+}
+
+type TestDataSet map[string]testhelpers.TestData
+type OrderedTestList []string

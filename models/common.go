@@ -14,17 +14,23 @@ type InterfaceCommon interface {
 		password []byte,
 		settingsID uuid.UUID,
 		assetsID uuid.UUID) (*User, error)
-	NewUserSettings(settings Settings) (*UserSetting, error)
+	NewUserSettings(settings Settings) (*UserSettings, error)
 	NewProduct(name string, public bool, details Details, assetsID *uuid.UUID) (*Product, error)
+	NewProductDetails(details Details) (*ProductDetails, error)
+}
 
+type UUIDInterfaceCommon interface {
 	NewUUID() (uuid.UUID, error)
+}
+
+type RepoUUIDInterface struct {
 }
 
 type RepoInterface struct {
 }
 
 // NewUUID is a wrapper to allow mocking
-func (RepoInterface) NewUUID() (uuid.UUID, error) {
+func (RepoUUIDInterface) NewUUID() (uuid.UUID, error) {
 	var newID uuid.UUID
 	newID, err := uuid.NewUUID()
 	if err != nil {
@@ -34,3 +40,4 @@ func (RepoInterface) NewUUID() (uuid.UUID, error) {
 }
 
 var Interface InterfaceCommon
+var UUIDInterface UUIDInterfaceCommon

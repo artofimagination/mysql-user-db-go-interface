@@ -3,28 +3,42 @@ package mysqldb
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
-func createUserTestData() (*models.User, error) {
+const (
+	GetUserByEmailTest = 0
+	AddUserTest        = 1
+)
+
+func createUsersTestData(test int) (*testhelpers.OrderedTests, DBConnectorMock, error) {
+	dbConnector := DBConnectorMock{}
+	dataSet := testhelpers.OrderedTests{
+		orderedList: make(OrderedTestList, 0),
+		testDataSet: make(TestDataSet, 0),
+	}
+	data := testhelpers.TestData{}
+
 	userID, err := uuid.NewUUID()
 	if err != nil {
-		return nil, err
+		return nil, dbConnector, err
 	}
 
 	settingsID, err := uuid.NewUUID()
 	if err != nil {
-		return nil, err
+		return nil, dbConnector, err
 	}
 
 	assetsID, err := uuid.NewUUID()
 	if err != nil {
-		return nil, err
+		return nil, dbConnector, err
 	}
 
 	user := models.User{
@@ -35,148 +49,189 @@ func createUserTestData() (*models.User, error) {
 		SettingsID: settingsID,
 		AssetsID:   assetsID,
 	}
-	return &user, nil
-}
 
-func TestGetUserByEmail_ValidEmail(t *testing.T) {
-	// Create test data
-	user, err := createUserTestData()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
-		t.Errorf("Failed to generate user test data %s", err)
-		return
+		return nil, dbConnector, err
 	}
 
-	// Prepare mock
 	binaryUserID, err := json.Marshal(user.ID)
 	if err != nil {
-		t.Errorf("Failed to marshal user uuid %s", err)
-		return
+		return nil, dbConnector, err
 	}
 
 	binarySettingsID, err := json.Marshal(user.SettingsID)
 	if err != nil {
-		t.Errorf("Failed to marshal settings uuid %s", err)
-		return
+		return nil, dbConnector, err
 	}
 
 	binaryAssetsID, err := json.Marshal(user.AssetsID)
 	if err != nil {
-		t.Errorf("Failed to marshal asset test data %s", err)
-		return
+		return nil, dbConnector, err
 	}
 
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	if err != nil {
-		t.Errorf("Failed to generate user test data %s", err)
-		return
+	switch test {
+
+	case GetUserByEmailTest:
+		testCase := "valid_email"
+		data = testhelpers.TestData{
+			data:     user.Email,
+			expected: make(map[string]interface{}),
+		}
+		data.expected = make(map[string]interface{})
+		data.expected.(map[string]interface{})["data"] = &user
+		data.expected.(map[string]interface{})["error"] = nil
+		rows := sqlmock.NewRows([]string{"id", "name", "email", "password", "user_settings_id", "user_assets_id"}).
+			AddRow(binaryUserID, user.Name, user.Email, user.Password, binarySettingsID, binaryAssetsID)
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnRows(rows)
+		mock.ExpectCommit()
+		dataSet.testDataSet[testCase] = data
+		dataSet.orderedList = append(dataSet.orderedList, testCase)
+
+		testCase = "failed_query"
+		data = testhelpers.TestData{
+			data:     user.Email,
+			expected: make(map[string]interface{}),
+		}
+		data.expected.(map[string]interface{})["data"] = nil
+		data.expected.(map[string]interface{})["error"] = errors.New("This is a failure test")
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnError(data.expected.(map[string]interface{})["error"].(error))
+		mock.ExpectRollback()
+		dataSet.testDataSet[testCase] = data
+		dataSet.orderedList = append(dataSet.orderedList, testCase)
+
+		testCase = "invalid_email"
+		data = testhelpers.TestData{
+			data:     user.Email,
+			expected: make(map[string]interface{}),
+		}
+		data.expected.(map[string]interface{})["data"] = nil
+		data.expected.(map[string]interface{})["error"] = sql.ErrNoRows
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnError(sql.ErrNoRows)
+		mock.ExpectCommit()
+		dataSet.testDataSet[testCase] = data
+		dataSet.orderedList = append(dataSet.orderedList, testCase)
+	case AddUserTest:
+		testCase := "valid_user"
+		password := []byte{}
+		data = testhelpers.TestData{
+			data:     user,
+			expected: nil,
+		}
+		data.data = user
+		data.expected = nil
+		mock.ExpectBegin()
+		mock.ExpectExec(InsertUserQuery).WithArgs(user.ID, user.Name, user.Email, password, user.SettingsID, user.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectCommit()
+		dataSet.testDataSet[testCase] = data
+		dataSet.orderedList = append(dataSet.orderedList, testCase)
+
+		testCase = "duplicate_name"
+		data = testhelpers.TestData{
+			data:     user,
+			expected: fmt.Errorf(ErrSQLDuplicateUserNameEntryString, user.Name),
+		}
+		mock.ExpectBegin()
+		mock.ExpectExec(InsertUserQuery).WithArgs(user.ID, user.Name, user.Email, password, user.SettingsID, user.AssetsID).WillReturnError(data.expected.(error))
+		mock.ExpectRollback()
+		dataSet.testDataSet[testCase] = data
+		dataSet.orderedList = append(dataSet.orderedList, testCase)
+
+		testCase = "duplicate_email"
+		data = testhelpers.TestData{
+			data:     user,
+			expected: fmt.Errorf(ErrSQLDuplicateEmailEntryString, user.Email),
+		}
+		mock.ExpectBegin()
+		mock.ExpectExec(InsertUserQuery).WithArgs(user.ID, user.Name, user.Email, password, user.SettingsID, user.AssetsID).WillReturnError(data.expected.(error))
+		mock.ExpectRollback()
+		dataSet.testDataSet[testCase] = data
+		dataSet.orderedList = append(dataSet.orderedList, testCase)
+	default:
+		return nil, dbConnector, fmt.Errorf("Unknown test %d", test)
 	}
 
-	rows := sqlmock.NewRows([]string{"id", "name", "email", "password", "user_settings_id", "user_assets_id"}).
-		AddRow(binaryUserID, user.Name, user.Email, user.Password, binarySettingsID, binaryAssetsID)
-	mock.ExpectBegin()
-	mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnRows(rows)
-	mock.ExpectCommit()
-
-	DBConnector = DBConnectorMock{
+	dbConnector = DBConnectorMock{
 		DB:   db,
 		Mock: mock,
 	}
-	defer db.Close()
+	Functions = MYSQLFunctions{}
 
-	FunctionInterface = MYSQLFunctionInterface{}
+	return &dataSet, dbConnector, nil
+}
+
+func TestGetUserByEmail(t *testing.T) {
+	// Create test data
+	dataSet, dbConnector, err := createUsersTestData(GetUserByEmailTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	defer dbConnector.DB.Close()
 
 	// Run test
-	tx, err := db.Begin()
-	if err != nil {
-		t.Errorf("Failed to setup DB transaction %s", err)
-		return
-	}
+	for _, testCaseString := range dataSet.orderedList {
+		tx, err := dbConnector.DB.Begin()
+		if err != nil {
+			t.Errorf("Failed to setup DB transaction %s", err)
+			return
+		}
+		testCase := dataSet.testDataSet[testCaseString]
+		email := testCase.data.(string)
+		var expectedData *models.User
+		if testCase.expected.(map[string]interface{})["data"] != nil {
+			expectedData = testCase.expected.(map[string]interface{})["data"].(*models.User)
+		}
+		var expectedError error
+		if testCase.expected.(map[string]interface{})["error"] != nil {
+			expectedError = testCase.expected.(map[string]interface{})["error"].(error)
+		}
 
-	data, err := FunctionInterface.GetUserByEmail(user.Email, tx)
-	if err != nil {
-		t.Errorf("Failed to get user %s", err)
-		return
-	}
+		output, err := Functions.GetUserByEmail(email, tx)
+		if !cmp.Equal(output, expectedData) {
+			t.Errorf("\n%s test failed.\n  Returned:\n   %+v\n  Expected:\n   %+v", testCaseString, output, expectedData)
+			return
+		}
 
-	if !cmp.Equal(*data, *user) {
-		t.Errorf("Test returned:\n %+v\nExpected:\n %+v", *data, *user)
-		return
+		if !testhelper.Equal(err, expectedError) {
+			t.Errorf("\n%s test failed.\n  Returned:\n   %+v\n  Expected:\n   %+v", testCaseString, err, expectedError)
+			return
+		}
 	}
 }
 
-func TestGetUserByEmail_InvalidEmail(t *testing.T) {
+func TestAddUser(t *testing.T) {
 	// Create test data
-	email := "test@test.com"
-
-	// Prepare mock
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	dataSet, dbConnector, err := createUsersTestData(AddUserTest)
 	if err != nil {
-		t.Errorf("Failed to create DB mock %s", err)
+		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
 
-	mock.ExpectBegin()
-	mock.ExpectQuery(GetUserByEmailQuery).WithArgs(email).WillReturnError(sql.ErrNoRows)
-	mock.ExpectCommit()
-	DBConnector = DBConnectorMock{
-		DB:   db,
-		Mock: mock,
-	}
-	defer db.Close()
-	FunctionInterface = MYSQLFunctionInterface{}
+	defer dbConnector.DB.Close()
 
-	// Run test
-	tx, err := db.Begin()
-	if err != nil {
-		t.Errorf("Failed to setup DB transaction %s", err)
-		return
-	}
+	// Run tests
+	for _, testCaseString := range dataSet.orderedList {
+		tx, err := dbConnector.DB.Begin()
+		if err != nil {
+			t.Errorf("Failed to setup DB transaction %s", err)
+			return
+		}
+		testCase := dataSet.testDataSet[testCaseString]
+		user := testCase.data.(models.User)
+		var expectedError error
+		if testCase.expected != nil {
+			expectedError = testCase.expected.(error)
+		}
 
-	_, err = FunctionInterface.GetUserByEmail(email, tx)
-	if err == nil || (err != nil && err != ErrNoUserWithEmail) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, ErrNoUserWithEmail)
-		return
-	}
-}
-
-func TestAddUser_Valid(t *testing.T) {
-	// Create test data
-	user, err := createUserTestData()
-	if err != nil {
-		t.Errorf("Failed to generate user test data %s", err)
-		return
-	}
-	password := []byte{}
-
-	// Prepare mock
-	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	if err != nil {
-		t.Errorf("Failed to generate user test data %s", err)
-		return
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectExec(InsertUserQuery).WithArgs(user.ID, user.Name, user.Email, password, user.SettingsID, user.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
-
-	DBConnector = DBConnectorMock{
-		DB:   db,
-		Mock: mock,
-	}
-	defer db.Close()
-
-	FunctionInterface = MYSQLFunctionInterface{}
-
-	// Run test
-	tx, err := db.Begin()
-	if err != nil {
-		t.Errorf("Failed to setup DB transaction %s", err)
-		return
-	}
-
-	err = FunctionInterface.AddUser(user, tx)
-	if err != nil {
-		t.Errorf("Failed to add user %s", err)
-		return
+		err = Functions.AddUser(&user, tx)
+		if !testhelper.Equal(err, expectedError) {
+			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, expectedError)
+			return
+		}
 	}
 }

@@ -17,20 +17,20 @@ const (
 
 var AddAssetQuery = "INSERT INTO ?_assets (id, refs) VALUES (UUID_TO_BIN(?), ?)"
 
-func (MYSQLFunctionInterface) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
+func (MYSQLFunctions) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
 	// Prepare data
 	binary, err := json.Marshal(asset.References)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
 	// Execute transaction
 	_, err = tx.Exec(AddAssetQuery, assetType, asset.ID, binary)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func UpdateAsset(assetType string, asset *models.Asset) error {

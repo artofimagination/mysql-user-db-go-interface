@@ -36,7 +36,7 @@ func createTestProductData() (*models.Product, error) {
 		AssetsID: assetID,
 	}
 
-	mysqldb.FunctionInterface = DBFunctionInterfaceMock{}
+	mysqldb.Functions = DBFunctionInterfaceMock{}
 	mysqldb.DBConnector = DBConnectorMock{}
 	return &expected, nil
 }
@@ -73,7 +73,7 @@ func TestCreateProduct_NoExistingProduct(t *testing.T) {
 	users, privileges := createTestUsersData()
 	users[userID] = 0
 
-	mysqldb.FunctionInterface = DBFunctionInterfaceMock{
+	mysqldb.Functions = DBFunctionInterfaceMock{
 		privileges: privileges,
 	}
 	users[userID] = 0
@@ -137,7 +137,7 @@ func TestCreateProduct_ProductAlreadyExists(t *testing.T) {
 	users, privileges := createTestUsersData()
 	users[userID] = 0
 
-	mysqldb.FunctionInterface = DBFunctionInterfaceMock{
+	mysqldb.Functions = DBFunctionInterfaceMock{
 		product:    expected,
 		privileges: privileges,
 	}
@@ -160,7 +160,7 @@ func TestCreateProduct_ProductAlreadyExists(t *testing.T) {
 func TestValidateUsers_ValidData(t *testing.T) {
 	// Create test data
 	users, privileges := createTestUsersData()
-	mysqldb.FunctionInterface = DBFunctionInterfaceMock{
+	mysqldb.Functions = DBFunctionInterfaceMock{
 		privileges: privileges,
 	}
 	userID, err := uuid.NewUUID()
@@ -180,7 +180,7 @@ func TestValidateUsers_ValidData(t *testing.T) {
 func TestValidateUsers_EmptyUsersList(t *testing.T) {
 	// Create test data
 	users, privileges := createTestUsersData()
-	mysqldb.FunctionInterface = DBFunctionInterfaceMock{
+	mysqldb.Functions = DBFunctionInterfaceMock{
 		privileges: privileges,
 	}
 
@@ -205,7 +205,7 @@ func TestValidateUsers_NilUserList(t *testing.T) {
 func TestValidateUsers_NoOwner(t *testing.T) {
 	// Create test data
 	users, privileges := createTestUsersData()
-	mysqldb.FunctionInterface = DBFunctionInterfaceMock{
+	mysqldb.Functions = DBFunctionInterfaceMock{
 		privileges: privileges,
 	}
 	userID, err := uuid.NewUUID()
@@ -232,7 +232,7 @@ func TestValidateUsers_NoOwner(t *testing.T) {
 func TestValidateUsers_MultipleOwners(t *testing.T) {
 	// Create test data
 	users, privileges := createTestUsersData()
-	mysqldb.FunctionInterface = DBFunctionInterfaceMock{
+	mysqldb.Functions = DBFunctionInterfaceMock{
 		privileges: privileges,
 	}
 	userID, err := uuid.NewUUID()
@@ -259,7 +259,7 @@ func TestValidateUsers_MultipleOwners(t *testing.T) {
 func TestValidateUsers_InvalidPrivilege(t *testing.T) {
 	// Create test data
 	users, privileges := createTestUsersData()
-	mysqldb.FunctionInterface = DBFunctionInterfaceMock{
+	mysqldb.Functions = DBFunctionInterfaceMock{
 		privileges: privileges,
 	}
 	userIDInvalid, err := uuid.NewUUID()

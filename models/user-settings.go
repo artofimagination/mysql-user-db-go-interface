@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserSetting struct {
+type UserSettings struct {
 	ID       uuid.UUID `validation:"required"`
 	Settings Settings  `validation:"required"`
 }
@@ -21,14 +21,14 @@ const (
 
 type Settings map[string]interface{}
 
-func (RepoInterface) NewUserSettings(settings Settings) (*UserSetting, error) {
-	var s UserSetting
+func (RepoInterface) NewUserSettings(settings Settings) (*UserSettings, error) {
+	var s UserSettings
 
 	if settings == nil {
 		return nil, errors.New(ErrSettingNotInitialised)
 	}
 
-	newID, err := Interface.NewUUID()
+	newID, err := UUIDInterface.NewUUID()
 	if err != nil {
 		return nil, err
 	}

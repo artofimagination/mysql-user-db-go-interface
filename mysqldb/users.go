@@ -3,7 +3,6 @@ package mysqldb
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
@@ -15,15 +14,15 @@ import (
 
 var ErrNoUserWithEmail = errors.New("There is no user associated with this email")
 
-var ErrSQLDuplicateNameEntryString = "Duplicate entry '%s' for key 'users.name'"
+var ErrSQLDuplicateUserNameEntryString = "Duplicate entry '%s' for key 'users.name'"
 var ErrSQLDuplicateEmailEntryString = "Duplicate entry '%s' for key 'users.email'"
-var ErrDuplicateNameEntry = errors.New("User with this name already exists")
+var ErrDuplicateUserNameEntry = errors.New("User with this name already exists")
 var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
 
 var GetUserByEmailQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
 
 // GetUserByEmail returns the user defined by the email.
-func (MYSQLFunctionInterface) GetUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
+func (MYSQLFunctions) GetUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
 	email = strings.ReplaceAll(email, " ", "")
 
 	var user models.User
@@ -33,11 +32,10 @@ func (MYSQLFunctionInterface) GetUserByEmail(email string, tx *sql.Tx) (*models.
 		if err := tx.Commit(); err != nil {
 			return nil, err
 		}
-		return nil, ErrNoUserWithEmail
+		return nil, err
 	case err != nil:
 		return nil, RollbackWithErrorStack(tx, err)
 	default:
-
 	}
 	defer query.Close()
 
@@ -130,28 +128,29 @@ var InsertUserQuery = "INSERT INTO users (id, name, email, password, user_settin
 // AddUser creates a new user entry in the DB.
 // Whitespaces in the email are automatically deleted
 // Email/Name are unique in DB. Duplicates will return error.
-func (MYSQLFunctionInterface) AddUser(user *models.User, tx *sql.Tx) error {
+func (MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
 	_, err := tx.Exec(InsertUserQuery, user.ID, user.Name, user.Email, user.Password, user.SettingsID, user.AssetsID)
-	switch {
-	case err == fmt.Errorf(ErrSQLDuplicateNameEntryString, user.Name):
-		log.Println(err)
-		if err := RollbackWithErrorStack(tx, err); err != nil {
-			return err
+	errDuplicateName := fmt.Errorf(ErrSQLDuplicateUserNameEntryString, user.Name)
+	errDuplicateEmail := fmt.Errorf(ErrSQLDuplicateEmailEntryString, user.Email)
+	if err != nil {
+		switch {
+		case err.Error() == errDuplicateName.Error():
+			if errRb := tx.Rollback(); errRb != nil {
+				return err
+			}
+			return errDuplicateName
+		case err.Error() == errDuplicateEmail.Error():
+			if errRb := tx.Rollback(); errRb != nil {
+				return err
+			}
+			return errDuplicateEmail
+		case err != nil:
+			return RollbackWithErrorStack(tx, err)
+		default:
+			return tx.Commit()
 		}
-		return ErrDuplicateNameEntry
-	case err == fmt.Errorf(ErrSQLDuplicateEmailEntryString, user.Email):
-		log.Println(err)
-		if err := RollbackWithErrorStack(tx, err); err != nil {
-			return err
-		}
-		return ErrDuplicateEmailEntry
-	case err != nil:
-		log.Println(err)
-		return RollbackWithErrorStack(tx, err)
-	default:
-		log.Println(err)
-		return tx.Commit()
 	}
+	return tx.Commit()
 }
 
 func deleteUserEntry(email string, tx *sql.Tx) error {
@@ -173,7 +172,7 @@ func DeleteUser(email string) error {
 		return err
 	}
 
-	user, err := FunctionInterface.GetUserByEmail(email, tx)
+	user, err := Functions.GetUserByEmail(email, tx)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}

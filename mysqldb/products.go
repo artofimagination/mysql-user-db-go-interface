@@ -3,37 +3,56 @@ package mysqldb
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
+
+var ErrNoProductsForUser = errors.New("This user has no products")
+var ErrSQLDuplicateProductNameEntryString = "Duplicate entry '%s' for key 'products.name'"
+var ErrDuplicateProductNameEntry = errors.New("Product with this name already exists")
+var ErrNoUserWithProduct = errors.New("No user is associated to this product")
 
 var AddProductUsersQuery = "INSERT INTO users_products (users_id, products_id, privilege) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
 
-func (MYSQLFunctionInterface) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
+func (MYSQLFunctions) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
 	for userID, privilege := range productUsers {
 		_, err := tx.Exec(AddProductUsersQuery, productID, userID, privilege)
 		if err != nil {
-			return err
+			return RollbackWithErrorStack(tx, err)
 		}
 	}
-	return nil
+	return tx.Commit()
 }
 
-func deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
-	queryString := "DELETE FROM users_products where products_id = UUID_TO_BIN(?)"
+var DeleteProductUsersByProductIDQuery = "DELETE FROM users_products where products_id = UUID_TO_BIN(?)"
 
-	_, err := tx.Exec(queryString, productID)
+func (MYSQLFunctions) deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProductUsersByProductIDQuery, productID)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	return nil
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoUserWithProduct
+	}
+
+	return tx.Commit()
 }
 
 var AddProductQuery = "INSERT INTO products (id, name, public, details, product_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)"
 
-func (MYSQLFunctionInterface) AddProduct(product *models.Product, tx *sql.Tx) error {
+func (MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
 	// Prepare data
 	jsonRaw, err := ConvertToJSONRaw(product.Details)
 	if err != nil {
@@ -42,10 +61,20 @@ func (MYSQLFunctionInterface) AddProduct(product *models.Product, tx *sql.Tx) er
 
 	// Execute transaction
 	_, err = tx.Exec(AddProductQuery, product.ID, product.Name, product.Public, jsonRaw, product.AssetsID)
+	errDuplicateName := fmt.Errorf(ErrSQLDuplicateProductNameEntryString, product.Name)
 	if err != nil {
-		return RollbackWithErrorStack(tx, err)
+		switch {
+		case err.Error() == errDuplicateName.Error():
+			if errRb := tx.Rollback(); errRb != nil {
+				return err
+			}
+			return errDuplicateName
+		case err != nil:
+			return RollbackWithErrorStack(tx, err)
+		default:
+			return tx.Commit()
+		}
 	}
-
 	return tx.Commit()
 }
 
@@ -73,7 +102,7 @@ func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	return &product, nil
 }
 
-func GetProductByID(ID uuid.UUID) (*models.Product, error) {
+func (MYSQLFunctions) GetProductByID(ID uuid.UUID) (*models.Product, error) {
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
@@ -89,10 +118,17 @@ func GetProductByID(ID uuid.UUID) (*models.Product, error) {
 
 var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privilege FROM users_products where users_id = UUID_TO_BIN(?)"
 
-func getUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
+func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.UserProducts, error) {
 	rows, err := tx.Query(GetUserProductIDsQuery, userID)
-	if err != nil {
-		return nil, err
+	switch {
+	case err == sql.ErrNoRows:
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, ErrNoProductsForUser
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
 	}
 
 	defer rows.Close()
@@ -110,25 +146,25 @@ func getUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, erro
 	if err != nil {
 		return nil, err
 	}
-	return &data, nil
+	return data, nil
 }
 
 // GetProductsByUserID returns all products belonging to the selected user.
 // The function first gets all rows matching with the user DI from users_products table,
 // then gets all products based on the product ids from the first query result.
-func GetProductsByUserID(userID uuid.UUID) (*[]models.Product, error) {
+func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) (*[]models.Product, error) {
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	ownershipMap, err := getUserProductIDs(userID, tx)
+	ownershipMap, err := Functions.GetUserProductIDs(userID, tx)
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	products := []models.Product{}
-	for productID := range *ownershipMap {
+	for productID := range ownershipMap {
 		product, err := getProductByID(productID, tx)
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)
@@ -141,7 +177,7 @@ func GetProductsByUserID(userID uuid.UUID) (*[]models.Product, error) {
 
 var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assests_id) FROM products WHERE name = ?"
 
-func (MYSQLFunctionInterface) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
+func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
 	details := json.RawMessage{}
 	product := models.Product{}
 
@@ -163,7 +199,7 @@ func (MYSQLFunctionInterface) GetProductByName(name string, tx *sql.Tx) (*models
 	return &product, nil
 }
 
-func DeleteProduct(productID *uuid.UUID) error {
+func (MYSQLFunctions) DeleteProduct(productID *uuid.UUID) error {
 	queryString := "DELETE FROM products where id = UUID_TO_BIN(?)"
 
 	tx, err := DBConnector.ConnectSystem()
@@ -171,7 +207,7 @@ func DeleteProduct(productID *uuid.UUID) error {
 		return err
 	}
 
-	if err := deleteProductUsersByProductID(productID, tx); err != nil {
+	if err := Functions.deleteProductUsersByProductID(productID, tx); err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
 
@@ -185,7 +221,7 @@ func DeleteProduct(productID *uuid.UUID) error {
 
 var GetPrivilegesQuery = "SELECT id, name, description from privileges"
 
-func (MYSQLFunctionInterface) GetPrivileges() (models.Privileges, error) {
+func (MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err

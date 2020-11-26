@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrUserExists = errors.New("User with this email already exists")
+var ErrProductsStillAssociated = errors.New("There are stillsome products associated to this user")
 
 func CreateUser(
 	name string,
@@ -45,26 +45,51 @@ func CreateUser(
 		return nil, err
 	}
 
-	existingUser, err := mysqldb.FunctionInterface.GetUserByEmail(email, tx)
+	existingUser, err := mysqldb.Functions.GetUserByEmail(email, tx)
 	if err != nil {
 		return nil, err
 	}
 
 	if existingUser != nil {
-		return nil, ErrUserExists
+		return nil, mysqldb.ErrDuplicateEmailEntry
 	}
 
-	if err := mysqldb.FunctionInterface.AddAsset(mysqldb.UserAssets, asset, tx); err != nil {
+	if err := mysqldb.Functions.AddAsset(mysqldb.UserAssets, asset, tx); err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.FunctionInterface.AddSettings(userSettings, tx); err != nil {
+	if err := mysqldb.Functions.AddSettings(userSettings, tx); err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.FunctionInterface.AddUser(user, tx); err != nil {
+	if err := mysqldb.Functions.AddUser(user, tx); err != nil {
 		return nil, err
 	}
 
 	return user, nil
+}
+
+func DeleteUser(email string) error {
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return err
+	}
+
+	user, err := mysqldb.Functions.GetUserByEmail(email, tx)
+	if err != nil {
+		return err
+	}
+
+	productIDs, err := mysqldb.Functions.GetUserProductIDs(user.ID, tx)
+	if err != nil {
+		if err != mysqldb.ErrNoProductsForUser {
+			return err
+		}
+	}
+
+	if productIDs != nil {
+		return ErrProductsStillAssociated
+	}
+
+	return nil
 }

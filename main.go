@@ -43,7 +43,7 @@ func insertUser(w http.ResponseWriter, r *http.Request) {
 
 	password := passwords[0]
 	models.Interface = models.RepoInterface{}
-	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	user, err := controllers.CreateUser(name, email, password,
 		func(*uuid.UUID) string {
 			return "testPath"
@@ -66,14 +66,14 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
 
-	result, err := mysqldb.FunctionInterface.GetUserByEmail(email, tx)
+	result, err := mysqldb.Functions.GetUserByEmail(email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -90,14 +90,14 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
 
-	resultUser, err := mysqldb.FunctionInterface.GetUserByEmail(email, tx)
+	resultUser, err := mysqldb.Functions.GetUserByEmail(email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -121,7 +121,7 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	err := mysqldb.DeleteUser(email)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
@@ -137,14 +137,14 @@ func deleteSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
 
-	resultUser, err := mysqldb.FunctionInterface.GetUserByEmail(email, tx)
+	resultUser, err := mysqldb.Functions.GetUserByEmail(email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -166,14 +166,14 @@ func checkUserPass(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.FunctionInterface = mysqldb.MYSQLFunctionInterface{}
+	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
 
-	_, err = mysqldb.FunctionInterface.GetUserByEmail(email, tx)
+	_, err = mysqldb.Functions.GetUserByEmail(email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {

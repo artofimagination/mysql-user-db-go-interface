@@ -19,7 +19,7 @@ func validateUsers(users models.ProductUsers) error {
 		return ErrEmptyUsersList
 	}
 
-	privileges, err := mysqldb.FunctionInterface.GetPrivileges()
+	privileges, err := mysqldb.Functions.GetPrivileges()
 	if err != nil {
 		return err
 	}
@@ -60,6 +60,10 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 	}
 
 	details := make(models.Details)
+	productDetails, err := models.Interface.NewProductDetails(details)
+	if err != nil {
+		return nil, err
+	}
 
 	product, err := models.Interface.NewProduct(name, public, details, &asset.ID)
 	if err != nil {
@@ -72,7 +76,7 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 		return nil, err
 	}
 
-	existingProduct, err := mysqldb.FunctionInterface.GetProductByName(name, tx)
+	existingProduct, err := mysqldb.Functions.GetProductByName(name, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -81,15 +85,19 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 		return nil, fmt.Errorf(ErrProductExistsString, product.Name)
 	}
 
-	if err := mysqldb.FunctionInterface.AddProductUsers(&product.ID, users, tx); err != nil {
+	if err := mysqldb.Functions.AddProductUsers(&product.ID, users, tx); err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.FunctionInterface.AddAsset(mysqldb.ProductAssets, asset, tx); err != nil {
+	if err := mysqldb.Functions.AddDetails(productDetails, tx); err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.FunctionInterface.AddProduct(product, tx); err != nil {
+	if err := mysqldb.Functions.AddAsset(mysqldb.ProductAssets, asset, tx); err != nil {
+		return nil, err
+	}
+
+	if err := mysqldb.Functions.AddProduct(product, tx); err != nil {
 		return nil, err
 	}
 

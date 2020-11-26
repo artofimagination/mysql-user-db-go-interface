@@ -11,23 +11,23 @@ import (
 
 var AddUserSettingsQuery = "INSERT INTO user_settings (id, settings) VALUES (UUID_TO_BIN(?), ?)"
 
-func (MYSQLFunctionInterface) AddSettings(settings *models.UserSetting, tx *sql.Tx) error {
+func (MYSQLFunctions) AddSettings(settings *models.UserSettings, tx *sql.Tx) error {
 
 	binary, err := json.Marshal(settings.Settings)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
 	_, err = tx.Exec(AddUserSettingsQuery, settings.ID, binary)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	return nil
+	return tx.Commit()
 }
 
-func GetSettings(settingsID *uuid.UUID) (*models.UserSetting, error) {
-	settings := models.UserSetting{}
+func GetSettings(settingsID *uuid.UUID) (*models.UserSettings, error) {
+	settings := models.UserSettings{}
 	queryString := "SELECT settings FROM user_settings WHERE id = UUID_TO_BIN(?)"
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
