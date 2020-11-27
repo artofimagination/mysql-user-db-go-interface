@@ -14,32 +14,24 @@ type ModelInterfaceMock struct {
 	userID     uuid.UUID
 	productID  uuid.UUID
 
-	productDetails *models.ProductDetails
-
 	err error
 }
 
-func (i ModelInterfaceMock) NewProduct(name string, public bool, details models.Details, assetsID *uuid.UUID) (*models.Product, error) {
+func (i ModelInterfaceMock) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Product, error) {
 	p := models.Product{
-		Name:     name,
-		Public:   public,
-		ID:       i.productID,
-		Details:  details,
-		AssetsID: *assetsID,
+		Name:      name,
+		Public:    public,
+		ID:        i.productID,
+		DetailsID: *detailsID,
+		AssetsID:  *assetsID,
 	}
 	return &p, i.err
 }
 
-func (i ModelInterfaceMock) NewAsset(references models.References, generatePath func(assetID *uuid.UUID) string) (*models.Asset, error) {
+func (i ModelInterfaceMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) string) (*models.Asset, error) {
 	var a models.Asset
 	a.ID = i.assetID
 	return &a, i.err
-}
-
-func (i ModelInterfaceMock) NewUserSettings(settings models.Settings) (*models.UserSettings, error) {
-	var s models.UserSettings
-	s.ID = i.settingsID
-	return &s, i.err
 }
 
 func (i ModelInterfaceMock) NewUser(
@@ -60,10 +52,6 @@ func (i ModelInterfaceMock) NewUser(
 	return &u, i.err
 }
 
-func (i ModelInterfaceMock) NewProductDetails(details models.Details) (*models.ProductDetails, error) {
-	return i.productDetails, i.err
-}
-
 // DBFunctionInterfaceMock overwrites the mysqldb package function implementations with mock code.
 type DBFunctionInterfaceMock struct {
 	user         *models.User
@@ -73,16 +61,8 @@ type DBFunctionInterfaceMock struct {
 	err          error
 }
 
-func (i DBFunctionInterfaceMock) AddDetails(details *models.ProductDetails, tx *sql.Tx) error {
-	return i.err
-}
-
 func (i DBFunctionInterfaceMock) GetPrivileges() (models.Privileges, error) {
 	return i.privileges, i.err
-}
-
-func (i DBFunctionInterfaceMock) AddSettings(settings *models.UserSettings, tx *sql.Tx) error {
-	return i.err
 }
 
 func (i DBFunctionInterfaceMock) GetUserByEmail(email string, tx *sql.Tx) (*models.User, error) {

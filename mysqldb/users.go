@@ -181,7 +181,7 @@ func DeleteUser(email string) error {
 		return RollbackWithErrorStack(tx, err)
 	}
 
-	if err := deleteSettings(&user.SettingsID, tx); err != nil {
+	if err := DeleteAsset(UserAssets, &user.SettingsID, tx); err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
 

@@ -81,37 +81,6 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getSettings(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Getting user settings")
-	emails, ok := r.URL.Query()["email"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'email' is missing")
-		return
-	}
-
-	email := emails[0]
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
-	tx, err := mysqldb.DBConnector.ConnectSystem()
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-		return
-	}
-
-	resultUser, err := mysqldb.Functions.GetUserByEmail(email, tx)
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-	} else {
-		fmt.Fprintln(w, resultUser)
-	}
-
-	resultSettings, err := mysqldb.GetSettings(&resultUser.SettingsID)
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-	} else {
-		fmt.Fprintln(w, *resultSettings)
-	}
-}
-
 func deleteUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Deleting user")
 	emails, ok := r.URL.Query()["email"]
@@ -123,35 +92,6 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	email := emails[0]
 	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	err := mysqldb.DeleteUser(email)
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-	}
-}
-
-func deleteSettings(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Deleting user settings")
-	emails, ok := r.URL.Query()["email"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'email' is missing")
-		return
-	}
-
-	email := emails[0]
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
-	tx, err := mysqldb.DBConnector.ConnectSystem()
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-		return
-	}
-
-	resultUser, err := mysqldb.Functions.GetUserByEmail(email, tx)
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-	} else {
-		fmt.Fprintln(w, resultUser)
-	}
-
-	err = mysqldb.DeleteSettings(&resultUser.SettingsID)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	}
@@ -187,8 +127,6 @@ func main() {
 	http.HandleFunc("/get", getUser)
 	http.HandleFunc("/delete", deleteUser)
 	http.HandleFunc("/check", checkUserPass)
-	http.HandleFunc("/get-settings", getSettings)
-	http.HandleFunc("/delete-settings", deleteSettings)
 
 	mysqldb.DBConnection = "root:123secure@tcp(user-db:3306)/user_database?parseTime=true"
 	mysqldb.MigrationDirectory = fmt.Sprintf("%s/src/mysql-user-db-go-interface/db/migrations/mysql", os.Getenv("GOPATH"))

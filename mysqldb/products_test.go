@@ -26,12 +26,6 @@ const (
 )
 
 func createTestProductData() (*models.Product, error) {
-	details := make(models.Details)
-	details[models.SupportClients] = true
-	details[models.ProjectUI] = true
-	details[models.Requires3D] = true
-	details[models.ClientUI] = true
-
 	productID, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
@@ -42,12 +36,17 @@ func createTestProductData() (*models.Product, error) {
 		return nil, err
 	}
 
+	detailsID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
 	product := models.Product{
-		ID:       productID,
-		Name:     "Test",
-		Public:   true,
-		Details:  details,
-		AssetsID: assetID,
+		ID:        productID,
+		Name:      "Test",
+		Public:    true,
+		DetailsID: detailsID,
+		AssetsID:  assetID,
 	}
 
 	return &product, nil
@@ -56,15 +55,22 @@ func createTestProductData() (*models.Product, error) {
 func addProductsToMock(products []models.Product) (*sqlmock.Rows, error) {
 	rowsProducts := sqlmock.NewRows([]string{"id", "name", "public", "details", "product_assets_id"})
 	for _, product := range products {
-		binaryID, err := json.Marshal(product.ID)
+		binaryProductID, err := json.Marshal(product.ID)
 		if err != nil {
 			return nil, err
 		}
-		jsonRaw, err := ConvertToJSONRaw(product.Details)
+
+		binaryDetailsID, err := json.Marshal(product.DetailsID)
 		if err != nil {
 			return nil, err
 		}
-		rowsProducts.AddRow(binaryID, product.Name, product.Public, jsonRaw, product.AssetsID)
+
+		binaryAssetID, err := json.Marshal(product.AssetsID)
+		if err != nil {
+			return nil, err
+		}
+
+		rowsProducts.AddRow(binaryProductID, product.Name, product.Public, binaryDetailsID, binaryAssetID)
 	}
 	return rowsProducts, nil
 }
@@ -138,11 +144,6 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		return nil, dbConnector, err
 	}
 
-	jsonRaw, err := ConvertToJSONRaw(product.Details)
-	if err != nil {
-		return nil, dbConnector, err
-	}
-
 	userProducts, err := createTestUserProductsData(2)
 	if err != nil {
 		return nil, dbConnector, err
@@ -157,7 +158,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 			Expected: nil,
 		}
 		mock.ExpectBegin()
-		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, jsonRaw, product.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -168,7 +169,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 			Expected: errors.New("This is a failure test"),
 		}
 		mock.ExpectBegin()
-		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, jsonRaw, product.AssetsID).WillReturnError(data.Expected.(error))
+		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnError(data.Expected.(error))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -179,7 +180,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 			Expected: fmt.Errorf(ErrSQLDuplicateProductNameEntryString, product.Name),
 		}
 		mock.ExpectBegin()
-		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, jsonRaw, product.AssetsID).WillReturnError(data.Expected.(error))
+		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnError(data.Expected.(error))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -255,7 +256,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		data.Expected.(map[string]interface{})["data"] = product
 		data.Expected.(map[string]interface{})["error"] = nil
 		rows := sqlmock.NewRows([]string{"id", "name", "public", "details", "product_assets_id"}).
-			AddRow(binaryProductID, product.Name, product.Public, jsonRaw, product.AssetsID)
+			AddRow(binaryProductID, product.Name, product.Public, product.DetailsID, product.AssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByIDQuery).WithArgs(product.ID).WillReturnRows(rows)
 		mock.ExpectCommit()
@@ -286,7 +287,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		data.Expected.(map[string]interface{})["data"] = product
 		data.Expected.(map[string]interface{})["error"] = nil
 		rows := sqlmock.NewRows([]string{"id", "name", "public", "details", "product_assets_id"}).
-			AddRow(binaryProductID, product.Name, product.Public, jsonRaw, binaryAssetID)
+			AddRow(binaryProductID, product.Name, product.Public, product.DetailsID, binaryAssetID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByNameQuery).WithArgs(product.Name).WillReturnRows(rows)
 		mock.ExpectCommit()

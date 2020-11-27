@@ -1,17 +1,15 @@
 package models
 
 import (
-	"errors"
-
 	"github.com/google/uuid"
 )
 
 type Product struct {
-	ID       uuid.UUID `validation:"required"`
-	Name     string    `validation:"required"`
-	Public   bool      `validation:"required"`
-	AssetsID uuid.UUID `validation:"required"`
-	Details  Details   `validation:"required"`
+	ID        uuid.UUID `validation:"required"`
+	Name      string    `validation:"required"`
+	Public    bool      `validation:"required"`
+	AssetsID  uuid.UUID `validation:"required"`
+	DetailsID uuid.UUID `validation:"required"`
 }
 
 type Privilege struct {
@@ -44,12 +42,8 @@ func (l Privileges) IsOwnerPrivilege(privilege int) bool {
 
 // NewProduct creates a new product instance where details describe the configuration of the product
 // and references contain all asset references.
-func (RepoInterface) NewProduct(name string, public bool, details Details, assetsID *uuid.UUID) (*Product, error) {
+func (RepoInterface) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {
 	var p Product
-
-	if details == nil {
-		return nil, errors.New(ErrProductDetailsNotInitialised)
-	}
 
 	newID, err := UUIDInterface.NewUUID()
 	if err != nil {
@@ -59,7 +53,7 @@ func (RepoInterface) NewProduct(name string, public bool, details Details, asset
 	p.ID = newID
 	p.Name = name
 	p.Public = public
-	p.Details = details
+	p.DetailsID = *detailsID
 	p.AssetsID = *assetsID
 
 	return &p, nil

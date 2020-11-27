@@ -53,19 +53,19 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 		return nil, err
 	}
 
-	references := make(models.References)
+	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
 	if err != nil {
 		return nil, err
 	}
 
-	details := make(models.Details)
-	productDetails, err := models.Interface.NewProductDetails(details)
+	details := make(models.DataMap)
+	productDetails, err := models.Interface.NewAsset(details, generateAssetPath)
 	if err != nil {
 		return nil, err
 	}
 
-	product, err := models.Interface.NewProduct(name, public, details, &asset.ID)
+	product, err := models.Interface.NewProduct(name, public, &productDetails.ID, &asset.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 		return nil, err
 	}
 
-	if err := mysqldb.Functions.AddDetails(productDetails, tx); err != nil {
+	if err := mysqldb.Functions.AddAsset(mysqldb.ProductDetails, productDetails, tx); err != nil {
 		return nil, err
 	}
 

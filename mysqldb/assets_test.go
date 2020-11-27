@@ -17,7 +17,7 @@ func createAssetTestData() (*test.OrderedTests, DBConnectorMock, error) {
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
-	references := make(models.References)
+	references := make(models.DataMap)
 
 	assetID, err := uuid.NewUUID()
 	if err != nil {
@@ -25,8 +25,8 @@ func createAssetTestData() (*test.OrderedTests, DBConnectorMock, error) {
 	}
 
 	asset := models.Asset{
-		ID:         assetID,
-		References: references,
+		ID:      assetID,
+		DataMap: references,
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -34,7 +34,7 @@ func createAssetTestData() (*test.OrderedTests, DBConnectorMock, error) {
 		return nil, dbConnector, err
 	}
 
-	binary, err := json.Marshal(asset.References)
+	binary, err := json.Marshal(asset.DataMap)
 	if err != nil {
 		return nil, dbConnector, err
 	}

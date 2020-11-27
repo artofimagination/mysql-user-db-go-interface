@@ -7,16 +7,14 @@ import (
 var NullUUID = uuid.MustParse("00000000-0000-0000-0000-000000000000")
 
 type InterfaceCommon interface {
-	NewAsset(references References, generatePath func(assetID *uuid.UUID) string) (*Asset, error)
+	NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) string) (*Asset, error)
 	NewUser(
 		name string,
 		email string,
 		password []byte,
 		settingsID uuid.UUID,
 		assetsID uuid.UUID) (*User, error)
-	NewUserSettings(settings Settings) (*UserSettings, error)
-	NewProduct(name string, public bool, details Details, assetsID *uuid.UUID) (*Product, error)
-	NewProductDetails(details Details) (*ProductDetails, error)
+	NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error)
 }
 
 type UUIDInterfaceCommon interface {

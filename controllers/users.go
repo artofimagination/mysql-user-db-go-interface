@@ -17,14 +17,14 @@ func CreateUser(
 	generateAssetPath func(assetID *uuid.UUID) string,
 	encryptPassword func(password string) ([]byte, error)) (*models.User, error) {
 
-	references := make(models.References)
+	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
 	if err != nil {
 		return nil, err
 	}
 
-	settings := make(models.Settings)
-	userSettings, err := models.Interface.NewUserSettings(settings)
+	settings := make(models.DataMap)
+	userSettings, err := models.Interface.NewAsset(settings, generateAssetPath)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func CreateUser(
 		return nil, err
 	}
 
-	if err := mysqldb.Functions.AddSettings(userSettings, tx); err != nil {
+	if err := mysqldb.Functions.AddAsset(mysqldb.UserSettings, userSettings, tx); err != nil {
 		return nil, err
 	}
 

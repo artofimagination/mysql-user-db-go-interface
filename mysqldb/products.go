@@ -2,7 +2,6 @@ package mysqldb
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
@@ -50,17 +49,11 @@ func deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
 	return nil
 }
 
-var AddProductQuery = "INSERT INTO products (id, name, public, details, product_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)"
+var AddProductQuery = "INSERT INTO products (id, name, public, product_details_id, product_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)"
 
 func (MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
-	// Prepare data
-	jsonRaw, err := ConvertToJSONRaw(product.Details)
-	if err != nil {
-		return err
-	}
-
 	// Execute transaction
-	_, err = tx.Exec(AddProductQuery, product.ID, product.Name, product.Public, jsonRaw, product.AssetsID)
+	_, err := tx.Exec(AddProductQuery, product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID)
 	errDuplicateName := fmt.Errorf(ErrSQLDuplicateProductNameEntryString, product.Name)
 	if err != nil {
 		switch {
@@ -81,7 +74,6 @@ func (MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
 var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assets_id) FROM products WHERE id = UUID_TO_BIN(?)"
 
 func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
-	details := json.RawMessage{}
 	product := models.Product{}
 
 	query, err := tx.Query(GetProductByIDQuery, ID)
@@ -95,11 +87,7 @@ func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	defer query.Close()
 
 	query.Next()
-	if err := query.Scan(&product.ID, &product.Name, &product.Public, &details, &product.AssetsID); err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
-
-	if err := json.Unmarshal(details, &product.Details); err != nil {
+	if err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID); err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 
@@ -193,7 +181,6 @@ func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) ([]models.Product, e
 var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assests_id) FROM products WHERE name = ?"
 
 func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
-	details := json.RawMessage{}
 	product := models.Product{}
 
 	query, err := tx.Query(GetProductByNameQuery, name)
@@ -210,11 +197,7 @@ func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product
 	defer query.Close()
 
 	query.Next()
-	if err := query.Scan(&product.ID, &product.Name, &product.Public, &details, &product.AssetsID); err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
-
-	if err := json.Unmarshal(details, &product.Details); err != nil {
+	if err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID); err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 

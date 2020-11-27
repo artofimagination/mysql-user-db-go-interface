@@ -14,12 +14,18 @@ func TestNewProduct_ValidInit(t *testing.T) {
 		t.Errorf("Failed to create asset uuid %s", err)
 		return
 	}
-	details := make(Details)
+
+	detailsID, err := uuid.NewUUID()
+	if err != nil {
+		t.Errorf("Failed to create asset uuid %s", err)
+		return
+	}
+
 	Expected := Product{
-		Name:     "TestProduct",
-		AssetsID: assetsID,
-		Details:  details,
-		Public:   true,
+		Name:      "TestProduct",
+		AssetsID:  assetsID,
+		DetailsID: detailsID,
+		Public:    true,
 	}
 	Interface = RepoInterface{}
 
@@ -27,7 +33,7 @@ func TestNewProduct_ValidInit(t *testing.T) {
 	product, err := Interface.NewProduct(
 		"TestProduct",
 		true,
-		details,
+		&detailsID,
 		&assetsID,
 	)
 	if err != nil {
@@ -38,29 +44,6 @@ func TestNewProduct_ValidInit(t *testing.T) {
 	Expected.ID = product.ID
 	if !cmp.Equal(*product, Expected) {
 		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *product, Expected)
-		return
-	}
-}
-
-func TestNewProduct_NilDetails(t *testing.T) {
-	// Create test data
-	assetsID, err := uuid.NewUUID()
-	if err != nil {
-		t.Errorf("Failed to create asset uuid %s", err)
-		return
-	}
-	var details Details
-	Interface = RepoInterface{}
-
-	// Execute test
-	_, err = Interface.NewProduct(
-		"TestProduct",
-		true,
-		details,
-		&assetsID,
-	)
-	if err == nil || err.Error() != ErrProductDetailsNotInitialised {
-		t.Errorf("Failed to create new product %s", err)
 		return
 	}
 }

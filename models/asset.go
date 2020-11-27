@@ -22,15 +22,15 @@ var DefaultURL = ""
 var ErrAssetRefNotInitialised = errors.New("Asset references not initialised")
 
 type Asset struct {
-	ID         uuid.UUID  `validation:"required"`
-	References References `validation:"required"`
-	Path       string
+	ID      uuid.UUID `validation:"required"`
+	DataMap DataMap   `validation:"required"`
+	Path    string
 }
 
 // Assets structure contains the identification of all user related documents images.
-type References map[string]string
+type DataMap map[string]interface{}
 
-func (RepoInterface) NewAsset(references References, generatePath func(assetID *uuid.UUID) string) (*Asset, error) {
+func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) string) (*Asset, error) {
 	var a Asset
 
 	if references == nil {
@@ -43,14 +43,14 @@ func (RepoInterface) NewAsset(references References, generatePath func(assetID *
 	}
 
 	a.ID = newID
-	a.References = references
+	a.DataMap = references
 	a.Path = generatePath(&a.ID)
 
 	return &a, nil
 }
 
 func (r *Asset) GetImagePath(typeString string) string {
-	path, ok := r.References[typeString]
+	path, ok := r.DataMap[typeString].(string)
 	if !ok {
 		return DefaultImagePath
 	}
@@ -59,7 +59,7 @@ func (r *Asset) GetImagePath(typeString string) string {
 }
 
 func (r *Asset) SetImagePath(typeString string) error {
-	if _, ok := r.References[typeString]; ok {
+	if _, ok := r.DataMap[typeString]; ok {
 		return nil
 	}
 
@@ -68,17 +68,17 @@ func (r *Asset) SetImagePath(typeString string) error {
 		return err
 	}
 
-	r.References[typeString] = fmt.Sprintf("%s/%s.jpg", r.Path, newID.String())
+	r.DataMap[typeString] = fmt.Sprintf("%s/%s.jpg", r.Path, newID.String())
 
 	return nil
 }
 
 func (r *Asset) SetURL(typeString string, url string) {
-	r.References[typeString] = url
+	r.DataMap[typeString] = url
 }
 
 func (r *Asset) GetURL(typeString string) string {
-	path, ok := r.References[typeString]
+	path, ok := r.DataMap[typeString].(string)
 	if !ok {
 		return DefaultURL
 	}
@@ -86,9 +86,9 @@ func (r *Asset) GetURL(typeString string) string {
 }
 
 func (r *Asset) ClearAsset(typeString string) error {
-	if _, ok := r.References[typeString]; !ok {
+	if _, ok := r.DataMap[typeString]; !ok {
 		return errors.New("Unknown asset reference type")
 	}
-	delete(r.References, typeString)
+	delete(r.DataMap, typeString)
 	return nil
 }

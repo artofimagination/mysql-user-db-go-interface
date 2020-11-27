@@ -36,7 +36,7 @@ func createTestUserData() (*models.User, error) {
 		Email:      "testEmail",
 		Password:   []byte{},
 		ID:         userID,
-		SettingsID: settingsID,
+		SettingsID: assetID,
 		AssetsID:   assetID,
 	}
 

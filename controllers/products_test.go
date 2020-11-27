@@ -16,8 +16,6 @@ func createTestProductData() (*models.Product, error) {
 		return nil, err
 	}
 
-	details := make(models.Details)
-
 	productID, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
@@ -29,11 +27,11 @@ func createTestProductData() (*models.Product, error) {
 	}
 
 	Expected := models.Product{
-		Name:     "testProduct",
-		Public:   true,
-		ID:       productID,
-		Details:  details,
-		AssetsID: assetID,
+		Name:      "testProduct",
+		Public:    true,
+		ID:        productID,
+		DetailsID: assetID,
+		AssetsID:  assetID,
 	}
 
 	mysqldb.Functions = DBFunctionInterfaceMock{}

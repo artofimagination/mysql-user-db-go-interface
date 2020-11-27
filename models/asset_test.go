@@ -28,9 +28,9 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	}
 
 	asset := Asset{
-		ID:         assetID,
-		References: make(References),
-		Path:       "test/path",
+		ID:      assetID,
+		DataMap: make(DataMap),
+		Path:    "test/path",
 	}
 
 	referenceID, err := uuid.NewUUID()
@@ -68,7 +68,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", asset.Path, referenceID.String())
 		data.Expected.(map[string]interface{})["error"] = nil
 		data.Data.(map[string]interface{})["asset_type"] = "testType"
-		asset.References[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(map[string]interface{})["data"].(string)
+		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(map[string]interface{})["data"].(string)
 		data.Data.(map[string]interface{})["asset"] = asset
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -97,7 +97,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		}
 
 		data.Data.(map[string]interface{})["asset_type"] = "testType"
-		asset.References[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
+		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
 		data.Data.(map[string]interface{})["asset"] = asset
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -110,14 +110,14 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		DefaultURL = data.Expected.(string)
 
 		data.Data.(map[string]interface{})["asset_type"] = "testType2"
-		asset.References[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
+		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
 		data.Data.(map[string]interface{})["asset"] = asset
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case NewAssetTest:
 		testCase := "valid"
 		data := test.Data{
-			Data:     asset.References,
+			Data:     asset.DataMap,
 			Expected: make(map[string]interface{}),
 		}
 		UUIDInterface = UUIDInterfaceMock{
@@ -129,7 +129,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "nil_reference"
-		var nilRef References
+		var nilRef DataMap
 		data = test.Data{
 			Data:     nilRef,
 			Expected: make(map[string]interface{}),
@@ -175,8 +175,8 @@ func TestSetImagePath(t *testing.T) {
 				return
 			}
 
-			if asset.References[assetType] != expectedData {
-				t.Errorf(test.TestResultString, testCaseString, asset.References[assetType], expectedData)
+			if asset.DataMap[assetType] != expectedData {
+				t.Errorf(test.TestResultString, testCaseString, asset.DataMap[assetType], expectedData)
 				return
 			}
 		})
@@ -252,7 +252,7 @@ func TestNewAsset(t *testing.T) {
 			if testCase.Expected.(map[string]interface{})["data"] != nil {
 				expectedData = testCase.Expected.(map[string]interface{})["data"].(*Asset)
 			}
-			references := testCase.Data.(References)
+			references := testCase.Data.(DataMap)
 			var expectedError error
 			if testCase.Expected.(map[string]interface{})["error"] != nil {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)

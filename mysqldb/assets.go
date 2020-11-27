@@ -11,15 +11,19 @@ import (
 )
 
 const (
-	UserAssets    = "user"
-	ProductAssets = "product"
+	UserAssets     = "user_assets"
+	ProductAssets  = "product_assets"
+	ProductDetails = "product_details"
+	UserSettings   = "user_settings"
 )
 
-var AddAssetQuery = "INSERT INTO ?_assets (id, refs) VALUES (UUID_TO_BIN(?), ?)"
+var ErrAssetMissing = "This %s is missing"
+
+var AddAssetQuery = "INSERT INTO ? (id, data) VALUES (UUID_TO_BIN(?), ?)"
 
 func (MYSQLFunctions) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
 	// Prepare data
-	binary, err := json.Marshal(asset.References)
+	binary, err := json.Marshal(asset.DataMap)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
@@ -35,9 +39,9 @@ func (MYSQLFunctions) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx
 
 func UpdateAsset(assetType string, asset *models.Asset) error {
 	// Prepare data
-	queryString := "UPDATE ?_assets set refs = ? where id = UUID_TO_BIN(?)"
+	queryString := "UPDATE ? set data = ? where id = UUID_TO_BIN(?)"
 
-	refRaw, err := ConvertToJSONRaw(&asset.References)
+	refRaw, err := ConvertToJSONRaw(&asset.DataMap)
 	if err != nil {
 		return err
 	}
@@ -59,7 +63,7 @@ func UpdateAsset(assetType string, asset *models.Asset) error {
 
 func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
 	asset := models.Asset{}
-	queryString := "SELECT BIN_TO_UUID(id), refs FROM ?_assets WHERE id = UUID_TO_BIN(?)"
+	queryString := "SELECT BIN_TO_UUID(id), data FROM ? WHERE id = UUID_TO_BIN(?)"
 
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
@@ -76,23 +80,31 @@ func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
 		return nil, RollbackWithErrorStack(tx, errors.Wrap(errors.WithStack(err), fmt.Sprintf("Asset %s not found", assetID.String())))
 	}
 
-	if err := json.Unmarshal(refs, &asset.References); err != nil {
+	if err := json.Unmarshal(refs, &asset.DataMap); err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	return &asset, tx.Commit()
 }
 
-func DeleteAsset(assetType string, assetID *uuid.UUID) error {
-	query := "DELETE FROM ?_assets WHERE id=UUID_TO_BIN(?)"
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return err
-	}
+var DeleteAssetQuery = "DELETE FROM ? WHERE id=UUID_TO_BIN(?)"
 
-	_, err = tx.Exec(query, assetType, *assetID)
+func DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteAssetQuery, assetType, *assetID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
-	return tx.Commit()
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return fmt.Errorf(ErrAssetMissing, assetType)
+	}
+	return nil
 }
