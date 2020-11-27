@@ -15,7 +15,7 @@ func TestNewProduct_ValidInit(t *testing.T) {
 		return
 	}
 	details := make(Details)
-	expected := Product{
+	Expected := Product{
 		Name:     "TestProduct",
 		AssetsID: assetsID,
 		Details:  details,
@@ -35,9 +35,9 @@ func TestNewProduct_ValidInit(t *testing.T) {
 		return
 	}
 
-	expected.ID = product.ID
-	if !cmp.Equal(*product, expected) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *product, expected)
+	Expected.ID = product.ID
+	if !cmp.Equal(*product, Expected) {
+		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *product, Expected)
 		return
 	}
 }

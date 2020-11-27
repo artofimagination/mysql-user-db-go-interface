@@ -28,7 +28,7 @@ func createTestProductData() (*models.Product, error) {
 		productID: productID,
 	}
 
-	expected := models.Product{
+	Expected := models.Product{
 		Name:     "testProduct",
 		Public:   true,
 		ID:       productID,
@@ -38,7 +38,7 @@ func createTestProductData() (*models.Product, error) {
 
 	mysqldb.Functions = DBFunctionInterfaceMock{}
 	mysqldb.DBConnector = DBConnectorMock{}
-	return &expected, nil
+	return &Expected, nil
 }
 
 func createTestUsersData() (models.ProductUsers, models.Privileges) {
@@ -58,7 +58,7 @@ func createTestUsersData() (models.ProductUsers, models.Privileges) {
 
 func TestCreateProduct_NoExistingProduct(t *testing.T) {
 	// Create test data
-	expected, err := createTestProductData()
+	Expected, err := createTestProductData()
 	if err != nil {
 		t.Errorf("Failed to create test data: %s", err)
 		return
@@ -80,8 +80,8 @@ func TestCreateProduct_NoExistingProduct(t *testing.T) {
 
 	// Execute test
 	product, err := CreateProduct(
-		expected.Name,
-		expected.Public,
+		Expected.Name,
+		Expected.Public,
 		users,
 		func(*uuid.UUID) string {
 			return "testPath"
@@ -91,15 +91,15 @@ func TestCreateProduct_NoExistingProduct(t *testing.T) {
 		return
 	}
 
-	if !cmp.Equal(*product, *expected) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *product, *expected)
+	if !cmp.Equal(*product, *Expected) {
+		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *product, *Expected)
 		return
 	}
 }
 
 func TestCreateProduct_IncorrectUsersData(t *testing.T) {
 	// Create test data
-	expected, err := createTestProductData()
+	Expected, err := createTestProductData()
 	if err != nil {
 		t.Errorf("Failed to create test data: %s", err)
 		return
@@ -108,8 +108,8 @@ func TestCreateProduct_IncorrectUsersData(t *testing.T) {
 
 	// Execute test
 	_, err = CreateProduct(
-		expected.Name,
-		expected.Public,
+		Expected.Name,
+		Expected.Public,
 		productUsers,
 		func(*uuid.UUID) string {
 			return "testPath"
@@ -122,7 +122,7 @@ func TestCreateProduct_IncorrectUsersData(t *testing.T) {
 
 func TestCreateProduct_ProductAlreadyExists(t *testing.T) {
 	// Create test data
-	expected, err := createTestProductData()
+	Expected, err := createTestProductData()
 	if err != nil {
 		t.Errorf("Failed to create test data: %s", err)
 		return
@@ -138,15 +138,15 @@ func TestCreateProduct_ProductAlreadyExists(t *testing.T) {
 	users[userID] = 0
 
 	mysqldb.Functions = DBFunctionInterfaceMock{
-		product:    expected,
+		product:    Expected,
 		privileges: privileges,
 	}
 
-	expectedError := fmt.Errorf(ErrProductExistsString, expected.Name)
+	expectedError := fmt.Errorf(ErrProductExistsString, Expected.Name)
 	// Execute test
 	_, err = CreateProduct(
-		expected.Name,
-		expected.Public,
+		Expected.Name,
+		Expected.Public,
 		users,
 		func(*uuid.UUID) string {
 			return "testPath"
@@ -277,9 +277,9 @@ func TestValidateUsers_InvalidPrivilege(t *testing.T) {
 	users[userID] = 0
 
 	// Execute test
-	expected := fmt.Errorf(ErrUnknownPrivilegeString, 2, userIDInvalid.String())
-	if err := validateUsers(users); err == nil || (err != nil && !cmp.Equal(err.Error(), expected.Error())) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, expected)
+	Expected := fmt.Errorf(ErrUnknownPrivilegeString, 2, userIDInvalid.String())
+	if err := validateUsers(users); err == nil || (err != nil && !cmp.Equal(err.Error(), Expected.Error())) {
+		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, Expected)
 		return
 	}
 }

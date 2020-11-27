@@ -31,7 +31,7 @@ func createTestUserData() (*models.User, error) {
 		userID:     userID,
 	}
 
-	expected := models.User{
+	Expected := models.User{
 		Name:       "testName",
 		Email:      "testEmail",
 		Password:   []byte{},
@@ -42,12 +42,12 @@ func createTestUserData() (*models.User, error) {
 
 	mysqldb.Functions = DBFunctionInterfaceMock{}
 	mysqldb.DBConnector = DBConnectorMock{}
-	return &expected, nil
+	return &Expected, nil
 }
 
 func TestCreateUser_NoExistingUser(t *testing.T) {
 	// Create test data
-	expected, err := createTestUserData()
+	Expected, err := createTestUserData()
 	if err != nil {
 		t.Errorf("Failed to create test data %s", err)
 		return
@@ -55,8 +55,8 @@ func TestCreateUser_NoExistingUser(t *testing.T) {
 
 	// Execute test
 	user, err := CreateUser(
-		expected.Name,
-		expected.Email,
+		Expected.Name,
+		Expected.Email,
 		"",
 		func(*uuid.UUID) string {
 			return "testPath"
@@ -68,28 +68,28 @@ func TestCreateUser_NoExistingUser(t *testing.T) {
 		return
 	}
 
-	if !cmp.Equal(*user, *expected) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *user, *expected)
+	if !cmp.Equal(*user, *Expected) {
+		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *user, *Expected)
 		return
 	}
 }
 
 func TestCreateUser_UserExists(t *testing.T) {
 	// Create test data
-	expected, err := createTestUserData()
+	Expected, err := createTestUserData()
 	if err != nil {
 		t.Errorf("Failed to create test data %s", err)
 		return
 	}
 
 	mysqldb.Functions = DBFunctionInterfaceMock{
-		user: expected,
+		user: Expected,
 	}
 
 	// Execute test
 	_, err = CreateUser(
-		expected.Name,
-		expected.Email,
+		Expected.Name,
+		Expected.Email,
 		"",
 		func(*uuid.UUID) string {
 			return "testPath"

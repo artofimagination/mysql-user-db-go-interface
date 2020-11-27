@@ -73,6 +73,10 @@ type DBFunctionInterfaceMock struct {
 	err          error
 }
 
+func (i DBFunctionInterfaceMock) AddDetails(details *models.ProductDetails, tx *sql.Tx) error {
+	return i.err
+}
+
 func (i DBFunctionInterfaceMock) GetPrivileges() (models.Privileges, error) {
 	return i.privileges, i.err
 }
@@ -107,6 +111,18 @@ func (i DBFunctionInterfaceMock) GetProductByName(name string, tx *sql.Tx) (*mod
 
 func (i DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.UserProducts, error) {
 	return i.userProducts, i.err
+}
+
+func (i DBFunctionInterfaceMock) DeleteProduct(productID *uuid.UUID) error {
+	return i.err
+}
+
+func (i DBFunctionInterfaceMock) GetProductByID(ID uuid.UUID) (*models.Product, error) {
+	return i.product, i.err
+}
+
+func (i DBFunctionInterfaceMock) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
+	return nil, i.err
 }
 
 // DBConnectorMock overwrites the mysqldb package implementations for DB connectionwith mock code.

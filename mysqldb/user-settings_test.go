@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
+	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -14,8 +14,8 @@ import (
 func createSettingsTestData() (*test.OrderedTests, DBConnectorMock, error) {
 	dbConnector := DBConnectorMock{}
 	dataSet := test.OrderedTests{
-		orderedList: make(test.OrderedTestList, 0),
-		testDataSet: make(test.DataSet, 0),
+		OrderedList: make(test.OrderedTestList, 0),
+		TestDataSet: make(test.DataSet),
 	}
 	settings := make(models.Settings)
 
@@ -39,25 +39,25 @@ func createSettingsTestData() (*test.OrderedTests, DBConnectorMock, error) {
 		return nil, dbConnector, err
 	}
 
-	data := test.TestData{
-		data:     setting,
-		expected: nil,
+	data := test.Data{
+		Data:     setting,
+		Expected: nil,
 	}
 
 	testCase := "valid_user_settings"
 	mock.ExpectBegin()
 	mock.ExpectExec(AddUserSettingsQuery).WithArgs(setting.ID, binary).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
-	dataSet.testDataSet[testCase] = data
-	dataSet.orderedList = append(dataSet.orderedList, testCase)
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "failed_query"
-	data.expected = errors.New("This is a failure test")
+	data.Expected = errors.New("This is a failure test")
 	mock.ExpectBegin()
-	mock.ExpectExec(AddUserSettingsQuery).WithArgs(setting.ID, binary).WillReturnError(data.expected.(error))
+	mock.ExpectExec(AddUserSettingsQuery).WithArgs(setting.ID, binary).WillReturnError(data.Expected.(error))
 	mock.ExpectRollback()
-	dataSet.testDataSet[testCase] = data
-	dataSet.orderedList = append(dataSet.orderedList, testCase)
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	dbConnector = DBConnectorMock{
 		DB:   db,
@@ -79,19 +79,26 @@ func TestAddSettings_ValidUserSetting(t *testing.T) {
 	defer dbConnector.DB.Close()
 
 	// Run tests
-	for _, testCaseString := range dataSet.orderedList {
-		tx, err := dbConnector.DB.Begin()
-		if err != nil {
-			t.Errorf("Failed to setup DB transaction: %s", err)
-			return
-		}
-		testCase := dataSet.testDataSet[testCaseString]
-		userSettings := testCase.data.(models.UserSettings)
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			tx, err := dbConnector.DB.Begin()
+			if err != nil {
+				t.Errorf("Failed to setup DB transaction: %s", err)
+				return
+			}
+			testCase := dataSet.TestDataSet[testCaseString]
+			var expectedError error
+			if testCase.Expected != nil {
+				expectedError = testCase.Expected.(error)
+			}
+			userSettings := testCase.Data.(models.UserSettings)
 
-		err = Functions.AddSettings(&userSettings, tx)
-		if !test.ErrEqual(err, testCase.expected) {
-			t.Errorf("\n%s test failed.\n  Returned:\n %+v\n  Expected:\n %+v", testCaseString, err, testCase.expected)
-			return
-		}
+			err = Functions.AddSettings(&userSettings, tx)
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+				return
+			}
+		})
 	}
 }

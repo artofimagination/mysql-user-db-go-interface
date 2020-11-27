@@ -16,7 +16,7 @@ func TestNewProductDetails_ValidInit(t *testing.T) {
 		return
 	}
 
-	expected := ProductDetails{
+	Expected := ProductDetails{
 		ID:      newID,
 		Details: details,
 	}
@@ -34,8 +34,8 @@ func TestNewProductDetails_ValidInit(t *testing.T) {
 		return
 	}
 
-	if !cmp.Equal(*productDetails, expected) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *productDetails, expected)
+	if !cmp.Equal(*productDetails, Expected) {
+		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *productDetails, Expected)
 		return
 	}
 }

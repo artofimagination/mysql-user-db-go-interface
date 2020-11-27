@@ -30,7 +30,7 @@ type FunctionCommonInterface interface {
 	AddUser(user *models.User, tx *sql.Tx) error
 	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
 	AddSettings(settings *models.UserSettings, tx *sql.Tx) error
-	GetProductsByUserID(userID uuid.UUID) (*[]models.Product, error)
+	GetProductsByUserID(userID uuid.UUID) ([]models.Product, error)
 	GetProductByID(ID uuid.UUID) (*models.Product, error)
 	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)
 	AddProduct(product *models.Product, tx *sql.Tx) error
@@ -38,7 +38,6 @@ type FunctionCommonInterface interface {
 	GetPrivileges() (models.Privileges, error)
 	GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.UserProducts, error)
 	AddDetails(details *models.ProductDetails, tx *sql.Tx) error
-	deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error
 	DeleteProduct(productID *uuid.UUID) error
 }
 

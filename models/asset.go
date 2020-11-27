@@ -19,7 +19,7 @@ var DefaultURL = ""
 
 // Errors called in multiple places (for example in unittests).
 
-var ErrAssetRefNotInitialised = "Asset references not initialised"
+var ErrAssetRefNotInitialised = errors.New("Asset references not initialised")
 
 type Asset struct {
 	ID         uuid.UUID  `validation:"required"`
@@ -34,7 +34,7 @@ func (RepoInterface) NewAsset(references References, generatePath func(assetID *
 	var a Asset
 
 	if references == nil {
-		return nil, errors.New(ErrAssetRefNotInitialised)
+		return nil, ErrAssetRefNotInitialised
 	}
 
 	newID, err := UUIDInterface.NewUUID()

@@ -4,146 +4,274 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 )
 
-func TestSetImagePath(t *testing.T) {
-	// Create test data
-	asset := Asset{}
-	asset.References = make(References)
-	asset.Path = "test/path"
-	Interface = RepoInterface{}
+const (
+	SetImagePathTest = 0
+	GetImagePathTest = 1
+	GetURLTest       = 2
+	NewAssetTest     = 3
+)
 
-	newID, err := uuid.NewUUID()
+func createAssetTestData(testID int) (*test.OrderedTests, error) {
+	dataSet := test.OrderedTests{
+		OrderedList: make(test.OrderedTestList, 0),
+		TestDataSet: make(test.DataSet),
+	}
+
+	assetID, err := uuid.NewUUID()
 	if err != nil {
-		t.Errorf("Failed to create details uuid %s", err)
-		return
+		return nil, err
+	}
+
+	asset := Asset{
+		ID:         assetID,
+		References: make(References),
+		Path:       "test/path",
+	}
+
+	referenceID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
 	}
 
 	UUIDInterface = UUIDInterfaceMock{
-		uuidMock: newID,
+		uuidMock: referenceID,
 	}
 
-	// Execute test
-	err = asset.SetImagePath("test")
+	switch testID {
+	case SetImagePathTest:
+		testCase := "valid"
+
+		data := test.Data{
+			Data:     make(map[string]interface{}),
+			Expected: make(map[string]interface{}),
+		}
+
+		data.Data.(map[string]interface{})["asset"] = asset
+		data.Data.(map[string]interface{})["asset_type"] = "testType"
+		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", asset.Path, referenceID.String())
+		data.Expected.(map[string]interface{})["error"] = nil
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	case GetImagePathTest:
+		testCase := "valid_key_uuid"
+
+		data := test.Data{
+			Data:     make(map[string]interface{}),
+			Expected: make(map[string]interface{}),
+		}
+
+		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", asset.Path, referenceID.String())
+		data.Expected.(map[string]interface{})["error"] = nil
+		data.Data.(map[string]interface{})["asset_type"] = "testType"
+		asset.References[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(map[string]interface{})["data"].(string)
+		data.Data.(map[string]interface{})["asset"] = asset
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "invalid_asset_type"
+
+		data = test.Data{
+			Data:     make(map[string]interface{}),
+			Expected: make(map[string]interface{}),
+		}
+
+		DefaultImagePath = "default/default.jpg"
+
+		data.Data.(map[string]interface{})["asset"] = asset
+		data.Data.(map[string]interface{})["asset_type"] = "testType2"
+		data.Expected.(map[string]interface{})["data"] = DefaultImagePath
+		data.Expected.(map[string]interface{})["error"] = nil
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	case GetURLTest:
+		testCase := "valid_url"
+
+		data := test.Data{
+			Data:     make(map[string]interface{}),
+			Expected: "https://success.com",
+		}
+
+		data.Data.(map[string]interface{})["asset_type"] = "testType"
+		asset.References[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
+		data.Data.(map[string]interface{})["asset"] = asset
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "invalid_url"
+		data = test.Data{
+			Data:     make(map[string]interface{}),
+			Expected: "https://default.com",
+		}
+		DefaultURL = data.Expected.(string)
+
+		data.Data.(map[string]interface{})["asset_type"] = "testType2"
+		asset.References[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
+		data.Data.(map[string]interface{})["asset"] = asset
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	case NewAssetTest:
+		testCase := "valid"
+		data := test.Data{
+			Data:     asset.References,
+			Expected: make(map[string]interface{}),
+		}
+		UUIDInterface = UUIDInterfaceMock{
+			uuidMock: asset.ID,
+		}
+		data.Expected.(map[string]interface{})["data"] = &asset
+		data.Expected.(map[string]interface{})["error"] = nil
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "nil_reference"
+		var nilRef References
+		data = test.Data{
+			Data:     nilRef,
+			Expected: make(map[string]interface{}),
+		}
+		UUIDInterface = UUIDInterfaceMock{
+			uuidMock: asset.ID,
+		}
+		data.Expected.(map[string]interface{})["data"] = nil
+		data.Expected.(map[string]interface{})["error"] = ErrAssetRefNotInitialised
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	}
+
+	Interface = RepoInterface{}
+
+	return &dataSet, nil
+}
+
+func TestSetImagePath(t *testing.T) {
+	// Create test data
+	dataSet, err := createAssetTestData(SetImagePathTest)
 	if err != nil {
-		t.Errorf("Failed to set path %s", err)
+		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
 
-	expected := fmt.Sprintf("%s/%s.jpg", asset.Path, newID.String())
-	if !cmp.Equal(asset.References["test"], expected) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", asset.References["test"], expected)
-		return
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			testCase := dataSet.TestDataSet[testCaseString]
+			expectedData := testCase.Expected.(map[string]interface{})["data"].(string)
+			var expectedError error
+			if testCase.Expected.(map[string]interface{})["asset"] != nil {
+				expectedError = testCase.Expected.(map[string]interface{})["asset"].(error)
+			}
+			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
+			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
+
+			err = asset.SetImagePath(assetType)
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+				return
+			}
+
+			if asset.References[assetType] != expectedData {
+				t.Errorf(test.TestResultString, testCaseString, asset.References[assetType], expectedData)
+				return
+			}
+		})
 	}
 }
 
-func TestGetPath_ValidKeyUUIDValue(t *testing.T) {
+func TestGetImagePath(t *testing.T) {
 	// Create test data
-	asset := Asset{}
-	asset.References = make(References)
-	testID, err := uuid.NewUUID()
+	dataSet, err := createAssetTestData(GetImagePathTest)
 	if err != nil {
-		t.Errorf("Failed to generate test uuid %s", err)
+		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
 
-	asset.Path = "test/path"
-	expected := fmt.Sprintf("%s/%s", asset.Path, testID.String())
-	asset.References["test"] = expected
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			testCase := dataSet.TestDataSet[testCaseString]
+			expectedData := testCase.Expected.(map[string]interface{})["data"].(string)
+			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
+			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-	// Execute test
-	path := asset.GetImagePath("test")
-
-	if !cmp.Equal(path, expected) {
-		t.Errorf("Test returned:\n %+v\nExpected:\n %+v", path, expected)
-		return
-	}
-}
-
-func TestGetPath_InvalidKeyUUIDValue(t *testing.T) {
-	// Create test data
-	asset := Asset{}
-	asset.References = make(References)
-	DefaultImagePath = "default/path/image.jpg"
-
-	asset.Path = "test/path"
-
-	// Execute test
-	path := asset.GetImagePath("test")
-
-	if !cmp.Equal(path, DefaultImagePath) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", path, DefaultImagePath)
-		return
+			output := asset.GetImagePath(assetType)
+			if output != expectedData {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				return
+			}
+		})
 	}
 }
 
 func TestGetURL(t *testing.T) {
 	// Create test data
-	asset := Asset{}
-	asset.References = make(References)
-	DefaultURL = "http://test.com"
-
-	// Execute test
-	path := asset.GetURL("test")
-
-	if !cmp.Equal(path, DefaultURL) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", path, DefaultURL)
+	dataSet, err := createAssetTestData(GetURLTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
 		return
+	}
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			testCase := dataSet.TestDataSet[testCaseString]
+			expectedData := testCase.Expected.(string)
+			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
+			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
+
+			output := asset.GetURL(assetType)
+			if output != expectedData {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				return
+			}
+		})
 	}
 }
 
-func TestNewAsset_ValidInit(t *testing.T) {
+func TestNewAsset(t *testing.T) {
 	// Create test data
-	references := make(References)
-	newID, err := uuid.NewUUID()
+	dataSet, err := createAssetTestData(NewAssetTest)
 	if err != nil {
-		t.Errorf("Failed to create details uuid %s", err)
+		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	expected := Asset{
-		ID:         newID,
-		References: references,
-		Path:       "testPath",
-	}
 
-	Interface = RepoInterface{}
-	UUIDInterface = UUIDInterfaceMock{
-		uuidMock: newID,
-	}
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			testCase := dataSet.TestDataSet[testCaseString]
+			var expectedData *Asset
+			if testCase.Expected.(map[string]interface{})["data"] != nil {
+				expectedData = testCase.Expected.(map[string]interface{})["data"].(*Asset)
+			}
+			references := testCase.Data.(References)
+			var expectedError error
+			if testCase.Expected.(map[string]interface{})["error"] != nil {
+				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
+			}
 
-	// Execute test
-	asset, err := Interface.NewAsset(
-		references,
-		func(assetID *uuid.UUID) string {
-			return "testPath"
+			output, err := Interface.NewAsset(
+				references,
+				func(*uuid.UUID) string {
+					return "test/path"
+				})
+			if !cmp.Equal(output, expectedData) {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				return
+			}
+
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				return
+			}
 		})
-	if err != nil {
-		t.Errorf("Failed to create new asset %s", err)
-		return
-	}
-
-	if !cmp.Equal(*asset, expected) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *asset, expected)
-		return
-	}
-}
-
-func TestNewAsset_NilReferences(t *testing.T) {
-	// Create test data
-	var references References
-
-	Interface = RepoInterface{}
-
-	// Execute test
-	_, err := Interface.NewAsset(
-		references,
-		func(assetID *uuid.UUID) string {
-			return "testPath"
-		})
-	if err == nil || err.Error() != ErrAssetRefNotInitialised {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, ErrAssetRefNotInitialised)
-		return
 	}
 }

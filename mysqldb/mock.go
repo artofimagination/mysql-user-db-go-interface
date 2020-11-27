@@ -22,8 +22,3 @@ func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 func (DBConnectorMock) BootstrapSystem() error {
 	return nil
 }
-
-type TestConnection struct {
-	db   *sql.DB
-	mock sqlmock.Sqlmock
-}

@@ -29,7 +29,7 @@ func (MYSQLFunctions) AddProductUsers(productID *uuid.UUID, productUsers models.
 
 var DeleteProductUsersByProductIDQuery = "DELETE FROM users_products where products_id = UUID_TO_BIN(?)"
 
-func (MYSQLFunctions) deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
+func deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
 	result, err := tx.Exec(DeleteProductUsersByProductIDQuery, productID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
@@ -47,7 +47,7 @@ func (MYSQLFunctions) deleteProductUsersByProductID(productID *uuid.UUID, tx *sq
 		return ErrNoUserWithProduct
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 var AddProductQuery = "INSERT INTO products (id, name, public, details, product_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)"
@@ -85,18 +85,22 @@ func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
 
 	query, err := tx.Query(GetProductByIDQuery, ID)
-	if err != nil {
-		return nil, err
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
 	}
 	defer query.Close()
 
 	query.Next()
 	if err := query.Scan(&product.ID, &product.Name, &product.Public, &details, &product.AssetsID); err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	if err := json.Unmarshal(details, &product.Details); err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	return &product, nil
@@ -109,8 +113,15 @@ func (MYSQLFunctions) GetProductByID(ID uuid.UUID) (*models.Product, error) {
 	}
 
 	product, err := getProductByID(ID, tx)
-	if err != nil {
+	switch {
+	case err == sql.ErrNoRows:
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, sql.ErrNoRows
+	case err != nil:
 		return nil, RollbackWithErrorStack(tx, err)
+	default:
 	}
 
 	return product, tx.Commit()
@@ -122,10 +133,7 @@ func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.Us
 	rows, err := tx.Query(GetUserProductIDsQuery, userID)
 	switch {
 	case err == sql.ErrNoRows:
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
-		return nil, ErrNoProductsForUser
+		return nil, sql.ErrNoRows
 	case err != nil:
 		return nil, RollbackWithErrorStack(tx, err)
 	default:
@@ -138,13 +146,13 @@ func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.Us
 		privilege := -1
 		err := rows.Scan(&productID, &privilege)
 		if err != nil {
-			return nil, err
+			return nil, RollbackWithErrorStack(tx, err)
 		}
 		data[productID] = privilege
 	}
 	err = rows.Err()
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 	return data, nil
 }
@@ -152,15 +160,22 @@ func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.Us
 // GetProductsByUserID returns all products belonging to the selected user.
 // The function first gets all rows matching with the user DI from users_products table,
 // then gets all products based on the product ids from the first query result.
-func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) (*[]models.Product, error) {
+func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	ownershipMap, err := Functions.GetUserProductIDs(userID, tx)
-	if err != nil {
+	switch {
+	case err == sql.ErrNoRows:
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, sql.ErrNoRows
+	case err != nil:
 		return nil, RollbackWithErrorStack(tx, err)
+	default:
 	}
 
 	products := []models.Product{}
@@ -172,7 +187,7 @@ func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) (*[]models.Product, 
 		products = append(products, *product)
 	}
 
-	return &products, tx.Commit()
+	return products, tx.Commit()
 }
 
 var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assests_id) FROM products WHERE name = ?"
@@ -182,21 +197,28 @@ func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product
 	product := models.Product{}
 
 	query, err := tx.Query(GetProductByNameQuery, name)
-	if err != nil {
-		return nil, err
+	switch {
+	case err == sql.ErrNoRows:
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
 	}
 	defer query.Close()
 
 	query.Next()
 	if err := query.Scan(&product.ID, &product.Name, &product.Public, &details, &product.AssetsID); err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	if err := json.Unmarshal(details, &product.Details); err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return &product, nil
+	return &product, tx.Commit()
 }
 
 func (MYSQLFunctions) DeleteProduct(productID *uuid.UUID) error {
@@ -207,7 +229,7 @@ func (MYSQLFunctions) DeleteProduct(productID *uuid.UUID) error {
 		return err
 	}
 
-	if err := Functions.deleteProductUsersByProductID(productID, tx); err != nil {
+	if err := deleteProductUsersByProductID(productID, tx); err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
 
@@ -224,12 +246,19 @@ var GetPrivilegesQuery = "SELECT id, name, description from privileges"
 func (MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	rows, err := tx.Query(GetPrivilegesQuery)
-	if err != nil {
-		return nil, err
+	switch {
+	case err == sql.ErrNoRows:
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
 	}
 
 	defer rows.Close()
@@ -239,14 +268,14 @@ func (MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 		privilege := models.Privilege{}
 		err := rows.Scan(&privilege.ID, &privilege.Name, &privilege.Description)
 		if err != nil {
-			return nil, err
+			return nil, RollbackWithErrorStack(tx, err)
 		}
 		privileges = append(privileges, privilege)
 	}
 	err = rows.Err()
 	if err != nil {
-		return nil, err
+		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return privileges, nil
+	return privileges, tx.Commit()
 }

@@ -16,7 +16,7 @@ func TestNewUserSettings_ValidInit(t *testing.T) {
 		return
 	}
 
-	expected := UserSettings{
+	Expected := UserSettings{
 		ID:       newID,
 		Settings: settings,
 	}
@@ -34,8 +34,8 @@ func TestNewUserSettings_ValidInit(t *testing.T) {
 		return
 	}
 
-	if !cmp.Equal(*userSettings, expected) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *userSettings, expected)
+	if !cmp.Equal(*userSettings, Expected) {
+		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *userSettings, Expected)
 		return
 	}
 }
