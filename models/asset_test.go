@@ -30,7 +30,6 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	asset := Asset{
 		ID:      assetID,
 		DataMap: make(DataMap),
-		Path:    "test/path",
 	}
 
 	referenceID, err := uuid.NewUUID()
@@ -41,6 +40,8 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	UUIDInterface = UUIDInterfaceMock{
 		uuidMock: referenceID,
 	}
+	baseAssetPath := "test/path"
+	asset.DataMap[BaseAssetPath] = baseAssetPath
 
 	switch testID {
 	case SetImagePathTest:
@@ -53,7 +54,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 
 		data.Data.(map[string]interface{})["asset"] = asset
 		data.Data.(map[string]interface{})["asset_type"] = "testType"
-		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", asset.Path, referenceID.String())
+		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
 		data.Expected.(map[string]interface{})["error"] = nil
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -65,7 +66,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", asset.Path, referenceID.String())
+		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
 		data.Expected.(map[string]interface{})["error"] = nil
 		data.Data.(map[string]interface{})["asset_type"] = "testType"
 		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(map[string]interface{})["data"].(string)

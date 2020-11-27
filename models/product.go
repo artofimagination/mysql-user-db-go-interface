@@ -7,7 +7,7 @@ import (
 type Product struct {
 	ID        uuid.UUID `validation:"required"`
 	Name      string    `validation:"required"`
-	Public    bool      `validation:"required"`
+	Public    bool
 	AssetsID  uuid.UUID `validation:"required"`
 	DetailsID uuid.UUID `validation:"required"`
 }

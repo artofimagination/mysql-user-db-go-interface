@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	BaseAssetPath  = "base_asset_path"
 	UserAvatar     = "user_avatar"
 	UserBackground = "user_background"
 
@@ -24,7 +25,6 @@ var ErrAssetRefNotInitialised = errors.New("Asset references not initialised")
 type Asset struct {
 	ID      uuid.UUID `validation:"required"`
 	DataMap DataMap   `validation:"required"`
-	Path    string
 }
 
 // Assets structure contains the identification of all user related documents images.
@@ -44,7 +44,7 @@ func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uui
 
 	a.ID = newID
 	a.DataMap = references
-	a.Path = generatePath(&a.ID)
+	a.DataMap[BaseAssetPath] = generatePath(&a.ID)
 
 	return &a, nil
 }
@@ -68,7 +68,7 @@ func (r *Asset) SetImagePath(typeString string) error {
 		return err
 	}
 
-	r.DataMap[typeString] = fmt.Sprintf("%s/%s.jpg", r.Path, newID.String())
+	r.DataMap[typeString] = fmt.Sprintf("%s/%s.jpg", r.DataMap[BaseAssetPath], newID.String())
 
 	return nil
 }
