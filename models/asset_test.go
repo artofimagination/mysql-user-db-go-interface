@@ -37,7 +37,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	UUIDInterface = UUIDInterfaceMock{
+	UUIDImpl = UUIDImplMock{
 		uuidMock: referenceID,
 	}
 	baseAssetPath := "test/path"
@@ -121,7 +121,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 			Data:     asset.DataMap,
 			Expected: make(map[string]interface{}),
 		}
-		UUIDInterface = UUIDInterfaceMock{
+		UUIDImpl = UUIDImplMock{
 			uuidMock: asset.ID,
 		}
 		data.Expected.(map[string]interface{})["data"] = &asset
@@ -135,7 +135,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 			Data:     nilRef,
 			Expected: make(map[string]interface{}),
 		}
-		UUIDInterface = UUIDInterfaceMock{
+		UUIDImpl = UUIDImplMock{
 			uuidMock: asset.ID,
 		}
 		data.Expected.(map[string]interface{})["data"] = nil

@@ -45,7 +45,7 @@ func (l Privileges) IsOwnerPrivilege(privilege int) bool {
 func (RepoInterface) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {
 	var p Product
 
-	newID, err := UUIDInterface.NewUUID()
+	newID, err := UUIDImpl.NewUUID()
 	if err != nil {
 		return nil, err
 	}

@@ -37,7 +37,7 @@ func (RepoInterface) NewUser(
 		return nil, errors.New(ErrProductDetailsNotInitialised)
 	}
 
-	newID, err := UUIDInterface.NewUUID()
+	newID, err := UUIDImpl.NewUUID()
 	if err != nil {
 		return nil, err
 	}

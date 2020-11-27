@@ -38,4 +38,4 @@ func (RepoUUIDInterface) NewUUID() (uuid.UUID, error) {
 }
 
 var Interface InterfaceCommon
-var UUIDInterface UUIDInterfaceCommon
+var UUIDImpl UUIDInterfaceCommon

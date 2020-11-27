@@ -37,7 +37,7 @@ func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uui
 		return nil, ErrAssetRefNotInitialised
 	}
 
-	newID, err := UUIDInterface.NewUUID()
+	newID, err := UUIDImpl.NewUUID()
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (r *Asset) SetImagePath(typeString string) error {
 		return nil
 	}
 
-	newID, err := UUIDInterface.NewUUID()
+	newID, err := UUIDImpl.NewUUID()
 	if err != nil {
 		return err
 	}

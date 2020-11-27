@@ -4,12 +4,12 @@ import (
 	"github.com/google/uuid"
 )
 
-// UUIDInterfaceMock overwrites the default github uuid library implementation.
-type UUIDInterfaceMock struct {
+// UUIDImplMock overwrites the default github uuid library implementation.
+type UUIDImplMock struct {
 	uuidMock uuid.UUID
 	err      error
 }
 
-func (i UUIDInterfaceMock) NewUUID() (uuid.UUID, error) {
+func (i UUIDImplMock) NewUUID() (uuid.UUID, error) {
 	return i.uuidMock, i.err
 }
