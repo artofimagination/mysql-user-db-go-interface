@@ -35,6 +35,6 @@ jobs:
     # Rerun all tests a few times, to find intermittent issues
     - name: Test
       env:
-        TEST_COMMAND: go test -v -cover ./...
+        TEST_COMMAND: "go test -v -cover ./..."
         LOOP_VAR: 0
-      run: for LOOP_VAR in 0 1 2 3 .. 10 do $TEST_COMMAND done
+      run: for LOOP_VAR in `seq 0 10`; do eval $TEST_COMMAND; done
