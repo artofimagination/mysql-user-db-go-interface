@@ -6,10 +6,16 @@ import (
 	"strings"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+)
+
+// Defines the possible user query key names
+const (
+	ByEmail = "email"
+	ByID    = "id"
 )
 
 var ErrNoUserWithEmail = errors.New("There is no user associated with this email")
@@ -18,14 +24,20 @@ var ErrSQLDuplicateUserNameEntryString = "Duplicate entry '%s' for key 'users.na
 var ErrSQLDuplicateEmailEntryString = "Duplicate entry '%s' for key 'users.email'"
 var ErrDuplicateUserNameEntry = errors.New("User with this name already exists")
 
-var GetUserByEmailQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
+var GetUserQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where ? = ?"
 
-// GetUserByEmail returns the user defined by the email.
-func (MYSQLFunctions) GetUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
-	email = strings.ReplaceAll(email, " ", "")
+// GetUser returns the user defined by the key name and key value.
+// Key name can be either id or email.
+func (MYSQLFunctions) GetUser(keyName string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
+	switch keyName {
+	case ByEmail:
+		keyValue = strings.ReplaceAll(keyValue.(string), " ", "")
+	case ByID:
+		keyValue = keyValue.(uuid.UUID)
+	}
 
 	var user models.User
-	query, err := tx.Query(GetUserByEmailQuery, email)
+	query, err := tx.Query(GetUserQuery, keyName, keyValue)
 	switch {
 	case err == sql.ErrNoRows:
 		if err := tx.Commit(); err != nil {
@@ -42,29 +54,6 @@ func (MYSQLFunctions) GetUserByEmail(email string, tx *sql.Tx) (*models.User, er
 	if err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID); err != nil {
 		return nil, err
 	}
-	return &user, tx.Commit()
-}
-
-// GetUserByID returns the user defined by it uuid.
-func GetUserByID(ID uuid.UUID) (*models.User, error) {
-	var user models.User
-	queryString := "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where id = UUID_TO_BIN(?)"
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return nil, err
-	}
-
-	query, err := tx.Query(queryString, ID)
-	if err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
-	defer query.Close()
-
-	query.Next()
-	if err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID); err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
-
 	return &user, tx.Commit()
 }
 
@@ -171,7 +160,7 @@ func DeleteUser(email string) error {
 		return err
 	}
 
-	user, err := Functions.GetUserByEmail(email, tx)
+	user, err := Functions.GetUser(ByEmail, email, tx)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}

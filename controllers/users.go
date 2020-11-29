@@ -46,7 +46,7 @@ func CreateUser(
 		return nil, err
 	}
 
-	existingUser, err := mysqldb.Functions.GetUserByEmail(email, tx)
+	existingUser, err := mysqldb.Functions.GetUser(mysqldb.ByEmail, email, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -70,13 +70,13 @@ func CreateUser(
 	return user, nil
 }
 
-func DeleteUser(email string) error {
+func DeleteUser(ID uuid.UUID) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	user, err := mysqldb.Functions.GetUserByEmail(email, tx)
+	user, err := mysqldb.Functions.GetUser(mysqldb.ByID, ID, tx)
 	if err != nil {
 		return err
 	}

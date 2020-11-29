@@ -65,7 +65,7 @@ func (i DBFunctionInterfaceMock) GetPrivileges() (models.Privileges, error) {
 	return i.privileges, i.err
 }
 
-func (i DBFunctionInterfaceMock) GetUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
+func (i DBFunctionInterfaceMock) GetUser(keyName string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
 	return i.user, i.err
 }
 

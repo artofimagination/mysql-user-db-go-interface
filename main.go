@@ -73,7 +73,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := mysqldb.Functions.GetUserByEmail(email, tx)
+	result, err := mysqldb.Functions.GetUser(mysqldb.ByEmail, email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -113,7 +113,7 @@ func checkUserPass(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = mysqldb.Functions.GetUserByEmail(email, tx)
+	_, err = mysqldb.Functions.GetUser(mysqldb.ByEmail, email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
