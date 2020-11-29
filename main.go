@@ -44,10 +44,10 @@ func insertUser(w http.ResponseWriter, r *http.Request) {
 	password := passwords[0]
 	models.Interface = models.RepoInterface{}
 	mysqldb.Functions = mysqldb.MYSQLFunctions{}
-	user, err := controllers.CreateUser(name, email, password,
+	user, err := controllers.CreateUser(name, email, []byte(password),
 		func(*uuid.UUID) string {
 			return "testPath"
-		}, func(string) ([]byte, error) {
+		}, func([]byte) ([]byte, error) {
 			return []byte{}, nil
 		})
 	if err != nil {

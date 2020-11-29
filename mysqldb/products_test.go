@@ -88,16 +88,21 @@ func createTestProductList(quantity int) ([]models.Product, error) {
 	return products, nil
 }
 
-func createTestUserProductsData(quantity int) (models.UserProducts, error) {
-	userProducts := make(models.UserProducts)
+func createTestUserProductsData(quantity int) (*models.UserProducts, error) {
+	userProducts := models.UserProducts{
+		ProductMap:     make(map[uuid.UUID]int),
+		ProductIDArray: make([]uuid.UUID, 0),
+	}
+
 	for ; quantity > 0; quantity-- {
 		productID, err := uuid.NewUUID()
 		if err != nil {
 			return nil, err
 		}
-		userProducts[productID] = 1
+		userProducts.ProductMap[productID] = 1
+		userProducts.ProductIDArray = append(userProducts.ProductIDArray, productID)
 	}
-	return userProducts, nil
+	return &userProducts, nil
 }
 
 func createTestProductUsersData() (models.ProductUsers, error) {
@@ -317,8 +322,8 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		data.Expected.(map[string]interface{})["data"] = userProducts
 		data.Expected.(map[string]interface{})["error"] = nil
 		rows := sqlmock.NewRows([]string{"products_id", "privilege"})
-		for productID, privilege := range userProducts {
-			rows.AddRow(productID, privilege)
+		for _, productID := range userProducts.ProductIDArray {
+			rows.AddRow(productID, userProducts.ProductMap[productID])
 		}
 
 		mock.ExpectBegin()
@@ -356,15 +361,12 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		rowsUserProducts := sqlmock.NewRows([]string{"products_id", "privilege"})
 		// Ranging through map is random, need to collect product ID-s in fixed order in order to
 		// have the correct order of sql mock expectations.
-		orderedProductIDs := make([]uuid.UUID, 0)
-		for productID, privilege := range userProducts {
-
-			rowsUserProducts.AddRow(productID, privilege)
-			orderedProductIDs = append(orderedProductIDs, productID)
+		for _, productID := range userProducts.ProductIDArray {
+			rowsUserProducts.AddRow(productID, userProducts.ProductMap[productID])
 		}
 
-		products[0].ID = orderedProductIDs[0]
-		products[1].ID = orderedProductIDs[1]
+		products[0].ID = userProducts.ProductIDArray[0]
+		products[1].ID = userProducts.ProductIDArray[1]
 
 		rowsProducts, err := addProductsToMock(products)
 		if err != nil {
@@ -373,7 +375,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnRows(rowsUserProducts)
-		for _, productID := range orderedProductIDs {
+		for _, productID := range userProducts.ProductIDArray {
 			mock.ExpectQuery(GetProductByIDQuery).WithArgs(productID).WillReturnRows(rowsProducts)
 		}
 		mock.ExpectCommit()
@@ -692,9 +694,9 @@ func TestGetUserProductIDs(t *testing.T) {
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
 			userID := testCase.Data.(uuid.UUID)
-			var expectedData models.UserProducts
+			var expectedData *models.UserProducts
 			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(models.UserProducts)
+				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.UserProducts)
 			}
 			var expectedError error
 			if testCase.Expected.(map[string]interface{})["error"] != nil {

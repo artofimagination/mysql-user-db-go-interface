@@ -19,7 +19,10 @@ type Privilege struct {
 }
 
 type Privileges []Privilege
-type UserProducts map[uuid.UUID]int
+type UserProducts struct {
+	ProductMap     map[uuid.UUID]int
+	ProductIDArray []uuid.UUID
+}
 type ProductUsers map[uuid.UUID]int
 
 func (l Privileges) IsValidPrivilege(privilege int) bool {

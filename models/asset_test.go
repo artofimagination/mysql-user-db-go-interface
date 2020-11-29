@@ -164,8 +164,8 @@ func TestSetImagePath(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
 			expectedData := testCase.Expected.(map[string]interface{})["data"].(string)
 			var expectedError error
-			if testCase.Expected.(map[string]interface{})["asset"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["asset"].(error)
+			if testCase.Expected.(map[string]interface{})["error"] != nil {
+				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)

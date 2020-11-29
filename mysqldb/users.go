@@ -17,7 +17,6 @@ var ErrNoUserWithEmail = errors.New("There is no user associated with this email
 var ErrSQLDuplicateUserNameEntryString = "Duplicate entry '%s' for key 'users.name'"
 var ErrSQLDuplicateEmailEntryString = "Duplicate entry '%s' for key 'users.email'"
 var ErrDuplicateUserNameEntry = errors.New("User with this name already exists")
-var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
 
 var GetUserByEmailQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
 

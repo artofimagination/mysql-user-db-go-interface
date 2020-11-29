@@ -117,7 +117,7 @@ func (MYSQLFunctions) GetProductByID(ID uuid.UUID) (*models.Product, error) {
 
 var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privilege FROM users_products where users_id = UUID_TO_BIN(?)"
 
-func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.UserProducts, error) {
+func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
 	rows, err := tx.Query(GetUserProductIDsQuery, userID)
 	switch {
 	case err == sql.ErrNoRows:
@@ -128,7 +128,10 @@ func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.Us
 	}
 
 	defer rows.Close()
-	data := make(models.UserProducts)
+	userProducts := models.UserProducts{
+		ProductMap:     make(map[uuid.UUID]int),
+		ProductIDArray: make([]uuid.UUID, 0),
+	}
 	for rows.Next() {
 		productID := uuid.UUID{}
 		privilege := -1
@@ -136,13 +139,14 @@ func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.Us
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)
 		}
-		data[productID] = privilege
+		userProducts.ProductMap[productID] = privilege
+		userProducts.ProductIDArray = append(userProducts.ProductIDArray, productID)
 	}
 	err = rows.Err()
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
-	return data, nil
+	return &userProducts, nil
 }
 
 // GetProductsByUserID returns all products belonging to the selected user.
@@ -167,7 +171,7 @@ func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) ([]models.Product, e
 	}
 
 	products := []models.Product{}
-	for productID := range ownershipMap {
+	for _, productID := range ownershipMap.ProductIDArray {
 		product, err := getProductByID(productID, tx)
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)

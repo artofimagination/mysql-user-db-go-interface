@@ -9,13 +9,14 @@ import (
 )
 
 var ErrProductsStillAssociated = errors.New("There are stillsome products associated to this user")
+var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
 
 func CreateUser(
 	name string,
 	email string,
-	passwd string,
+	passwd []byte,
 	generateAssetPath func(assetID *uuid.UUID) string,
-	encryptPassword func(password string) ([]byte, error)) (*models.User, error) {
+	encryptPassword func(password []byte) ([]byte, error)) (*models.User, error) {
 
 	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
@@ -51,7 +52,7 @@ func CreateUser(
 	}
 
 	if existingUser != nil {
-		return nil, mysqldb.ErrDuplicateEmailEntry
+		return nil, ErrDuplicateEmailEntry
 	}
 
 	if err := mysqldb.Functions.AddAsset(mysqldb.UserAssets, asset, tx); err != nil {

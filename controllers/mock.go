@@ -57,7 +57,7 @@ type DBFunctionInterfaceMock struct {
 	user         *models.User
 	product      *models.Product
 	privileges   models.Privileges
-	userProducts models.UserProducts
+	userProducts *models.UserProducts
 	err          error
 }
 
@@ -89,7 +89,7 @@ func (i DBFunctionInterfaceMock) GetProductByName(name string, tx *sql.Tx) (*mod
 	return i.product, i.err
 }
 
-func (i DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (models.UserProducts, error) {
+func (i DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
 	return i.userProducts, i.err
 }
 

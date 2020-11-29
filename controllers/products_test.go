@@ -6,38 +6,10 @@ import (
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
+	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 )
-
-func createTestProductData() (*models.Product, error) {
-	assetID, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-
-	productID, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-
-	models.Interface = ModelInterfaceMock{
-		assetID:   assetID,
-		productID: productID,
-	}
-
-	Expected := models.Product{
-		Name:      "testProduct",
-		Public:    true,
-		ID:        productID,
-		DetailsID: assetID,
-		AssetsID:  assetID,
-	}
-
-	mysqldb.Functions = DBFunctionInterfaceMock{}
-	mysqldb.DBConnector = DBConnectorMock{}
-	return &Expected, nil
-}
 
 func createTestUsersData() (models.ProductUsers, models.Privileges) {
 	privileges := make(models.Privileges, 2)
@@ -54,104 +26,147 @@ func createTestUsersData() (models.ProductUsers, models.Privileges) {
 	return users, privileges
 }
 
-func TestCreateProduct_NoExistingProduct(t *testing.T) {
-	// Create test data
-	Expected, err := createTestProductData()
+func createProductTestData() (*test.OrderedTests, error) {
+	dataSet := test.OrderedTests{
+		OrderedList: make(test.OrderedTestList, 0),
+		TestDataSet: make(test.DataSet),
+	}
+
+	productUsers, privileges := createTestUsersData()
+
+	assetID, err := uuid.NewUUID()
 	if err != nil {
-		t.Errorf("Failed to create test data: %s", err)
-		return
+		return nil, err
+	}
+
+	productID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	models.Interface = ModelInterfaceMock{
+		assetID:   assetID,
+		productID: productID,
+	}
+
+	product := models.Product{
+		Name:      "testProduct",
+		Public:    true,
+		ID:        productID,
+		DetailsID: assetID,
+		AssetsID:  assetID,
 	}
 
 	userID, err := uuid.NewUUID()
 	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
-		return
+		return nil, err
 	}
 
-	users, privileges := createTestUsersData()
-	users[userID] = 0
-
-	mysqldb.Functions = DBFunctionInterfaceMock{
-		privileges: privileges,
-	}
-	users[userID] = 0
-
-	// Execute test
-	product, err := CreateProduct(
-		Expected.Name,
-		Expected.Public,
-		users,
-		func(*uuid.UUID) string {
-			return "testPath"
-		})
-	if err != nil {
-		t.Errorf("Failed to create user: %s", err)
-		return
+	testCase := "no_existing_product"
+	data := test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: make(map[string]interface{}),
 	}
 
-	if !cmp.Equal(*product, *Expected) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", *product, *Expected)
-		return
+	data.Data.(map[string]interface{})["input"] = product
+	data.Data.(map[string]interface{})["db_mock"] = nil
+	productUsers[userID] = 0
+	data.Data.(map[string]interface{})["product_users"] = productUsers
+	data.Data.(map[string]interface{})["privileges"] = privileges
+	data.Expected.(map[string]interface{})["data"] = &product
+	data.Expected.(map[string]interface{})["error"] = nil
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	testCase = "existing_product"
+	data = test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: make(map[string]interface{}),
 	}
+
+	data.Data.(map[string]interface{})["input"] = product
+	data.Data.(map[string]interface{})["db_mock"] = &product
+	productUsers[userID] = 0
+	data.Data.(map[string]interface{})["product_users"] = productUsers
+	data.Data.(map[string]interface{})["privileges"] = privileges
+	data.Expected.(map[string]interface{})["data"] = nil
+	data.Expected.(map[string]interface{})["error"] = fmt.Errorf(ErrProductExistsString, product.Name)
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	testCase = "incorrect_product_users"
+	data = test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: make(map[string]interface{}),
+	}
+
+	data.Data.(map[string]interface{})["input"] = product
+	data.Data.(map[string]interface{})["db_mock"] = &product
+	productUsers = make(models.ProductUsers)
+	data.Data.(map[string]interface{})["product_users"] = productUsers
+	data.Data.(map[string]interface{})["privileges"] = privileges
+	data.Expected.(map[string]interface{})["data"] = nil
+	data.Expected.(map[string]interface{})["error"] = ErrEmptyUsersList
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	mysqldb.Functions = DBFunctionInterfaceMock{}
+	mysqldb.DBConnector = DBConnectorMock{}
+	return &dataSet, nil
 }
 
-func TestCreateProduct_IncorrectUsersData(t *testing.T) {
+func TestCreateProduct(t *testing.T) {
 	// Create test data
-	Expected, err := createTestProductData()
+	dataSet, err := createProductTestData()
 	if err != nil {
 		t.Errorf("Failed to create test data: %s", err)
 		return
 	}
-	productUsers := make(models.ProductUsers)
 
-	// Execute test
-	_, err = CreateProduct(
-		Expected.Name,
-		Expected.Public,
-		productUsers,
-		func(*uuid.UUID) string {
-			return "testPath"
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			testCase := dataSet.TestDataSet[testCaseString]
+			var expectedData *models.Product
+			if testCase.Expected.(map[string]interface{})["data"] != nil {
+				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.Product)
+			}
+			var expectedError error
+			if testCase.Expected.(map[string]interface{})["error"] != nil {
+				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
+			}
+			input := testCase.Data.(map[string]interface{})["input"].(models.Product)
+			productUsers := testCase.Data.(map[string]interface{})["product_users"].(models.ProductUsers)
+			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
+			var DBMock *models.Product
+			if testCase.Data.(map[string]interface{})["db_mock"] != nil {
+				DBMock = testCase.Data.(map[string]interface{})["db_mock"].(*models.Product)
+			}
+
+			mysqldb.Functions = DBFunctionInterfaceMock{
+				product:    DBMock,
+				privileges: privileges,
+			}
+
+			output, err := CreateProduct(
+				input.Name,
+				input.Public,
+				productUsers,
+				func(*uuid.UUID) string {
+					return "testPath"
+				})
+
+			if !cmp.Equal(output, expectedData) {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				return
+			}
+
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				return
+			}
 		})
-	if err == nil || (err != nil && err != ErrEmptyUsersList) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, ErrEmptyUsersList)
-		return
-	}
-}
-
-func TestCreateProduct_ProductAlreadyExists(t *testing.T) {
-	// Create test data
-	Expected, err := createTestProductData()
-	if err != nil {
-		t.Errorf("Failed to create test data: %s", err)
-		return
-	}
-
-	userID, err := uuid.NewUUID()
-	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
-		return
-	}
-
-	users, privileges := createTestUsersData()
-	users[userID] = 0
-
-	mysqldb.Functions = DBFunctionInterfaceMock{
-		product:    Expected,
-		privileges: privileges,
-	}
-
-	expectedError := fmt.Errorf(ErrProductExistsString, Expected.Name)
-	// Execute test
-	_, err = CreateProduct(
-		Expected.Name,
-		Expected.Public,
-		users,
-		func(*uuid.UUID) string {
-			return "testPath"
-		})
-	if err == nil || (err != nil && !cmp.Equal(err.Error(), expectedError.Error())) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, expectedError)
-		return
 	}
 }
 
