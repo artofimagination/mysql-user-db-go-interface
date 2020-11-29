@@ -32,5 +32,9 @@ jobs:
     - name: Build
       run: go build -v .
 
+    # Rerun all tests a few times, to find intermittent issues
     - name: Test
-      run: go test -v -cover ./...
+      env:
+        TEST_COMMAND: go test -v -cover ./...
+        LOOP_VAR: 0
+      run: for LOOP_VAR in 0 1 2 3 .. 10 do $TEST_COMMAND done
