@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	GetUserTest = 0
-	AddUserTest = 1
+	GetUserTest    = 0
+	AddUserTest    = 1
+	DeleteUserTest = 2
 )
 
 func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error) {
@@ -210,6 +211,29 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	case DeleteUserTest:
+		testCase := "valid_user"
+		data = test.Data{
+			Data:     user.ID,
+			Expected: nil,
+		}
+		mock.ExpectBegin()
+		mock.ExpectExec(DeleteUserQuery).WithArgs(user.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "invalid_user"
+		data = test.Data{
+			Data:     user.ID,
+			Expected: ErrNoUserDeleted,
+		}
+		mock.ExpectBegin()
+		mock.ExpectExec(DeleteUserQuery).WithArgs(user.ID).WillReturnResult(sqlmock.NewResult(1, 0))
+		mock.ExpectRollback()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
 	default:
 		return nil, dbConnector, fmt.Errorf("Unknown test %d", testID)
 	}
@@ -295,6 +319,41 @@ func TestAddUser(t *testing.T) {
 			}
 
 			err = Functions.AddUser(&user, tx)
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				return
+			}
+		})
+	}
+}
+
+func TestDeleteUser(t *testing.T) {
+	// Create test data
+	dataSet, dbConnector, err := createUsersTestData(DeleteUserTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	defer dbConnector.DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			tx, err := dbConnector.DB.Begin()
+			if err != nil {
+				t.Errorf("Failed to setup DB transaction %s", err)
+				return
+			}
+			testCase := dataSet.TestDataSet[testCaseString]
+			userID := testCase.Data.(uuid.UUID)
+			var expectedError error
+			if testCase.Expected != nil {
+				expectedError = testCase.Expected.(error)
+			}
+
+			err = Functions.DeleteUser(&userID, tx)
 			if !test.ErrEqual(err, expectedError) {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return

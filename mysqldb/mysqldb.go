@@ -37,6 +37,7 @@ type FunctionCommonInterface interface {
 	GetPrivileges() (models.Privileges, error)
 	GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
 	DeleteProduct(productID *uuid.UUID) error
+	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
 }
 
 // MYSQL Interface implementation
