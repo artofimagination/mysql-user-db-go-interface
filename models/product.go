@@ -43,6 +43,15 @@ func (l Privileges) IsOwnerPrivilege(privilege int) bool {
 	return false
 }
 
+func (l Privileges) IsPartnerPrivilege(privilege int) bool {
+	for _, value := range l {
+		if value.ID == privilege && value.Name == "Partner" {
+			return true
+		}
+	}
+	return false
+}
+
 // NewProduct creates a new product instance where details describe the configuration of the product
 // and references contain all asset references.
 func (RepoInterface) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {

@@ -93,7 +93,15 @@ func (i DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx)
 	return i.userProducts, i.err
 }
 
+func (i DBFunctionInterfaceMock) DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
 func (i DBFunctionInterfaceMock) DeleteUser(userID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i DBFunctionInterfaceMock) DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
 	return i.err
 }
 

@@ -13,6 +13,7 @@ var ErrNoProductsForUser = errors.New("This user has no products")
 var ErrSQLDuplicateProductNameEntryString = "Duplicate entry '%s' for key 'products.name'"
 var ErrDuplicateProductNameEntry = errors.New("Product with this name already exists")
 var ErrNoUserWithProduct = errors.New("No user is associated to this product")
+var ErrNoProductDeleted = errors.New("No product was deleted")
 
 var AddProductUsersQuery = "INSERT INTO users_products (users_id, products_id, privilege) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
 
@@ -28,7 +29,7 @@ func (MYSQLFunctions) AddProductUsers(productID *uuid.UUID, productUsers models.
 
 var DeleteProductUsersByProductIDQuery = "DELETE FROM users_products where products_id = UUID_TO_BIN(?)"
 
-func deleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
+func (MYSQLFunctions) DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
 	result, err := tx.Exec(DeleteProductUsersByProductIDQuery, productID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
@@ -208,24 +209,27 @@ func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product
 	return &product, tx.Commit()
 }
 
-func (MYSQLFunctions) DeleteProduct(productID *uuid.UUID) error {
-	queryString := "DELETE FROM products where id = UUID_TO_BIN(?)"
+var DeleteProductQuery = "DELETE FROM products where id = UUID_TO_BIN(?)"
 
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return err
-	}
-
-	if err := deleteProductUsersByProductID(productID, tx); err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	_, err = tx.Exec(queryString, productID)
+func (MYSQLFunctions) DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProductQuery, productID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
 
-	return tx.Commit()
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoProductDeleted
+	}
+
+	return nil
 }
 
 var GetPrivilegesQuery = "SELECT id, name, description from privileges"

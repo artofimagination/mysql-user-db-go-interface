@@ -403,9 +403,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 			Expected: nil,
 		}
 		mock.ExpectBegin()
-		mock.ExpectExec("DELETE FROM users_products where products_id = UUID_TO_BIN(?)").WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectExec("DELETE FROM products where id = UUID_TO_BIN(?)").WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectCommit()
+		mock.ExpectExec(DeleteProductQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -580,7 +578,7 @@ func TestDeleteProductUsersByProductID(t *testing.T) {
 			}
 			productID := testCase.Data.(uuid.UUID)
 
-			err = deleteProductUsersByProductID(&productID, tx)
+			err = Functions.DeleteProductUsersByProductID(&productID, tx)
 			if !test.ErrEqual(err, expectedError) {
 				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
 				return
@@ -770,6 +768,12 @@ func TestDeleteProduct(t *testing.T) {
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
+		tx, err := dbConnector.DB.Begin()
+		if err != nil {
+			t.Errorf("Failed to setup DB transaction %s", err)
+			return
+		}
+
 		testCaseString := testCaseString
 		testCase := dataSet.TestDataSet[testCaseString]
 		var expectedError error
@@ -778,7 +782,7 @@ func TestDeleteProduct(t *testing.T) {
 		}
 		data := testCase.Data.(uuid.UUID)
 
-		err = Functions.DeleteProduct(&data)
+		err = Functions.DeleteProduct(&data, tx)
 		if !test.ErrEqual(err, expectedError) {
 			t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 			return

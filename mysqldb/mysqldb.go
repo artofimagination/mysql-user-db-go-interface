@@ -36,8 +36,9 @@ type FunctionCommonInterface interface {
 	AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error
 	GetPrivileges() (models.Privileges, error)
 	GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
-	DeleteProduct(productID *uuid.UUID) error
+	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
 	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
+	DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error
 }
 
 // MYSQL Interface implementation
