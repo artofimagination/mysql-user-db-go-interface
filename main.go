@@ -91,7 +91,19 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 
 	email := emails[0]
 	mysqldb.Functions = mysqldb.MYSQLFunctions{}
-	err := mysqldb.DeleteUser(email)
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+
+	user, err := mysqldb.Functions.GetUser(mysqldb.ByEmail, email, tx)
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+
+	err = mysqldb.Functions.DeleteUser(&user.ID, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	}
