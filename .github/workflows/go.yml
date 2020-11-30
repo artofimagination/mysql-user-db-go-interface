@@ -32,5 +32,6 @@ jobs:
     - name: Build
       run: go build -v .
 
+    # Rerun all tests a few times, to find intermittent issues
     - name: Test
-      run: go test -v .
+      run: go test -v -cover ./... -count 10
