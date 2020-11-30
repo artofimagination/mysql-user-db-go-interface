@@ -26,7 +26,7 @@ type MYSQLConnector struct {
 
 // Data handling common function interface. Needed in order to allow mock and custom functionality implementations.
 type FunctionCommonInterface interface {
-	GetUser(keyName string, keyValue interface{}, tx *sql.Tx) (*models.User, error)
+	GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error)
 	AddUser(user *models.User, tx *sql.Tx) error
 	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
 

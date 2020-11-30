@@ -81,14 +81,14 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["key_name"] = ByEmail
+		data.Data.(map[string]interface{})["query"] = GetUserByEmailQuery
 		data.Data.(map[string]interface{})["key_value"] = user.Email
 		data.Expected.(map[string]interface{})["data"] = &user
 		data.Expected.(map[string]interface{})["error"] = nil
 		rows := sqlmock.NewRows([]string{"id", "name", "email", "password", "user_settings_id", "user_assets_id"}).
 			AddRow(binaryUserID, user.Name, user.Email, user.Password, binarySettingsID, binaryAssetsID)
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserQuery).WithArgs(ByEmail, user.Email).WillReturnRows(rows)
+		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnRows(rows)
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -99,12 +99,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["key_name"] = ByEmail
+		data.Data.(map[string]interface{})["query"] = GetUserByEmailQuery
 		data.Data.(map[string]interface{})["key_value"] = user.Email
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = errors.New("This is a failure test")
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserQuery).WithArgs(ByEmail, user.Email).WillReturnError(data.Expected.(map[string]interface{})["error"].(error))
+		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnError(data.Expected.(map[string]interface{})["error"].(error))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -115,12 +115,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["key_name"] = ByEmail
+		data.Data.(map[string]interface{})["query"] = GetUserByEmailQuery
 		data.Data.(map[string]interface{})["key_value"] = user.Email
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserQuery).WithArgs(ByEmail, user.Email).WillReturnError(sql.ErrNoRows)
+		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnError(sql.ErrNoRows)
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -131,7 +131,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["key_name"] = ByID
+		data.Data.(map[string]interface{})["query"] = GetUserByIDQuery
 		data.Data.(map[string]interface{})["key_value"] = user.ID
 		data.Expected = make(map[string]interface{})
 		data.Expected.(map[string]interface{})["data"] = &user
@@ -139,7 +139,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		rows = sqlmock.NewRows([]string{"id", "name", "email", "password", "user_settings_id", "user_assets_id"}).
 			AddRow(binaryUserID, user.Name, user.Email, user.Password, binarySettingsID, binaryAssetsID)
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserQuery).WithArgs(ByID, user.ID).WillReturnRows(rows)
+		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnRows(rows)
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -150,12 +150,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["key_name"] = ByID
+		data.Data.(map[string]interface{})["query"] = GetUserByIDQuery
 		data.Data.(map[string]interface{})["key_value"] = user.ID
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = errors.New("This is a failure test")
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserQuery).WithArgs(ByID, user.ID).WillReturnError(data.Expected.(map[string]interface{})["error"].(error))
+		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnError(data.Expected.(map[string]interface{})["error"].(error))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -166,12 +166,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["key_name"] = ByID
+		data.Data.(map[string]interface{})["query"] = GetUserByIDQuery
 		data.Data.(map[string]interface{})["key_value"] = user.ID
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserQuery).WithArgs(ByID, user.ID).WillReturnError(sql.ErrNoRows)
+		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnError(sql.ErrNoRows)
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -268,7 +268,7 @@ func TestGetUser(t *testing.T) {
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
 			keyValue := testCase.Data.(map[string]interface{})["key_value"]
-			keyName := testCase.Data.(map[string]interface{})["key_name"].(string)
+			query := testCase.Data.(map[string]interface{})["query"].(string)
 			var expectedData *models.User
 			if testCase.Expected.(map[string]interface{})["data"] != nil {
 				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.User)
@@ -278,7 +278,7 @@ func TestGetUser(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 
-			output, err := Functions.GetUser(keyName, keyValue, tx)
+			output, err := Functions.GetUser(query, keyValue, tx)
 			if !cmp.Equal(output, expectedData) {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return

@@ -25,20 +25,18 @@ var ErrSQLDuplicateEmailEntryString = "Duplicate entry '%s' for key 'users.email
 var ErrDuplicateUserNameEntry = errors.New("User with this name already exists")
 var ErrNoUserDeleted = errors.New("No user was deleted")
 
-var GetUserQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where ? = ?"
+var GetUserByEmailQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
+var GetUserByIDQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where id = UUID_TO_BIN(?)"
 
 // GetUser returns the user defined by the key name and key value.
 // Key name can be either id or email.
-func (MYSQLFunctions) GetUser(keyName string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
-	switch keyName {
-	case ByEmail:
+func (MYSQLFunctions) GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
+	if queryString == GetUserByEmailQuery {
 		keyValue = strings.ReplaceAll(keyValue.(string), " ", "")
-	case ByID:
-		keyValue = keyValue.(uuid.UUID)
 	}
 
 	var user models.User
-	query, err := tx.Query(GetUserQuery, keyName, keyValue)
+	query, err := tx.Query(queryString, keyValue)
 	switch {
 	case err == sql.ErrNoRows:
 		if err := tx.Commit(); err != nil {
