@@ -14,6 +14,7 @@ var ErrSQLDuplicateProductNameEntryString = "Duplicate entry '%s' for key 'produ
 var ErrDuplicateProductNameEntry = errors.New("Product with this name already exists")
 var ErrNoUserWithProduct = errors.New("No user is associated to this product")
 var ErrNoProductDeleted = errors.New("No product was deleted")
+var ErrNoUsersProductUpdate = errors.New("No users product was updated")
 
 var AddProductUsersQuery = "INSERT INTO users_products (users_id, products_id, privilege) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
 
@@ -45,6 +46,29 @@ func (MYSQLFunctions) DeleteProductUsersByProductID(productID *uuid.UUID, tx *sq
 			return err
 		}
 		return ErrNoUserWithProduct
+	}
+
+	return nil
+}
+
+var UpdateUsersProductsQuery = "UPDATE users_products set privilege = ? where users_id = UUID_TO_BIN(?) AND products_id = UUID_TO_BIN(?)"
+
+func (MYSQLFunctions) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error {
+	result, err := tx.Exec(UpdateUsersProductsQuery, privilege, userID, productID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoUsersProductUpdate
 	}
 
 	return nil

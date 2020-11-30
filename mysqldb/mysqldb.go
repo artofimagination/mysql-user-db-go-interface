@@ -28,18 +28,23 @@ type MYSQLConnector struct {
 type FunctionCommonInterface interface {
 	GetUser(keyName string, keyValue interface{}, tx *sql.Tx) (*models.User, error)
 	AddUser(user *models.User, tx *sql.Tx) error
+	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
+
 	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
 	DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error
+
 	GetProductsByUserID(userID uuid.UUID) ([]models.Product, error)
+	UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error
+	AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error
+	DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error
+	GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
+
 	GetProductByID(ID uuid.UUID) (*models.Product, error)
 	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)
 	AddProduct(product *models.Product, tx *sql.Tx) error
-	AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error
-	GetPrivileges() (models.Privileges, error)
-	GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
 	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
-	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
-	DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error
+
+	GetPrivileges() (models.Privileges, error)
 }
 
 // MYSQL Interface implementation

@@ -23,6 +23,7 @@ const (
 	GetUserProductIDsTest             = 5
 	GetProductsByUserIDTest           = 6
 	DeleteProductTest                 = 7
+	UpdateUsersProductsTest           = 8
 )
 
 func createTestProductData() (*models.Product, error) {
@@ -407,6 +408,46 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
+		testCase = "no_product"
+		data = test.Data{
+			Data:     product.ID,
+			Expected: ErrNoProductDeleted,
+		}
+		mock.ExpectBegin()
+		mock.ExpectExec(DeleteProductQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 0))
+		mock.ExpectRollback()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	case UpdateUsersProductsTest:
+
+		testCase := "valid_id"
+		data = test.Data{
+			Data:     make(map[string]interface{}),
+			Expected: nil,
+		}
+		data.Data.(map[string]interface{})["user_id"] = userID
+		data.Data.(map[string]interface{})["product_id"] = product.ID
+		data.Data.(map[string]interface{})["privilege"] = 1
+		mock.ExpectBegin()
+		mock.ExpectExec(UpdateUsersProductsQuery).WithArgs(data.Data.(map[string]interface{})["privilege"].(int), userID, product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "no_users_products"
+		data = test.Data{
+			Data:     make(map[string]interface{}),
+			Expected: ErrNoUsersProductUpdate,
+		}
+		data.Data.(map[string]interface{})["user_id"] = userID
+		data.Data.(map[string]interface{})["product_id"] = product.ID
+		data.Data.(map[string]interface{})["privilege"] = 1
+		mock.ExpectBegin()
+		mock.ExpectExec(UpdateUsersProductsQuery).WithArgs(data.Data.(map[string]interface{})["privilege"].(int), userID, product.ID).WillReturnResult(sqlmock.NewResult(1, 0))
+		mock.ExpectRollback()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
 	default:
 		return nil, dbConnector, fmt.Errorf("Unknown test %d", testID)
 	}
@@ -544,6 +585,43 @@ func TestAddProductUsers(t *testing.T) {
 			productID := testData["product_id"].(uuid.UUID)
 
 			err = Functions.AddProductUsers(&productID, testData["product_users"].(models.ProductUsers), tx)
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+				return
+			}
+		})
+	}
+}
+
+func TestUpdateUsersProducts(t *testing.T) {
+	// Create test data
+	dataSet, dbConnector, err := createProductsTestData(UpdateUsersProductsTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	defer dbConnector.DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			tx, err := dbConnector.DB.Begin()
+			if err != nil {
+				t.Errorf("Failed to setup DB transaction %s", err)
+				return
+			}
+			testCase := dataSet.TestDataSet[testCaseString]
+			var expectedError error
+			if testCase.Expected != nil {
+				expectedError = testCase.Expected.(error)
+			}
+			userID := testCase.Data.(map[string]interface{})["user_id"].(uuid.UUID)
+			productID := testCase.Data.(map[string]interface{})["product_id"].(uuid.UUID)
+			privilege := testCase.Data.(map[string]interface{})["privilege"].(int)
+
+			err = Functions.UpdateUsersProducts(&userID, &productID, privilege, tx)
 			if !test.ErrEqual(err, expectedError) {
 				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
 				return
