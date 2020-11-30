@@ -98,7 +98,7 @@ func (MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
 
 var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assets_id) FROM products WHERE id = UUID_TO_BIN(?)"
 
-func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
+func (MYSQLFunctions) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
 
 	query, err := tx.Query(GetProductByIDQuery, ID)
@@ -117,27 +117,6 @@ func getProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	}
 
 	return &product, nil
-}
-
-func (MYSQLFunctions) GetProductByID(ID uuid.UUID) (*models.Product, error) {
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return nil, err
-	}
-
-	product, err := getProductByID(ID, tx)
-	switch {
-	case err == sql.ErrNoRows:
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
-		return nil, sql.ErrNoRows
-	case err != nil:
-		return nil, RollbackWithErrorStack(tx, err)
-	default:
-	}
-
-	return product, tx.Commit()
 }
 
 var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privilege FROM users_products where users_id = UUID_TO_BIN(?)"
@@ -197,7 +176,7 @@ func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) ([]models.Product, e
 
 	products := []models.Product{}
 	for _, productID := range ownershipMap.ProductIDArray {
-		product, err := getProductByID(productID, tx)
+		product, err := Functions.GetProductByID(productID, tx)
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)
 		}

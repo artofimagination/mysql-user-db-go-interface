@@ -113,7 +113,7 @@ func (i DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, productI
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) GetProductByID(ID uuid.UUID) (*models.Product, error) {
+func (i DBFunctionInterfaceMock) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	return i.product, i.err
 }
 

@@ -265,7 +265,6 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 			AddRow(binaryProductID, product.Name, product.Public, product.DetailsID, product.AssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByIDQuery).WithArgs(product.ID).WillReturnRows(rows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -279,7 +278,6 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		data.Data = product.ID
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByIDQuery).WithArgs(product.ID).WillReturnError(sql.ErrNoRows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -680,6 +678,12 @@ func TestGetProductByID(t *testing.T) {
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
+			tx, err := dbConnector.DB.Begin()
+			if err != nil {
+				t.Errorf("Failed to setup DB transaction %s", err)
+				return
+			}
+
 			testCase := dataSet.TestDataSet[testCaseString]
 			productID := testCase.Data.(uuid.UUID)
 			var expectedData *models.Product
@@ -691,7 +695,7 @@ func TestGetProductByID(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 
-			output, err := Functions.GetProductByID(productID)
+			output, err := Functions.GetProductByID(productID, tx)
 			if !cmp.Equal(output, expectedData) {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
