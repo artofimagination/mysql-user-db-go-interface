@@ -89,7 +89,7 @@ func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
 
 var DeleteAssetQuery = "DELETE FROM ? WHERE id=UUID_TO_BIN(?)"
 
-func DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error {
+func (MYSQLFunctions) DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error {
 	result, err := tx.Exec(DeleteAssetQuery, assetType, *assetID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)

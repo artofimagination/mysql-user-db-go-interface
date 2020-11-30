@@ -29,6 +29,7 @@ type FunctionCommonInterface interface {
 	GetUser(keyName string, keyValue interface{}, tx *sql.Tx) (*models.User, error)
 	AddUser(user *models.User, tx *sql.Tx) error
 	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
+	DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error
 	GetProductsByUserID(userID uuid.UUID) ([]models.Product, error)
 	GetProductByID(ID uuid.UUID) (*models.Product, error)
 	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)

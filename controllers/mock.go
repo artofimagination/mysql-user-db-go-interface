@@ -77,6 +77,10 @@ func (i DBFunctionInterfaceMock) AddAsset(assetType string, asset *models.Asset,
 	return i.err
 }
 
+func (i DBFunctionInterfaceMock) DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
 func (i DBFunctionInterfaceMock) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
 	return i.err
 }
