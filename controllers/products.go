@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -102,4 +103,26 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 	}
 
 	return product, nil
+}
+
+func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
+	// Valid user
+	product, err := mysqldb.Functions.GetProductByID(*productID, tx)
+	if err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteProduct(productID, tx); err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteAsset(mysqldb.ProductAssets, &product.AssetsID, tx); err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteAsset(mysqldb.ProductDetails, &product.DetailsID, tx); err != nil {
+		return err
+	}
+
+	return nil
 }

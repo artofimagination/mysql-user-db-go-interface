@@ -22,3 +22,7 @@ func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 func (DBConnectorMock) BootstrapSystem() error {
 	return nil
 }
+
+func (DBConnectorMock) Commit(tx *sql.Tx) error {
+	return nil
+}

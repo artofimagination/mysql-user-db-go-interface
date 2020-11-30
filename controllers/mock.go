@@ -54,22 +54,28 @@ func (i ModelInterfaceMock) NewUser(
 
 // DBFunctionInterfaceMock overwrites the mysqldb package function implementations with mock code.
 type DBFunctionInterfaceMock struct {
-	user         *models.User
-	product      *models.Product
-	privileges   models.Privileges
-	userProducts *models.UserProducts
-	err          error
+	user                 *models.User
+	userDeleted          *bool
+	userAdded            *bool
+	product              *models.Product
+	productAdded         *bool
+	productDeleted       *bool
+	usersProductsUpdated *bool
+	privileges           models.Privileges
+	userProducts         *models.UserProducts
+	err                  error
 }
 
 func (i DBFunctionInterfaceMock) GetPrivileges() (models.Privileges, error) {
 	return i.privileges, i.err
 }
 
-func (i DBFunctionInterfaceMock) GetUser(keyName string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
+func (i DBFunctionInterfaceMock) GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
 	return i.user, i.err
 }
 
 func (i DBFunctionInterfaceMock) AddUser(user *models.User, tx *sql.Tx) error {
+	*i.userAdded = true
 	return i.err
 }
 
@@ -86,6 +92,7 @@ func (i DBFunctionInterfaceMock) AddProductUsers(productID *uuid.UUID, productUs
 }
 
 func (i DBFunctionInterfaceMock) AddProduct(product *models.Product, tx *sql.Tx) error {
+	*i.productAdded = true
 	return i.err
 }
 
@@ -98,10 +105,12 @@ func (i DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx)
 }
 
 func (i DBFunctionInterfaceMock) DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
+	*i.productDeleted = true
 	return i.err
 }
 
 func (i DBFunctionInterfaceMock) DeleteUser(userID *uuid.UUID, tx *sql.Tx) error {
+	*i.userDeleted = true
 	return i.err
 }
 
@@ -110,6 +119,7 @@ func (i DBFunctionInterfaceMock) DeleteProductUsersByProductID(productID *uuid.U
 }
 
 func (i DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error {
+	*i.usersProductsUpdated = true
 	return i.err
 }
 
@@ -129,6 +139,11 @@ type DBConnectorMock struct {
 func (i DBConnectorMock) BootstrapSystem() error {
 	return i.err
 }
+
 func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 	return nil, i.err
+}
+
+func (i DBConnectorMock) Commit(tx *sql.Tx) error {
+	return i.err
 }

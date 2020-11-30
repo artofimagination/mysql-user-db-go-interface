@@ -115,6 +115,107 @@ func createProductTestData() (*test.OrderedTests, error) {
 	return &dataSet, nil
 }
 
+func createValidationTestData() (*test.OrderedTests, error) {
+	dataSet := test.OrderedTests{
+		OrderedList: make(test.OrderedTestList, 0),
+		TestDataSet: make(test.DataSet),
+	}
+
+	userID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	productUsers, privileges := createTestUsersData()
+
+	testCase := "valid_data"
+	data := test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: nil,
+	}
+
+	productUsers[userID] = 0
+	data.Data.(map[string]interface{})["input"] = productUsers
+	data.Data.(map[string]interface{})["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	testCase = "empty_user_list"
+	data = test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: ErrEmptyUsersList,
+	}
+
+	productUsers = make(models.ProductUsers)
+	data.Data.(map[string]interface{})["input"] = productUsers
+	data.Data.(map[string]interface{})["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	testCase = "nil_user_list"
+	data = test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: ErrEmptyUsersList,
+	}
+
+	data.Data.(map[string]interface{})["input"] = nil
+	data.Data.(map[string]interface{})["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	testCase = "no_owner"
+	data = test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: ErrInvalidOwnerCount,
+	}
+
+	productUsers = make(models.ProductUsers)
+	productUsers[userID] = 1
+	data.Data.(map[string]interface{})["input"] = productUsers
+	data.Data.(map[string]interface{})["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	testCase = "multiple_owners"
+	data = test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: ErrInvalidOwnerCount,
+	}
+
+	productUsers = make(models.ProductUsers)
+	productUsers[userID] = 0
+	userID2, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+	productUsers[userID2] = 0
+	data.Data.(map[string]interface{})["input"] = productUsers
+	data.Data.(map[string]interface{})["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	testCase = "invalid_privilege"
+	data = test.Data{
+		Data:     make(map[string]interface{}),
+		Expected: fmt.Errorf(ErrUnknownPrivilegeString, 2, userID.String()),
+	}
+
+	productUsers = make(models.ProductUsers)
+	productUsers[userID] = 2
+	data.Data.(map[string]interface{})["input"] = productUsers
+	data.Data.(map[string]interface{})["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = data
+	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	return &dataSet, nil
+}
+
 func TestCreateProduct(t *testing.T) {
 	// Create test data
 	dataSet, err := createProductTestData()
@@ -144,9 +245,11 @@ func TestCreateProduct(t *testing.T) {
 				DBMock = testCase.Data.(map[string]interface{})["db_mock"].(*models.Product)
 			}
 
+			mockCopy := DBMock
 			mysqldb.Functions = DBFunctionInterfaceMock{
-				product:    DBMock,
-				privileges: privileges,
+				product:      mockCopy,
+				privileges:   privileges,
+				productAdded: test.NewBool(false),
 			}
 
 			output, err := CreateProduct(
@@ -170,129 +273,38 @@ func TestCreateProduct(t *testing.T) {
 	}
 }
 
-func TestValidateUsers_ValidData(t *testing.T) {
+func TestValidateUsers(t *testing.T) {
 	// Create test data
-	users, privileges := createTestUsersData()
-	mysqldb.Functions = DBFunctionInterfaceMock{
-		privileges: privileges,
-	}
-	userID, err := uuid.NewUUID()
+	dataSet, err := createValidationTestData()
 	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
+		t.Errorf("Failed to create test data: %s", err)
 		return
 	}
-	users[userID] = 0
 
-	// Execute test
-	if err := validateUsers(users); err != nil {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, nil)
-		return
-	}
-}
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			testCase := dataSet.TestDataSet[testCaseString]
+			var expectedError error
+			if testCase.Expected != nil {
+				expectedError = testCase.Expected.(error)
+			}
+			var input models.ProductUsers
+			if testCase.Data.(map[string]interface{})["input"] != nil {
+				input = testCase.Data.(map[string]interface{})["input"].(models.ProductUsers)
+			}
+			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
 
-func TestValidateUsers_EmptyUsersList(t *testing.T) {
-	// Create test data
-	users, privileges := createTestUsersData()
-	mysqldb.Functions = DBFunctionInterfaceMock{
-		privileges: privileges,
-	}
+			mysqldb.Functions = DBFunctionInterfaceMock{
+				privileges: privileges,
+			}
 
-	// Execute test
-	if err := validateUsers(users); err == nil || (err != nil && err != ErrEmptyUsersList) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, ErrEmptyUsersList)
-		return
-	}
-}
-
-func TestValidateUsers_NilUserList(t *testing.T) {
-	// Create test data
-	var users models.ProductUsers
-
-	// Execute test
-	if err := validateUsers(users); err == nil || (err != nil && err != ErrEmptyUsersList) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, ErrEmptyUsersList)
-		return
-	}
-}
-
-func TestValidateUsers_NoOwner(t *testing.T) {
-	// Create test data
-	users, privileges := createTestUsersData()
-	mysqldb.Functions = DBFunctionInterfaceMock{
-		privileges: privileges,
-	}
-	userID, err := uuid.NewUUID()
-	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
-		return
-	}
-	users[userID] = 1
-
-	userID, err = uuid.NewUUID()
-	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
-		return
-	}
-	users[userID] = 1
-
-	// Execute test
-	if err := validateUsers(users); err == nil || (err != nil && err != ErrInvalidOwnerCount) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, ErrInvalidOwnerCount)
-		return
-	}
-}
-
-func TestValidateUsers_MultipleOwners(t *testing.T) {
-	// Create test data
-	users, privileges := createTestUsersData()
-	mysqldb.Functions = DBFunctionInterfaceMock{
-		privileges: privileges,
-	}
-	userID, err := uuid.NewUUID()
-	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
-		return
-	}
-	users[userID] = 0
-
-	userID, err = uuid.NewUUID()
-	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
-		return
-	}
-	users[userID] = 0
-
-	// Execute test
-	if err := validateUsers(users); err == nil || (err != nil && err != ErrInvalidOwnerCount) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, ErrInvalidOwnerCount)
-		return
-	}
-}
-
-func TestValidateUsers_InvalidPrivilege(t *testing.T) {
-	// Create test data
-	users, privileges := createTestUsersData()
-	mysqldb.Functions = DBFunctionInterfaceMock{
-		privileges: privileges,
-	}
-	userIDInvalid, err := uuid.NewUUID()
-	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
-		return
-	}
-	users[userIDInvalid] = 2
-
-	userID, err := uuid.NewUUID()
-	if err != nil {
-		t.Errorf("Failed to create user uuid: %s", err)
-		return
-	}
-	users[userID] = 0
-
-	// Execute test
-	Expected := fmt.Errorf(ErrUnknownPrivilegeString, 2, userIDInvalid.String())
-	if err := validateUsers(users); err == nil || (err != nil && !cmp.Equal(err.Error(), Expected.Error())) {
-		t.Errorf("\nTest returned:\n %+v\nExpected:\n %+v", err, Expected)
-		return
+			err := validateUsers(input)
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				return
+			}
+		})
 	}
 }
