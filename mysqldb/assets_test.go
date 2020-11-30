@@ -1,6 +1,7 @@
 package mysqldb
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -15,6 +17,8 @@ import (
 const (
 	AddAssetTest    = 0
 	DeleteAssetTest = 1
+	UpdateAssetTest = 2
+	GetAssetTest    = 3
 )
 
 func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error) {
@@ -40,7 +44,12 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		return nil, dbConnector, err
 	}
 
-	binary, err := json.Marshal(asset.DataMap)
+	binaryDataMap, err := json.Marshal(asset.DataMap)
+	if err != nil {
+		return nil, dbConnector, err
+	}
+
+	binaryID, err := json.Marshal(asset.ID)
 	if err != nil {
 		return nil, dbConnector, err
 	}
@@ -54,7 +63,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 	case AddAssetTest:
 		testCase := "valid_user_asset"
 		mock.ExpectBegin()
-		mock.ExpectExec(AddAssetQuery).WithArgs(UserAssets, asset.ID, binary).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec(AddAssetQuery).WithArgs(UserAssets, asset.ID, binaryDataMap).WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -62,7 +71,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		testCase = "failed_query"
 		data.Expected = errors.New("This is a failure test")
 		mock.ExpectBegin()
-		mock.ExpectExec(AddAssetQuery).WithArgs(UserAssets, asset.ID, binary).WillReturnError(data.Expected.(error))
+		mock.ExpectExec(AddAssetQuery).WithArgs(UserAssets, asset.ID, binaryDataMap).WillReturnError(data.Expected.(error))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -80,6 +89,50 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteAssetQuery).WithArgs(UserAssets, asset.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	case UpdateAssetTest:
+		testCase := "valid_asset"
+
+		data.Expected = nil
+		mock.ExpectBegin()
+		mock.ExpectExec(UpdateAssetQuery).WithArgs(UserAssets, binaryDataMap, &asset.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectCommit()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "missing_asset"
+		data.Expected = fmt.Errorf(ErrAssetMissing, UserAssets)
+		mock.ExpectBegin()
+		mock.ExpectExec(UpdateAssetQuery).WithArgs(UserAssets, binaryDataMap, &asset.ID).WillReturnResult(sqlmock.NewResult(1, 0))
+		mock.ExpectRollback()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	case GetAssetTest:
+		testCase := "valid_asset"
+		data := test.Data{
+			Data:     asset,
+			Expected: make(map[string]interface{}),
+		}
+		data.Expected.(map[string]interface{})["data"] = &asset
+		data.Expected.(map[string]interface{})["error"] = nil
+		rows := sqlmock.NewRows([]string{"id", "data"}).AddRow(binaryID, binaryDataMap)
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetAssetQuery).WithArgs(UserAssets, &asset.ID).WillReturnRows(rows)
+		mock.ExpectCommit()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "missing_asset"
+		data = test.Data{
+			Data:     asset,
+			Expected: make(map[string]interface{}),
+		}
+		data.Expected.(map[string]interface{})["data"] = nil
+		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetAssetQuery).WithArgs(UserAssets, &asset.ID).WillReturnError(sql.ErrNoRows)
+		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
@@ -121,7 +174,7 @@ func TestAddAsset(t *testing.T) {
 
 			err = Functions.AddAsset(UserAssets, &asset, tx)
 			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
 		})
@@ -156,7 +209,78 @@ func TestDeleteAsset(t *testing.T) {
 
 			err = Functions.DeleteAsset(UserAssets, &asset.ID, tx)
 			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				return
+			}
+		})
+	}
+}
+
+func TestUpdateAsset(t *testing.T) {
+	// Create test data
+	dataSet, dbConnector, err := createAssetTestData(UpdateAssetTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	DBConnector = dbConnector
+	defer dbConnector.DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			testCase := dataSet.TestDataSet[testCaseString]
+			var expectedError error
+			if testCase.Expected != nil {
+				expectedError = testCase.Expected.(error)
+			}
+			asset := testCase.Data.(models.Asset)
+
+			err = UpdateAsset(UserAssets, &asset)
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				return
+			}
+		})
+	}
+}
+
+func TestGetAsset(t *testing.T) {
+	// Create test data
+	dataSet, dbConnector, err := createAssetTestData(GetAssetTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	DBConnector = dbConnector
+	defer dbConnector.DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			testCase := dataSet.TestDataSet[testCaseString]
+			var expectedError error
+			if testCase.Expected.(map[string]interface{})["error"] != nil {
+				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
+			}
+			var expectedData *models.Asset
+			if testCase.Expected.(map[string]interface{})["data"] != nil {
+				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.Asset)
+			}
+			asset := testCase.Data.(models.Asset)
+
+			output, err := GetAsset(UserAssets, &asset.ID)
+			if !cmp.Equal(output, expectedData) {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				return
+			}
+
+			if !test.ErrEqual(err, expectedError) {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
 		})
