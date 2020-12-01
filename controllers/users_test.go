@@ -82,115 +82,115 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 	switch testID {
 	case CreateUserTest:
 		testCase := "no_existing_user"
-		data := test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
+		data := make(map[string]interface{})
+		data["input"] = user
+		data["db_mock"] = nil
+		expected := make(map[string]interface{})
+		expected["data"] = &user
+		expected["error"] = nil
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-
-		data.Data.(map[string]interface{})["input"] = user
-		data.Data.(map[string]interface{})["db_mock"] = nil
-		data.Expected.(map[string]interface{})["data"] = &user
-		data.Expected.(map[string]interface{})["error"] = nil
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "existing_user"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
+		data = make(map[string]interface{})
+		data["input"] = user
+		data["db_mock"] = &user
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = ErrDuplicateEmailEntry
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-
-		data.Data.(map[string]interface{})["input"] = user
-		data.Data.(map[string]interface{})["db_mock"] = &user
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = ErrDuplicateEmailEntry
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case DeleteUserTest:
 
 		testCase := "valid_data_has_nominee"
-		data := test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
-		}
-
 		usersProducts.ProductMap[productID] = 0
 		nominees := make(map[uuid.UUID]uuid.UUID)
 		nominees[productID] = nomineeID
-		data.Data.(map[string]interface{})["user_id"] = user.ID
-		data.Data.(map[string]interface{})["nominees"] = nominees
-		data.Data.(map[string]interface{})["db_mock_product"] = &product
-		data.Data.(map[string]interface{})["db_mock_user"] = &user
-		data.Data.(map[string]interface{})["db_mock_users_products"] = usersProducts
-		data.Data.(map[string]interface{})["db_mock_privileges"] = privileges
-		data.Expected.(map[string]interface{})["error"] = nil
-		data.Expected.(map[string]interface{})["user_deleted"] = true
-		data.Expected.(map[string]interface{})["product_deleted"] = false
-		data.Expected.(map[string]interface{})["users_products_updated"] = true
-		dataSet.TestDataSet[testCase] = data
+		data := make(map[string]interface{})
+		data["user_id"] = user.ID
+		data["nominees"] = nominees
+		data["db_mock_product"] = &product
+		data["db_mock_user"] = &user
+		data["db_mock_users_products"] = usersProducts
+		data["db_mock_privileges"] = privileges
+		expected := make(map[string]interface{})
+		expected["error"] = nil
+		expected["user_deleted"] = true
+		expected["product_deleted"] = false
+		expected["users_products_updated"] = true
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "valid_data_has_no_nominee"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
-		}
-
 		usersProducts.ProductMap[productID] = 0
-		data.Data.(map[string]interface{})["user_id"] = user.ID
-		data.Data.(map[string]interface{})["nominees"] = nil
-		data.Data.(map[string]interface{})["db_mock_product"] = &product
-		data.Data.(map[string]interface{})["db_mock_user"] = &user
-		data.Data.(map[string]interface{})["db_mock_users_products"] = usersProducts
-		data.Data.(map[string]interface{})["db_mock_privileges"] = privileges
-		data.Expected.(map[string]interface{})["error"] = nil
-		data.Expected.(map[string]interface{})["user_deleted"] = true
-		data.Expected.(map[string]interface{})["product_deleted"] = true
-		data.Expected.(map[string]interface{})["users_products_updated"] = false
-		dataSet.TestDataSet[testCase] = data
+		data = make(map[string]interface{})
+		data["user_id"] = user.ID
+		data["nominees"] = nil
+		data["db_mock_product"] = &product
+		data["db_mock_user"] = &user
+		data["db_mock_users_products"] = usersProducts
+		data["db_mock_privileges"] = privileges
+		expected = make(map[string]interface{})
+		expected["error"] = nil
+		expected["user_deleted"] = true
+		expected["product_deleted"] = true
+		expected["users_products_updated"] = false
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_user"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
+		data = make(map[string]interface{})
+		data["user_id"] = user.ID
+		data["nominees"] = nil
+		data["db_mock_product"] = &product
+		data["db_mock_user"] = &user
+		data["db_mock_users_products"] = usersProducts
+		data["db_mock_error"] = sql.ErrNoRows
+		data["db_mock_privileges"] = privileges
+		expected = make(map[string]interface{})
+		expected["error"] = ErrUserNotFound
+		expected["user_deleted"] = false
+		expected["product_deleted"] = false
+		expected["users_products_updated"] = false
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-
-		data.Data.(map[string]interface{})["user_id"] = user.ID
-		data.Data.(map[string]interface{})["nominees"] = nil
-		data.Data.(map[string]interface{})["db_mock_product"] = &product
-		data.Data.(map[string]interface{})["db_mock_user"] = &user
-		data.Data.(map[string]interface{})["db_mock_users_products"] = usersProducts
-		data.Data.(map[string]interface{})["db_mock_error"] = sql.ErrNoRows
-		data.Data.(map[string]interface{})["db_mock_privileges"] = privileges
-		data.Expected.(map[string]interface{})["error"] = ErrUserNotFound
-		data.Expected.(map[string]interface{})["user_deleted"] = false
-		data.Expected.(map[string]interface{})["product_deleted"] = false
-		data.Expected.(map[string]interface{})["users_products_updated"] = false
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "has_no_products"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
-		}
-
 		usersProducts = models.UserProducts{
 			ProductMap: make(map[uuid.UUID]int),
 		}
-		data.Data.(map[string]interface{})["user_id"] = user.ID
-		data.Data.(map[string]interface{})["nominees"] = nil
-		data.Data.(map[string]interface{})["db_mock_product"] = &product
-		data.Data.(map[string]interface{})["db_mock_user"] = &user
-		data.Data.(map[string]interface{})["db_mock_users_products"] = usersProducts
-		data.Data.(map[string]interface{})["db_mock_error"] = nil
-		data.Data.(map[string]interface{})["db_mock_privileges"] = privileges
-		data.Expected.(map[string]interface{})["error"] = nil
-		data.Expected.(map[string]interface{})["user_deleted"] = true
-		data.Expected.(map[string]interface{})["product_deleted"] = false
-		data.Expected.(map[string]interface{})["users_products_updated"] = false
-		dataSet.TestDataSet[testCase] = data
+		data = make(map[string]interface{})
+		data["user_id"] = user.ID
+		data["nominees"] = nil
+		data["db_mock_product"] = &product
+		data["db_mock_user"] = &user
+		data["db_mock_users_products"] = usersProducts
+		data["db_mock_error"] = nil
+		data["db_mock_privileges"] = privileges
+		expected = make(map[string]interface{})
+		expected["error"] = nil
+		expected["user_deleted"] = true
+		expected["product_deleted"] = false
+		expected["users_products_updated"] = false
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 

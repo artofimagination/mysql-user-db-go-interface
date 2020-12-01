@@ -63,51 +63,51 @@ func createProductTestData() (*test.OrderedTests, error) {
 	}
 
 	testCase := "no_existing_product"
-	data := test.Data{
-		Data:     make(map[string]interface{}),
-		Expected: make(map[string]interface{}),
-	}
-
-	data.Data.(map[string]interface{})["input"] = product
-	data.Data.(map[string]interface{})["db_mock"] = nil
+	data := make(map[string]interface{})
+	data["input"] = product
+	data["db_mock"] = nil
 	productUsers[userID] = 0
-	data.Data.(map[string]interface{})["product_users"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
-	data.Expected.(map[string]interface{})["data"] = &product
-	data.Expected.(map[string]interface{})["error"] = nil
-	dataSet.TestDataSet[testCase] = data
+	data["product_users"] = productUsers
+	data["privileges"] = privileges
+	expected := make(map[string]interface{})
+	expected["data"] = &product
+	expected["error"] = nil
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
+		Expected: expected,
+	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "existing_product"
-	data = test.Data{
-		Data:     make(map[string]interface{}),
-		Expected: make(map[string]interface{}),
-	}
-
-	data.Data.(map[string]interface{})["input"] = product
-	data.Data.(map[string]interface{})["db_mock"] = &product
+	data = make(map[string]interface{})
+	data["input"] = product
+	data["db_mock"] = &product
 	productUsers[userID] = 0
-	data.Data.(map[string]interface{})["product_users"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
-	data.Expected.(map[string]interface{})["data"] = nil
-	data.Expected.(map[string]interface{})["error"] = fmt.Errorf(ErrProductExistsString, product.Name)
-	dataSet.TestDataSet[testCase] = data
+	data["product_users"] = productUsers
+	data["privileges"] = privileges
+	expected = make(map[string]interface{})
+	expected["data"] = nil
+	expected["error"] = fmt.Errorf(ErrProductExistsString, product.Name)
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
+		Expected: expected,
+	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "incorrect_product_users"
-	data = test.Data{
-		Data:     make(map[string]interface{}),
-		Expected: make(map[string]interface{}),
-	}
-
-	data.Data.(map[string]interface{})["input"] = product
-	data.Data.(map[string]interface{})["db_mock"] = &product
+	data = make(map[string]interface{})
+	data["input"] = product
+	data["db_mock"] = &product
 	productUsers = make(models.ProductUsers)
-	data.Data.(map[string]interface{})["product_users"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
-	data.Expected.(map[string]interface{})["data"] = nil
-	data.Expected.(map[string]interface{})["error"] = ErrEmptyUsersList
-	dataSet.TestDataSet[testCase] = data
+	data["product_users"] = productUsers
+	data["privileges"] = privileges
+	expected = make(map[string]interface{})
+	expected["data"] = nil
+	expected["error"] = ErrEmptyUsersList
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
+		Expected: expected,
+	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	mysqldb.Functions = DBFunctionInterfaceMock{}
@@ -129,63 +129,54 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	productUsers, privileges := createTestUsersData()
 
 	testCase := "valid_data"
-	data := test.Data{
-		Data:     make(map[string]interface{}),
+	productUsers[userID] = 0
+	data := make(map[string]interface{})
+	data["input"] = productUsers
+	data["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
 		Expected: nil,
 	}
-
-	productUsers[userID] = 0
-	data.Data.(map[string]interface{})["input"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
-
-	dataSet.TestDataSet[testCase] = data
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "empty_user_list"
-	data = test.Data{
-		Data:     make(map[string]interface{}),
+	data = make(map[string]interface{})
+	productUsers = make(models.ProductUsers)
+	data["input"] = productUsers
+	data["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
 		Expected: ErrEmptyUsersList,
 	}
-
-	productUsers = make(models.ProductUsers)
-	data.Data.(map[string]interface{})["input"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
-
-	dataSet.TestDataSet[testCase] = data
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "nil_user_list"
-	data = test.Data{
-		Data:     make(map[string]interface{}),
+	data = make(map[string]interface{})
+	data["input"] = nil
+	data["privileges"] = privileges
+
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
 		Expected: ErrEmptyUsersList,
 	}
-
-	data.Data.(map[string]interface{})["input"] = nil
-	data.Data.(map[string]interface{})["privileges"] = privileges
-
-	dataSet.TestDataSet[testCase] = data
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "no_owner"
-	data = test.Data{
-		Data:     make(map[string]interface{}),
-		Expected: ErrInvalidOwnerCount,
-	}
-
 	productUsers = make(models.ProductUsers)
 	productUsers[userID] = 1
-	data.Data.(map[string]interface{})["input"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
+	data = make(map[string]interface{})
+	data["input"] = productUsers
+	data["privileges"] = privileges
 
-	dataSet.TestDataSet[testCase] = data
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
+		Expected: ErrInvalidOwnerCount,
+	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "multiple_owners"
-	data = test.Data{
-		Data:     make(map[string]interface{}),
-		Expected: ErrInvalidOwnerCount,
-	}
-
 	productUsers = make(models.ProductUsers)
 	productUsers[userID] = 0
 	userID2, err := uuid.NewUUID()
@@ -193,24 +184,27 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		return nil, err
 	}
 	productUsers[userID2] = 0
-	data.Data.(map[string]interface{})["input"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
+	data = make(map[string]interface{})
+	data["input"] = productUsers
+	data["privileges"] = privileges
 
-	dataSet.TestDataSet[testCase] = data
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
+		Expected: ErrInvalidOwnerCount,
+	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "invalid_privilege"
-	data = test.Data{
-		Data:     make(map[string]interface{}),
-		Expected: fmt.Errorf(ErrUnknownPrivilegeString, 2, userID.String()),
-	}
-
 	productUsers = make(models.ProductUsers)
 	productUsers[userID] = 2
-	data.Data.(map[string]interface{})["input"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
+	data = make(map[string]interface{})
+	data["input"] = productUsers
+	data["privileges"] = privileges
 
-	dataSet.TestDataSet[testCase] = data
+	dataSet.TestDataSet[testCase] = test.Data{
+		Data:     data,
+		Expected: fmt.Errorf(ErrUnknownPrivilegeString, 2, userID.String()),
+	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	return &dataSet, nil

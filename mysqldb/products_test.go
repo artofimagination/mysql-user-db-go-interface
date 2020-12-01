@@ -128,8 +128,6 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		return nil, dbConnector, err
 	}
 
-	data := test.Data{}
-
 	product, err := createTestProductData()
 	if err != nil {
 		return nil, dbConnector, err
@@ -159,204 +157,189 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 	case AddProductTest:
 
 		testCase := "valid_product"
-		data = test.Data{
-			Data:     product,
-			Expected: nil,
-		}
 		mock.ExpectBegin()
 		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product,
+			Expected: nil,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failed_query"
-		data = test.Data{
-			Data:     product,
-			Expected: errors.New("This is a failure test"),
-		}
+		expected := errors.New("This is a failure test")
 		mock.ExpectBegin()
-		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnError(data.Expected.(error))
+		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "duplicate_name"
-		data = test.Data{
-			Data:     product,
-			Expected: fmt.Errorf(ErrSQLDuplicateProductNameEntryString, product.Name),
-		}
+		expected = fmt.Errorf(ErrSQLDuplicateProductNameEntryString, product.Name)
 		mock.ExpectBegin()
-		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnError(data.Expected.(error))
+		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case AddProductUsersTest:
-
 		testCase := "valid_products"
 		productUsers, err := createTestProductUsersData()
 		if err != nil {
 			return nil, dbConnector, err
 		}
-
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: nil,
-		}
-		data.Data.(map[string]interface{})["product_id"] = product.ID
-		data.Data.(map[string]interface{})["product_users"] = productUsers
-
+		data := make(map[string]interface{})
+		data["product_id"] = product.ID
+		data["product_users"] = productUsers
 		mock.ExpectBegin()
 		for userID, privilege := range productUsers {
 			mock.ExpectExec(AddProductUsersQuery).WithArgs(product.ID, userID, privilege).WillReturnResult(sqlmock.NewResult(1, 1))
 		}
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: nil,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failed_query"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: errors.New("This is a failure test"),
-		}
-		data.Data.(map[string]interface{})["product_id"] = product.ID
-		data.Data.(map[string]interface{})["product_users"] = productUsers
+		data = make(map[string]interface{})
+		expected := errors.New("This is a failure test")
+		data["product_id"] = product.ID
+		data["product_users"] = productUsers
 		mock.ExpectBegin()
 		for userID, privilege := range productUsers {
-			mock.ExpectExec(AddProductUsersQuery).WithArgs(product.ID, userID, privilege).WillReturnError(data.Expected.(error))
+			mock.ExpectExec(AddProductUsersQuery).WithArgs(product.ID, userID, privilege).WillReturnError(expected)
 		}
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case DeleteProductUsersByProductIDTest:
-
 		testCase := "valid_id"
-		data = test.Data{
+		mock.ExpectBegin()
+		mock.ExpectExec(DeleteProductUsersByProductIDQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     product.ID,
 			Expected: nil,
 		}
-		mock.ExpectBegin()
-		mock.ExpectExec(DeleteProductUsersByProductIDQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "missing_id"
-		data = test.Data{
-			Data:     product.ID,
-			Expected: ErrNoUserWithProduct,
-		}
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProductUsersByProductIDQuery).WithArgs(product.ID).WillReturnError(ErrNoUserWithProduct)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product.ID,
+			Expected: ErrNoUserWithProduct,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case GetProductByIDTest:
 
 		testCase := "valid_id"
-		data = test.Data{
-			Data:     product.ID,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = product
-		data.Expected.(map[string]interface{})["error"] = nil
+		expected := make(map[string]interface{})
+		expected["data"] = product
+		expected["error"] = nil
 		rows := sqlmock.NewRows([]string{"id", "name", "public", "details", "product_assets_id"}).
 			AddRow(binaryProductID, product.Name, product.Public, product.DetailsID, product.AssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByIDQuery).WithArgs(product.ID).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product.ID,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "missing_id"
-		data = test.Data{
-			Data:     product.ID,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
-		data.Data = product.ID
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByIDQuery).WithArgs(product.ID).WillReturnError(sql.ErrNoRows)
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product.ID,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case GetProductByNameTest:
-
 		testCase := "valid_name"
-		data = test.Data{
-			Data:     product.Name,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = product
-		data.Expected.(map[string]interface{})["error"] = nil
+		expected := make(map[string]interface{})
+		expected["data"] = product
+		expected["error"] = nil
 		rows := sqlmock.NewRows([]string{"id", "name", "public", "details", "product_assets_id"}).
 			AddRow(binaryProductID, product.Name, product.Public, product.DetailsID, binaryAssetID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByNameQuery).WithArgs(product.Name).WillReturnRows(rows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product.Name,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "missing_name"
-		data = test.Data{
-			Data:     product.Name,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByNameQuery).WithArgs(product.Name).WillReturnError(sql.ErrNoRows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product.Name,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case GetUserProductIDsTest:
-
 		testCase := "valid_id"
-		data = test.Data{
-			Data:     userID,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = userProducts
-		data.Expected.(map[string]interface{})["error"] = nil
+		expected := make(map[string]interface{})
+		expected["data"] = userProducts
+		expected["error"] = nil
 		rows := sqlmock.NewRows([]string{"products_id", "privilege"})
 		for _, productID := range userProducts.ProductIDArray {
 			rows.AddRow(productID, userProducts.ProductMap[productID])
 		}
-
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     userID,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "missing_products"
-		data = test.Data{
-			Data:     userID,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
-
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     userID,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case GetProductsByUserIDTest:
-
 		products, err := createTestProductList(2)
 		if err != nil {
 			return nil, dbConnector, err
 		}
 
 		testCase := "valid_id"
-		data = test.Data{
-			Data:     userID,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = products
-		data.Expected.(map[string]interface{})["error"] = nil
+		expected := make(map[string]interface{})
+		expected["data"] = products
+		expected["error"] = nil
 		rowsUserProducts := sqlmock.NewRows([]string{"products_id", "privilege"})
 		// Ranging through map is random, need to collect product ID-s in fixed order in order to
 		// have the correct order of sql mock expectations.
@@ -378,72 +361,71 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 			mock.ExpectQuery(GetProductByIDQuery).WithArgs(productID).WillReturnRows(rowsProducts)
 		}
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     userID,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "no_products"
-		data = test.Data{
-			Data:     userID,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     userID,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case DeleteProductTest:
-
 		testCase := "valid_id"
-		data = test.Data{
+		mock.ExpectBegin()
+		mock.ExpectExec(DeleteProductQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     product.ID,
 			Expected: nil,
 		}
-		mock.ExpectBegin()
-		mock.ExpectExec(DeleteProductQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "no_product"
-		data = test.Data{
-			Data:     product.ID,
-			Expected: ErrNoProductDeleted,
-		}
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProductQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     product.ID,
+			Expected: ErrNoProductDeleted,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case UpdateUsersProductsTest:
-
 		testCase := "valid_id"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
+		data := make(map[string]interface{})
+		data["user_id"] = userID
+		data["product_id"] = product.ID
+		data["privilege"] = 1
+		mock.ExpectBegin()
+		mock.ExpectExec(UpdateUsersProductsQuery).WithArgs(data["privilege"].(int), userID, product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
 			Expected: nil,
 		}
-		data.Data.(map[string]interface{})["user_id"] = userID
-		data.Data.(map[string]interface{})["product_id"] = product.ID
-		data.Data.(map[string]interface{})["privilege"] = 1
-		mock.ExpectBegin()
-		mock.ExpectExec(UpdateUsersProductsQuery).WithArgs(data.Data.(map[string]interface{})["privilege"].(int), userID, product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "no_users_products"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
+		data = make(map[string]interface{})
+		data["user_id"] = userID
+		data["product_id"] = product.ID
+		data["privilege"] = 1
+		mock.ExpectBegin()
+		mock.ExpectExec(UpdateUsersProductsQuery).WithArgs(data["privilege"].(int), userID, product.ID).WillReturnResult(sqlmock.NewResult(1, 0))
+		mock.ExpectRollback()
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
 			Expected: ErrNoUsersProductUpdate,
 		}
-		data.Data.(map[string]interface{})["user_id"] = userID
-		data.Data.(map[string]interface{})["product_id"] = product.ID
-		data.Data.(map[string]interface{})["privilege"] = 1
-		mock.ExpectBegin()
-		mock.ExpectExec(UpdateUsersProductsQuery).WithArgs(data.Data.(map[string]interface{})["privilege"].(int), userID, product.ID).WillReturnResult(sqlmock.NewResult(1, 0))
-		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	default:

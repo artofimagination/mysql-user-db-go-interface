@@ -50,34 +50,35 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 	case NewProduct:
 		testCase := "valid_product"
 
-		data := test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
-		}
-
-		data.Data.(map[string]interface{})["product"] = product
-		data.Data.(map[string]interface{})["uuid_mock"] = UUIDImplMock{
+		data := make(map[string]interface{})
+		data["product"] = product
+		data["uuid_mock"] = UUIDImplMock{
 			uuidMock: productID,
 		}
-		data.Expected.(map[string]interface{})["data"] = &product
-		data.Expected.(map[string]interface{})["error"] = nil
-		dataSet.TestDataSet[testCase] = data
+		expected := make(map[string]interface{})
+		expected["data"] = &product
+		expected["error"] = nil
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failure_case"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
-		}
 
 		err := errors.New("Failed with error")
-		data.Data.(map[string]interface{})["product"] = product
-		data.Data.(map[string]interface{})["uuid_mock"] = UUIDImplMock{
+		data = make(map[string]interface{})
+		data["product"] = product
+		data["uuid_mock"] = UUIDImplMock{
 			err: err,
 		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = err
-		dataSet.TestDataSet[testCase] = data
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = err
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
