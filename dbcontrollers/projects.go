@@ -1,4 +1,4 @@
-package controllers
+package dbcontrollers
 
 import (
 	"github.com/google/uuid"
