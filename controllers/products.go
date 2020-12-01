@@ -126,3 +126,43 @@ func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
 
 	return nil
 }
+
+func GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	product, err := mysqldb.Functions.GetProductByID(*productID, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	details, err := mysqldb.GetAsset(mysqldb.ProductDetails, &product.DetailsID)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, err := mysqldb.GetAsset(mysqldb.ProductAssets, &product.AssetsID)
+	if err != nil {
+		return nil, err
+	}
+
+	productData := models.ProductData{
+		ID:      product.ID,
+		Name:    product.Name,
+		Public:  product.Public,
+		Details: *details,
+		Assets:  *assets,
+	}
+
+	return &productData, nil
+}
+
+func UpdateProductDetails(details *models.Asset) error {
+	return mysqldb.UpdateAsset(mysqldb.ProductDetails, details)
+}
+
+func UpdateProductAssets(assets *models.Asset) error {
+	return mysqldb.UpdateAsset(mysqldb.ProductAssets, assets)
+}

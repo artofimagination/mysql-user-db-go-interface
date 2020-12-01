@@ -144,3 +144,61 @@ func DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
 
 	return mysqldb.DBConnector.Commit(tx)
 }
+
+func GetUser(userID *uuid.UUID) (*models.UserData, error) {
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByIDQuery, *userID, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	settings, err := mysqldb.GetAsset(mysqldb.UserSettings, &user.SettingsID)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, err := mysqldb.GetAsset(mysqldb.UserAssets, &user.AssetsID)
+	if err != nil {
+		return nil, err
+	}
+
+	userData := models.UserData{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		Settings: *settings,
+		Assets:   *assets,
+	}
+
+	return &userData, nil
+}
+
+func UpdateUserSettings(settings *models.Asset) error {
+	return mysqldb.UpdateAsset(mysqldb.UserSettings, settings)
+}
+
+func UpdateUserAssets(assets *models.Asset) error {
+	return mysqldb.UpdateAsset(mysqldb.UserAssets, assets)
+}
+
+func Authenticate(email string, passwd []byte, authenticate func(string, []byte, *models.User) error) error {
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return err
+	}
+
+	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
+	if err != nil {
+		return err
+	}
+
+	if err := authenticate(email, passwd, user); err != nil {
+		return err
+	}
+
+	return nil
+}
