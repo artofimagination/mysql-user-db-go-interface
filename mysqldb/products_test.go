@@ -15,15 +15,15 @@ import (
 )
 
 const (
-	AddProductTest                    = 0
-	AddProductUsersTest               = 1
-	DeleteProductUsersByProductIDTest = 2
-	GetProductByIDTest                = 3
-	GetProductByNameTest              = 4
-	GetUserProductIDsTest             = 5
-	GetProductsByUserIDTest           = 6
-	DeleteProductTest                 = 7
-	UpdateUsersProductsTest           = 8
+	AddProductTest = iota
+	AddProductUsersTest
+	DeleteProductUsersByProductIDTest
+	GetProductByIDTest
+	GetProductByNameTest
+	GetUserProductIDsTest
+	GetProductsByUserIDTest
+	DeleteProductTest
+	UpdateUsersProductsTest
 )
 
 func createTestProductData() (*models.Product, error) {

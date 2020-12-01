@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	AddAssetTest    = 0
-	DeleteAssetTest = 1
+	AddAssetTest = iota
+	DeleteAssetTest
 )
 
 func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error) {

@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	GetUserTest    = 0
-	AddUserTest    = 1
-	DeleteUserTest = 2
+	GetUserTest = iota
+	AddUserTest
+	DeleteUserTest
 )
 
 func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error) {

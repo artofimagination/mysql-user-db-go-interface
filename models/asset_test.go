@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	SetImagePathTest = 0
-	GetImagePathTest = 1
-	GetURLTest       = 2
-	NewAssetTest     = 3
+	SetImagePathTest = iota
+	GetImagePathTest
+	GetURLTest
+	NewAssetTest
 )
 
 func createAssetTestData(testID int) (*test.OrderedTests, error) {

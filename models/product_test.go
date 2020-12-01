@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	NewProduct = 0
+	NewProduct = iota
 )
 
 func createTestData(testID int) (*test.OrderedTests, error) {
