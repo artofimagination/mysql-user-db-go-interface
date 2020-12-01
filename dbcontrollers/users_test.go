@@ -22,6 +22,8 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		TestDataSet: make(test.DataSet),
 	}
 
+	dbController = &MYSQLController{}
+
 	assetID, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
@@ -234,7 +236,7 @@ func TestCreateUser(t *testing.T) {
 				productAdded: test.NewBool(false),
 			}
 
-			output, err := CreateUser(
+			output, err := dbController.CreateUser(
 				input.Name,
 				input.Email,
 				input.Password,
@@ -305,7 +307,7 @@ func TestDeleteUser(t *testing.T) {
 				privileges:           testCase.Data.(map[string]interface{})["db_mock_privileges"].(models.Privileges),
 			}
 
-			err := DeleteUser(&userID, nominatedOwners)
+			err := dbController.DeleteUser(&userID, nominatedOwners)
 			if !test.ErrEqual(err, expectedError) {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return

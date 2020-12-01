@@ -147,3 +147,5 @@ func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 func (i DBConnectorMock) Commit(tx *sql.Tx) error {
 	return i.err
 }
+
+var dbController *MYSQLController

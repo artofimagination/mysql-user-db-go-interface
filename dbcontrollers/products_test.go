@@ -32,6 +32,8 @@ func createProductTestData() (*test.OrderedTests, error) {
 		TestDataSet: make(test.DataSet),
 	}
 
+	dbController = &MYSQLController{}
+
 	productUsers, privileges := createTestUsersData()
 
 	assetID, err := uuid.NewUUID()
@@ -252,7 +254,7 @@ func TestCreateProduct(t *testing.T) {
 				productAdded: test.NewBool(false),
 			}
 
-			output, err := CreateProduct(
+			output, err := dbController.CreateProduct(
 				input.Name,
 				input.Public,
 				productUsers,
