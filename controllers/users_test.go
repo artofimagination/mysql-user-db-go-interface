@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	CreateUserTest = 0
-	DeleteUserTest = 1
+	CreateUserTest = iota
+	DeleteUserTest
 )
 
 func createUserTestData(testID int) (*test.OrderedTests, error) {
