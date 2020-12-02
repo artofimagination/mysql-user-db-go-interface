@@ -20,8 +20,8 @@ const (
 
 var ErrNoUserWithEmail = errors.New("There is no user associated with this email")
 
-var ErrSQLDuplicateUserNameEntryString = "Duplicate entry '%s' for key 'users.name'"
-var ErrSQLDuplicateEmailEntryString = "Duplicate entry '%s' for key 'users.email'"
+var ErrSQLDuplicateUserNameEntryString = "Error 1062: Duplicate entry '%s' for key 'users.name'"
+var ErrSQLDuplicateEmailEntryString = "Error 1062: Duplicate entry '%s' for key 'users.email'"
 var ErrDuplicateUserNameEntry = errors.New("User with this name already exists")
 var ErrNoUserDeleted = errors.New("No user was deleted")
 
@@ -36,24 +36,16 @@ func (MYSQLFunctions) GetUser(queryString string, keyValue interface{}, tx *sql.
 	}
 
 	var user models.User
-	query, err := tx.Query(queryString, keyValue)
+	query := tx.QueryRow(queryString, keyValue)
+	err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID)
 	switch {
 	case err == sql.ErrNoRows:
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
 		return nil, err
 	case err != nil:
 		return nil, RollbackWithErrorStack(tx, err)
 	default:
 	}
-	defer query.Close()
-
-	query.Next()
-	if err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID); err != nil {
-		return nil, err
-	}
-	return &user, tx.Commit()
+	return &user, nil
 }
 
 func UserExists(username string) (bool, error) {
@@ -134,10 +126,10 @@ func (MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
 		case err != nil:
 			return RollbackWithErrorStack(tx, err)
 		default:
-			return tx.Commit()
+			return nil
 		}
 	}
-	return tx.Commit()
+	return nil
 }
 
 var DeleteUserQuery = "DELETE FROM users WHERE id=UUID_TO_BIN(?)"

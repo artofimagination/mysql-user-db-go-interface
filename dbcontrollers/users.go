@@ -3,6 +3,7 @@ package dbcontrollers
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
@@ -50,10 +51,15 @@ func (MYSQLController) CreateUser(
 
 	existingUser, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
 	if err != nil {
-		return nil, err
+		if err != sql.ErrNoRows {
+			return nil, err
+		}
 	}
 
 	if existingUser != nil {
+		if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+			return nil, err
+		}
 		return nil, ErrDuplicateEmailEntry
 	}
 
@@ -66,6 +72,10 @@ func (MYSQLController) CreateUser(
 	}
 
 	if err := mysqldb.Functions.AddUser(user, tx); err != nil {
+		errDuplicateName := fmt.Errorf(mysqldb.ErrSQLDuplicateUserNameEntryString, user.Name)
+		if err.Error() == errDuplicateName.Error() {
+			return nil, ErrDuplicateNameEntry
+		}
 		return nil, err
 	}
 
@@ -154,6 +164,9 @@ func (MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 
 	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByIDQuery, *userID, tx)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrUserNotFound
+		}
 		return nil, err
 	}
 

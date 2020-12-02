@@ -19,6 +19,7 @@ type DBConnectorCommon interface {
 	BootstrapSystem() error
 	ConnectSystem() (*sql.Tx, error)
 	Commit(tx *sql.Tx) error
+	Rollback(tx *sql.Tx) error
 }
 
 // MYSQL Interface implementation
@@ -61,6 +62,10 @@ func (MYSQLConnector) Commit(tx *sql.Tx) error {
 	return tx.Commit()
 }
 
+func (MYSQLConnector) Rollback(tx *sql.Tx) error {
+	return tx.Rollback()
+}
+
 func (MYSQLConnector) BootstrapSystem() error {
 	fmt.Printf("Executing MYSQL migration\n")
 	migrations := &migrate.FileMigrationSource{
@@ -75,7 +80,7 @@ func (MYSQLConnector) BootstrapSystem() error {
 	fmt.Printf("DB connection open\n")
 
 	n := 0
-	for retryCount := 10; retryCount > 0; retryCount-- {
+	for retryCount := 20; retryCount > 0; retryCount-- {
 		n, err = migrate.Exec(db, "mysql", migrations, migrate.Up)
 		if err == nil {
 			break

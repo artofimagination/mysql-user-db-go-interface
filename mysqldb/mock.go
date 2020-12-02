@@ -26,3 +26,7 @@ func (DBConnectorMock) BootstrapSystem() error {
 func (DBConnectorMock) Commit(tx *sql.Tx) error {
 	return nil
 }
+
+func (DBConnectorMock) Rollback(tx *sql.Tx) error {
+	return nil
+}

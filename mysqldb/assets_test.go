@@ -63,15 +63,16 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 	case AddAssetTest:
 		testCase := "valid_user_asset"
 		mock.ExpectBegin()
-		mock.ExpectExec(AddAssetQuery).WithArgs(UserAssets, asset.ID, binaryDataMap).WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectCommit()
+		query := fmt.Sprintf(AddAssetQuery, UserAssets)
+		mock.ExpectExec(query).WithArgs(asset.ID, binaryDataMap).WillReturnResult(sqlmock.NewResult(1, 1))
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failed_query"
 		data.Expected = errors.New("This is a failure test")
 		mock.ExpectBegin()
-		mock.ExpectExec(AddAssetQuery).WithArgs(UserAssets, asset.ID, binaryDataMap).WillReturnError(data.Expected.(error))
+		query = fmt.Sprintf(AddAssetQuery, UserAssets)
+		mock.ExpectExec(query).WithArgs(asset.ID, binaryDataMap).WillReturnError(data.Expected.(error))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -80,14 +81,16 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		testCase := "valid_user_asset"
 		data.Expected = nil
 		mock.ExpectBegin()
-		mock.ExpectExec(DeleteAssetQuery).WithArgs(UserAssets, asset.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+		query := fmt.Sprintf(DeleteAssetQuery, UserAssets)
+		mock.ExpectExec(query).WithArgs(asset.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failed_query"
 		data.Expected = fmt.Errorf(ErrAssetMissing, UserAssets)
 		mock.ExpectBegin()
-		mock.ExpectExec(DeleteAssetQuery).WithArgs(UserAssets, asset.ID).WillReturnResult(sqlmock.NewResult(1, 0))
+		query = fmt.Sprintf(DeleteAssetQuery, UserAssets)
+		mock.ExpectExec(query).WithArgs(asset.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -96,7 +99,8 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 
 		data.Expected = nil
 		mock.ExpectBegin()
-		mock.ExpectExec(UpdateAssetQuery).WithArgs(UserAssets, binaryDataMap, &asset.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+		query := fmt.Sprintf(UpdateAssetQuery, UserAssets)
+		mock.ExpectExec(query).WithArgs(binaryDataMap, &asset.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -104,7 +108,8 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		testCase = "missing_asset"
 		data.Expected = fmt.Errorf(ErrAssetMissing, UserAssets)
 		mock.ExpectBegin()
-		mock.ExpectExec(UpdateAssetQuery).WithArgs(UserAssets, binaryDataMap, &asset.ID).WillReturnResult(sqlmock.NewResult(1, 0))
+		query = fmt.Sprintf(UpdateAssetQuery, UserAssets)
+		mock.ExpectExec(query).WithArgs(binaryDataMap, &asset.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -118,7 +123,8 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		data.Expected.(map[string]interface{})["error"] = nil
 		rows := sqlmock.NewRows([]string{"id", "data"}).AddRow(binaryID, binaryDataMap)
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetAssetQuery).WithArgs(UserAssets, &asset.ID).WillReturnRows(rows)
+		query := fmt.Sprintf(GetAssetQuery, UserAssets)
+		mock.ExpectQuery(query).WithArgs(&asset.ID).WillReturnRows(rows)
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -131,7 +137,8 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetAssetQuery).WithArgs(UserAssets, &asset.ID).WillReturnError(sql.ErrNoRows)
+		query = fmt.Sprintf(GetAssetQuery, UserAssets)
+		mock.ExpectQuery(query).WithArgs(&asset.ID).WillReturnError(sql.ErrNoRows)
 		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)

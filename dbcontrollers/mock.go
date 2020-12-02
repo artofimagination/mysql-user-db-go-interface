@@ -148,4 +148,8 @@ func (i DBConnectorMock) Commit(tx *sql.Tx) error {
 	return i.err
 }
 
+func (i DBConnectorMock) Rollback(tx *sql.Tx) error {
+	return i.err
+}
+
 var dbController *MYSQLController

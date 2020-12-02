@@ -71,7 +71,7 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err.Error() == dbcontrollers.ErrDuplicateEmailEntry.Error() ||
 			err.Error() == dbcontrollers.ErrDuplicateNameEntry.Error() {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusAccepted)
 			fmt.Fprint(w, err.Error())
 			return
 		}
@@ -123,7 +123,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	userData, err := queryUser(r)
 	if err != nil {
 		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusAccepted)
 			fmt.Fprint(w, err.Error())
 			return
 		}
@@ -149,16 +149,45 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Deleting user")
 	userData, err := queryUser(r)
 	if err != nil {
-		fmt.Fprintln(w, err)
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
 		return
 	}
 
 	nominees := make(map[uuid.UUID]uuid.UUID)
+
 	err = dbController.DeleteUser(&userData.ID, nominees)
 	if err != nil {
-		fmt.Fprintln(w, err.Error())
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
 	}
-	fmt.Fprintln(w, "Delete completed")
+
+	_, err = queryUser(r)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, "Delete completed")
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintln(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, "Data still exists")
 }
 
 func authenticateUser(w http.ResponseWriter, r *http.Request) {
