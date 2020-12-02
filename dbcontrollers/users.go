@@ -10,6 +10,7 @@ import (
 )
 
 var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
+var ErrDuplicateNameEntry = errors.New("User with this name already exists")
 var ErrUserNotFound = errors.New("The selected user not found")
 
 func (MYSQLController) CreateUser(
