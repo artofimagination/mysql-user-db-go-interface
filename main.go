@@ -122,7 +122,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 
 	userData, err := queryUser(r)
 	if err != nil {
-		if err.Error() == dbcontrollers.ErrNoUser.Error() {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, err.Error())
 			return
