@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,41 +23,74 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 
 func addUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Adding user")
-	names, ok := r.URL.Query()["name"]
-	if !ok || len(names[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'name' is missing")
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusBadRequest)
+		errorString := fmt.Sprintf("Invalid request type %s", r.Method)
+		fmt.Fprint(w, errorString)
 		return
 	}
 
-	name := names[0]
-	emails, ok := r.URL.Query()["email"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'email' is missing")
+	data := make(map[string]string)
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
+		fmt.Fprint(w, err.Error())
 		return
 	}
 
-	email := emails[0]
-
-	passwords, ok := r.URL.Query()["password"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'password' is missing")
+	name, ok := data["name"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Missing 'name'")
 		return
 	}
 
-	password := passwords[0]
+	email, ok := data["email"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Missing 'email'")
+		return
+	}
+
+	password, ok := data["password"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Missing 'password'")
+		return
+	}
+
 	models.Interface = models.RepoInterface{}
 	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	user, err := dbController.CreateUser(name, email, []byte(password),
 		func(*uuid.UUID) string {
 			return "testPath"
-		}, func([]byte) ([]byte, error) {
-			return []byte{}, nil
+		}, func(password []byte) ([]byte, error) {
+			return password, nil
 		})
 	if err != nil {
-		fmt.Fprintln(w, err.Error())
+		if err.Error() == dbcontrollers.ErrDuplicateEmailEntry.Error() ||
+			err.Error() == dbcontrollers.ErrDuplicateNameEntry.Error() {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to create user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
 		return
 	}
-	fmt.Fprintln(w, user)
+
+	b, err := json.Marshal(user)
+	if err != nil {
+		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprint(w, string(b))
 }
 
 func queryUser(r *http.Request) (*models.UserData, error) {
@@ -69,7 +103,6 @@ func queryUser(r *http.Request) (*models.UserData, error) {
 	if err != nil {
 		return nil, err
 	}
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 
 	userData, err := dbController.GetUser(&id)
 	if err != nil {
@@ -80,14 +113,36 @@ func queryUser(r *http.Request) (*models.UserData, error) {
 
 func getUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Getting user")
-
-	userData, err := queryUser(r)
-	if err != nil {
-		fmt.Fprintln(w, err)
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusBadRequest)
+		errorString := fmt.Sprintf("Invalid request type %s", r.Method)
+		fmt.Fprint(w, errorString)
 		return
 	}
 
-	fmt.Fprintln(w, userData)
+	userData, err := queryUser(r)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoUser.Error() {
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	b, err := json.Marshal(userData)
+	if err != nil {
+		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(b))
 }
 
 func deleteUser(w http.ResponseWriter, r *http.Request) {

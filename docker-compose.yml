@@ -15,8 +15,6 @@ services:
       - 3306:3306
     networks:
       - development
-    volumes: 
-      - ./user-settings:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_DB_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DB_NAME}
