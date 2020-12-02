@@ -1,0 +1,22 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Functional testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+      - uses: actions/checkout@v2
+
+      - name: Start test server
+        run: docker-compose up -d
+
+      - name: Python Pylin GitHub Action
+        uses: fylein/python-pytest-github-action@v1
+        with:
+          args: pip3 install -r test/requirements.txt && pytest test
