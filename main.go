@@ -262,7 +262,6 @@ func updateUserAssets(w http.ResponseWriter, r *http.Request) {
 
 func addProduct(w http.ResponseWriter, r *http.Request) {
 	log.Println("Adding product")
-	log.Println(r)
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusBadRequest)
 		errorString := fmt.Sprintf("Invalid request type %s", r.Method)
@@ -278,7 +277,6 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, err.Error())
 		return
 	}
-	log.Println(data)
 
 	// Parse product info
 	productJSON, ok := data["product"]
@@ -295,16 +293,11 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	publicString, ok := productJSON.(map[string]interface{})["public"].(string)
+	public, ok := productJSON.(map[string]interface{})["public"].(bool)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, "Missing 'public'")
 		return
-	}
-
-	public := false
-	if publicString == "true" {
-		public = true
 	}
 
 	// Get user ID
@@ -327,20 +320,13 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 			return "testPath"
 		})
 	if err != nil {
-		if product != nil {
-			duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, product.Name)
-			if err.Error() == duplicateProduct.Error() {
-				w.WriteHeader(http.StatusAccepted)
-				fmt.Fprint(w, err.Error())
-				return
-			}
-		}
-
-		if err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
+		duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
+		if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
 			w.WriteHeader(http.StatusAccepted)
 			fmt.Fprint(w, err.Error())
 			return
 		}
+
 		err = errors.Wrap(errors.WithStack(err), "Failed to create product")
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, err.Error())
@@ -369,7 +355,6 @@ func queryProduct(r *http.Request) (*models.ProductData, error) {
 	if err != nil {
 		return nil, err
 	}
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 
 	productData, err := dbController.GetProduct(&id)
 	if err != nil {
@@ -383,11 +368,27 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 
 	productData, err := queryProduct(r)
 	if err != nil {
-		fmt.Fprintln(w, err)
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
 		return
 	}
 
-	fmt.Fprintln(w, productData)
+	b, err := json.Marshal(productData)
+	if err != nil {
+		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, string(b))
 }
 
 func updateProductDetails(w http.ResponseWriter, r *http.Request) {
