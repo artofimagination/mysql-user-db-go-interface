@@ -16,11 +16,11 @@ var ErrNoUserWithProduct = errors.New("No user is associated to this product")
 var ErrNoProductDeleted = errors.New("No product was deleted")
 var ErrNoUsersProductUpdate = errors.New("No users product was updated")
 
-var AddProductUsersQuery = "INSERT INTO users_products (users_id, products_id, privilege) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
+var AddProductUsersQuery = "INSERT INTO users_products (users_id, products_id, privileges_id) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
 
 func (MYSQLFunctions) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
 	for userID, privilege := range productUsers {
-		_, err := tx.Exec(AddProductUsersQuery, productID, userID, privilege)
+		_, err := tx.Exec(AddProductUsersQuery, userID, productID, privilege)
 		if err != nil {
 			return RollbackWithErrorStack(tx, err)
 		}
@@ -51,7 +51,7 @@ func (MYSQLFunctions) DeleteProductUsersByProductID(productID *uuid.UUID, tx *sq
 	return nil
 }
 
-var UpdateUsersProductsQuery = "UPDATE users_products set privilege = ? where users_id = UUID_TO_BIN(?) AND products_id = UUID_TO_BIN(?)"
+var UpdateUsersProductsQuery = "UPDATE users_products set privileges_id = ? where users_id = UUID_TO_BIN(?) AND products_id = UUID_TO_BIN(?)"
 
 func (MYSQLFunctions) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error {
 	result, err := tx.Exec(UpdateUsersProductsQuery, privilege, userID, productID)
@@ -74,7 +74,7 @@ func (MYSQLFunctions) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUI
 	return nil
 }
 
-var AddProductQuery = "INSERT INTO products (id, name, public, product_details_id, product_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, ?, ?)"
+var AddProductQuery = "INSERT INTO products (id, name, public, product_details_id, product_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, UUID_TO_BIN(?), UUID_TO_BIN(?))"
 
 func (MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
 	// Execute transaction
@@ -100,8 +100,8 @@ var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(pro
 
 func (MYSQLFunctions) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
-
-	query, err := tx.Query(GetProductByIDQuery, ID)
+	query := tx.QueryRow(GetProductByIDQuery, ID)
+	err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, sql.ErrNoRows
@@ -109,17 +109,11 @@ func (MYSQLFunctions) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product,
 		return nil, RollbackWithErrorStack(tx, err)
 	default:
 	}
-	defer query.Close()
-
-	query.Next()
-	if err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID); err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
 
 	return &product, nil
 }
 
-var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privilege FROM users_products where users_id = UUID_TO_BIN(?)"
+var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privileges_id FROM users_products where users_id = UUID_TO_BIN(?)"
 
 func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
 	rows, err := tx.Query(GetUserProductIDsQuery, userID)
@@ -191,19 +185,15 @@ var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(p
 func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
 
-	query, err := tx.Query(GetProductByNameQuery, name)
+	query := tx.QueryRow(GetProductByNameQuery, name)
+
+	err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, sql.ErrNoRows
 	case err != nil:
 		return nil, RollbackWithErrorStack(tx, err)
 	default:
-	}
-	defer query.Close()
-
-	query.Next()
-	if err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID); err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
 	}
 
 	return &product, nil
@@ -279,7 +269,7 @@ func (MYSQLFunctions) GetPrivilege(name string) (*models.Privilege, error) {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	rows := tx.QueryRow(GetPrivilegesQuery, name)
+	rows := tx.QueryRow(GetPrivilegeQuery, name)
 	switch {
 	case err == sql.ErrNoRows:
 		if err := tx.Commit(); err != nil {

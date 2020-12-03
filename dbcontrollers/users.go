@@ -13,6 +13,7 @@ import (
 var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
 var ErrDuplicateNameEntry = errors.New("User with this name already exists")
 var ErrUserNotFound = errors.New("The selected user not found")
+var ErrInvalidEmailOrPasswd = errors.New("Invalid email or password")
 
 func (MYSQLController) CreateUser(
 	name string,
@@ -50,10 +51,8 @@ func (MYSQLController) CreateUser(
 	}
 
 	existingUser, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
-	if err != nil {
-		if err != sql.ErrNoRows {
-			return nil, err
-		}
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
 	}
 
 	if existingUser != nil {
@@ -92,6 +91,9 @@ func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]u
 	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByIDQuery, ID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+				return err
+			}
 			return ErrUserNotFound
 		}
 		return err
@@ -165,6 +167,9 @@ func (MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByIDQuery, *userID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+				return nil, err
+			}
 			return nil, ErrUserNotFound
 		}
 		return nil, err
@@ -188,7 +193,7 @@ func (MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 		Assets:   *assets,
 	}
 
-	return &userData, nil
+	return &userData, mysqldb.DBConnector.Commit(tx)
 }
 
 func (MYSQLController) UpdateUserSettings(settings *models.Asset) error {
@@ -207,6 +212,12 @@ func (MYSQLController) Authenticate(email string, passwd []byte, authenticate fu
 
 	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+				return err
+			}
+			return ErrInvalidEmailOrPasswd
+		}
 		return err
 	}
 
@@ -214,5 +225,5 @@ func (MYSQLController) Authenticate(email string, passwd []byte, authenticate fu
 		return err
 	}
 
-	return nil
+	return mysqldb.DBConnector.Commit(tx)
 }

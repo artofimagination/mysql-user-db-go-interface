@@ -14,6 +14,7 @@ var ErrProductExistsString = "Product with name %s already exists"
 var ErrEmptyUsersList = errors.New("At least one product user is required")
 var ErrUnknownPrivilegeString = "Unknown privilege %d set for user %s"
 var ErrInvalidOwnerCount = errors.New("Product must have a single owner")
+var ErrProductNotFound = errors.New("The selected product not found")
 
 func validateUsers(users models.ProductUsers) error {
 	if users == nil || (users != nil && len(users) == 0) {
@@ -71,22 +72,20 @@ func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID,
 	}
 
 	existingProduct, err := mysqldb.Functions.GetProductByName(name, tx)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
 	if existingProduct != nil {
+		if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+			return nil, err
+		}
 		return nil, fmt.Errorf(ErrProductExistsString, product.Name)
 	}
 
 	users := make(models.ProductUsers)
 	privilege, err := mysqldb.Functions.GetPrivilege("Owner")
 	if err != nil {
-		return nil, err
-	}
-
-	users[*owner] = privilege.ID
-	if err := mysqldb.Functions.AddProductUsers(&product.ID, users, tx); err != nil {
 		return nil, err
 	}
 
@@ -102,7 +101,12 @@ func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID,
 		return nil, err
 	}
 
-	return product, nil
+	users[*owner] = privilege.ID
+	if err := mysqldb.Functions.AddProductUsers(&product.ID, users, tx); err != nil {
+		return nil, err
+	}
+
+	return product, mysqldb.DBConnector.Commit(tx)
 }
 
 func (MYSQLController) DeleteProduct(productID *uuid.UUID) error {
@@ -115,7 +119,7 @@ func (MYSQLController) DeleteProduct(productID *uuid.UUID) error {
 		return err
 	}
 
-	return nil
+	return mysqldb.DBConnector.Commit(tx)
 }
 
 func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
@@ -148,7 +152,12 @@ func (MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, er
 
 	product, err := mysqldb.Functions.GetProductByID(*productID, tx)
 	if err != nil {
-		return nil, err
+		if err == sql.ErrNoRows {
+			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+				return nil, err
+			}
+			return nil, ErrProductNotFound
+		}
 	}
 
 	details, err := mysqldb.GetAsset(mysqldb.ProductDetails, &product.DetailsID)
@@ -169,7 +178,7 @@ func (MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, er
 		Assets:  *assets,
 	}
 
-	return &productData, nil
+	return &productData, mysqldb.DBConnector.Commit(tx)
 }
 
 func (MYSQLController) UpdateProductDetails(details *models.Asset) error {

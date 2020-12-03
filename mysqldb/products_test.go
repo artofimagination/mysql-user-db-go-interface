@@ -207,7 +207,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 
 		mock.ExpectBegin()
 		for userID, privilege := range productUsers {
-			mock.ExpectExec(AddProductUsersQuery).WithArgs(product.ID, userID, privilege).WillReturnResult(sqlmock.NewResult(1, 1))
+			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnResult(sqlmock.NewResult(1, 1))
 		}
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -221,7 +221,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		data.Data.(map[string]interface{})["product_users"] = productUsers
 		mock.ExpectBegin()
 		for userID, privilege := range productUsers {
-			mock.ExpectExec(AddProductUsersQuery).WithArgs(product.ID, userID, privilege).WillReturnError(data.Expected.(error))
+			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnError(data.Expected.(error))
 		}
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = data
