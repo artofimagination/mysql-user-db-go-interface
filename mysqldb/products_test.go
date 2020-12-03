@@ -116,8 +116,7 @@ func createTestProductUsersData() (models.ProductUsers, error) {
 	return owners, nil
 }
 
-func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, error) {
-	dbConnector := DBConnectorMock{}
+func createProductsTestData(testID int) (*test.OrderedTests, error) {
 	dataSet := test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
@@ -125,32 +124,32 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	product, err := createTestProductData()
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	binaryProductID, err := json.Marshal(product.ID)
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	binaryAssetID, err := json.Marshal(product.AssetsID)
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	userID, err := uuid.NewUUID()
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	userProducts, err := createTestUserProductsData(2)
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	switch testID {
@@ -192,7 +191,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		testCase := "valid_products"
 		productUsers, err := createTestProductUsersData()
 		if err != nil {
-			return nil, dbConnector, err
+			return nil, err
 		}
 		data := make(map[string]interface{})
 		data["product_id"] = product.ID
@@ -333,7 +332,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 	case GetProductsByUserIDTest:
 		products, err := createTestProductList(2)
 		if err != nil {
-			return nil, dbConnector, err
+			return nil, err
 		}
 
 		testCase := "valid_id"
@@ -352,7 +351,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 
 		rowsProducts, err := addProductsToMock(products)
 		if err != nil {
-			return nil, dbConnector, err
+			return nil, err
 		}
 
 		mock.ExpectBegin()
@@ -429,20 +428,19 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	default:
-		return nil, dbConnector, fmt.Errorf("Unknown test %d", testID)
+		return nil, fmt.Errorf("Unknown test %d", testID)
 	}
 
-	dbConnector = DBConnectorMock{
+	DBConnector = &DBConnectorMock{
 		DB:   db,
 		Mock: mock,
 	}
 	Functions = MYSQLFunctions{}
 
-	return &dataSet, dbConnector, nil
+	return &dataSet, nil
 }
 
-func createPrivilegesTestData() (*test.OrderedTests, DBConnectorMock, error) {
-	dbConnector := DBConnectorMock{}
+func createPrivilegesTestData() (*test.OrderedTests, error) {
 	dataSet := test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
@@ -450,7 +448,7 @@ func createPrivilegesTestData() (*test.OrderedTests, DBConnectorMock, error) {
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	privileges := make(models.Privileges, 2)
@@ -493,30 +491,29 @@ func createPrivilegesTestData() (*test.OrderedTests, DBConnectorMock, error) {
 	dataSet.TestDataSet[testCase] = data
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
-	dbConnector = DBConnectorMock{
+	DBConnector = &DBConnectorMock{
 		DB:   db,
 		Mock: mock,
 	}
 	Functions = MYSQLFunctions{}
 
-	return &dataSet, dbConnector, nil
+	return &dataSet, nil
 }
 
 func TestAddProduct(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(AddProductTest)
+	dataSet, err := createProductsTestData(AddProductTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -539,19 +536,18 @@ func TestAddProduct(t *testing.T) {
 
 func TestAddProductUsers(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(AddProductUsersTest)
+	dataSet, err := createProductsTestData(AddProductUsersTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -575,19 +571,18 @@ func TestAddProductUsers(t *testing.T) {
 
 func TestUpdateUsersProducts(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(UpdateUsersProductsTest)
+	dataSet, err := createProductsTestData(UpdateUsersProductsTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -612,19 +607,18 @@ func TestUpdateUsersProducts(t *testing.T) {
 
 func TestDeleteProductUsersByProductID(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(DeleteProductUsersByProductIDTest)
+	dataSet, err := createProductsTestData(DeleteProductUsersByProductIDTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -647,20 +641,18 @@ func TestDeleteProductUsersByProductID(t *testing.T) {
 
 func TestGetProductByID(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(GetProductByIDTest)
+	dataSet, err := createProductsTestData(GetProductByIDTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	DBConnector = dbConnector
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -693,19 +685,18 @@ func TestGetProductByID(t *testing.T) {
 
 func TestGetProductByName(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(GetProductByNameTest)
+	dataSet, err := createProductsTestData(GetProductByNameTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -737,19 +728,18 @@ func TestGetProductByName(t *testing.T) {
 
 func TestGetUserProductIDs(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(GetUserProductIDsTest)
+	dataSet, err := createProductsTestData(GetUserProductIDsTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -781,14 +771,12 @@ func TestGetUserProductIDs(t *testing.T) {
 
 func TestGetProductsByUserID(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(GetProductsByUserIDTest)
+	dataSet, err := createProductsTestData(GetProductsByUserIDTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	DBConnector = dbConnector
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
@@ -821,18 +809,16 @@ func TestGetProductsByUserID(t *testing.T) {
 
 func TestDeleteProduct(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createProductsTestData(DeleteProductTest)
+	dataSet, err := createProductsTestData(DeleteProductTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	DBConnector = dbConnector
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
-		tx, err := dbConnector.DB.Begin()
+		tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 		if err != nil {
 			t.Errorf("Failed to setup DB transaction %s", err)
 			return
@@ -856,14 +842,13 @@ func TestDeleteProduct(t *testing.T) {
 
 func TestGetPrivileges(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createPrivilegesTestData()
+	dataSet, err := createPrivilegesTestData()
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
 
-	DBConnector = dbConnector
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {

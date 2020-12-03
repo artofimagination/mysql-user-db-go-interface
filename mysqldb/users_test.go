@@ -20,8 +20,7 @@ const (
 	DeleteUserTest
 )
 
-func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error) {
-	dbConnector := DBConnectorMock{}
+func createUsersTestData(testID int) (*test.OrderedTests, error) {
 	dataSet := test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
@@ -29,17 +28,17 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 
 	userID, err := uuid.NewUUID()
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	settingsID, err := uuid.NewUUID()
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	assetsID, err := uuid.NewUUID()
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	user := models.User{
@@ -53,22 +52,22 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	binaryUserID, err := json.Marshal(user.ID)
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	binarySettingsID, err := json.Marshal(user.SettingsID)
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	binaryAssetsID, err := json.Marshal(user.AssetsID)
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	switch testID {
@@ -235,33 +234,32 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	default:
-		return nil, dbConnector, fmt.Errorf("Unknown test %d", testID)
+		return nil, fmt.Errorf("Unknown test %d", testID)
 	}
 
-	dbConnector = DBConnectorMock{
+	DBConnector = &DBConnectorMock{
 		DB:   db,
 		Mock: mock,
 	}
 	Functions = MYSQLFunctions{}
 
-	return &dataSet, dbConnector, nil
+	return &dataSet, nil
 }
 
 func TestGetUser(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createUsersTestData(GetUserTest)
+	dataSet, err := createUsersTestData(GetUserTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run test
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -294,19 +292,18 @@ func TestGetUser(t *testing.T) {
 
 func TestAddUser(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createUsersTestData(AddUserTest)
+	dataSet, err := createUsersTestData(AddUserTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -329,19 +326,18 @@ func TestAddUser(t *testing.T) {
 
 func TestDeleteUser(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createUsersTestData(DeleteUserTest)
+	dataSet, err := createUsersTestData(DeleteUserTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return

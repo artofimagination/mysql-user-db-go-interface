@@ -17,8 +17,7 @@ const (
 	DeleteAssetTest
 )
 
-func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error) {
-	dbConnector := DBConnectorMock{}
+func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	dataSet := test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
@@ -27,7 +26,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 
 	assetID, err := uuid.NewUUID()
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	asset := models.Asset{
@@ -37,12 +36,12 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	binary, err := json.Marshal(asset.DataMap)
 	if err != nil {
-		return nil, dbConnector, err
+		return nil, err
 	}
 
 	data := test.Data{
@@ -84,30 +83,30 @@ func createAssetTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	dbConnector = DBConnectorMock{
+	DBConnector = &DBConnectorMock{
 		DB:   db,
 		Mock: mock,
 	}
 	Functions = MYSQLFunctions{}
 
-	return &dataSet, dbConnector, nil
+	return &dataSet, nil
 }
 
 func TestAddAsset(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createAssetTestData(AddAssetTest)
+	dataSet, err := createAssetTestData(AddAssetTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
 
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction: %s", err)
 				return
@@ -130,19 +129,19 @@ func TestAddAsset(t *testing.T) {
 
 func TestDeleteAsset(t *testing.T) {
 	// Create test data
-	dataSet, dbConnector, err := createAssetTestData(DeleteAssetTest)
+	dataSet, err := createAssetTestData(DeleteAssetTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
 
-	defer dbConnector.DB.Close()
+	defer DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := dbConnector.DB.Begin()
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction: %s", err)
 				return

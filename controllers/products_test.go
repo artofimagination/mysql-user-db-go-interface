@@ -19,7 +19,7 @@ func createTestUsersData() (models.ProductUsers, models.Privileges) {
 	privileges[1].ID = 1
 	privileges[1].Name = "User"
 	privileges[1].Description = "description1"
-	mysqldb.DBConnector = DBConnectorMock{}
+	mysqldb.DBConnector = &DBConnectorMock{}
 
 	users := make(models.ProductUsers)
 
@@ -111,7 +111,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	mysqldb.Functions = DBFunctionInterfaceMock{}
-	mysqldb.DBConnector = DBConnectorMock{}
+	mysqldb.DBConnector = &DBConnectorMock{}
 	return &dataSet, nil
 }
 
@@ -294,7 +294,7 @@ func TestValidateUsers(t *testing.T) {
 				privileges: privileges,
 			}
 
-			err := validateUsers(input)
+			err := validateOwnership(input)
 			if !test.ErrEqual(err, expectedError) {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return

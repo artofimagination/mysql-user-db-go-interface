@@ -143,7 +143,7 @@ func main() {
 	mysqldb.DBConnection = "root:123secure@tcp(user-db:3306)/user_database?parseTime=true"
 	mysqldb.MigrationDirectory = fmt.Sprintf("%s/src/mysql-user-db-go-interface/db/migrations/mysql", os.Getenv("GOPATH"))
 
-	mysqldb.DBConnector = mysqldb.MYSQLConnector{}
+	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
 	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
 		log.Fatalf("System bootstrap failed. %s", errors.WithStack(err))
 	}

@@ -195,7 +195,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 	}
 
 	mysqldb.Functions = DBFunctionInterfaceMock{}
-	mysqldb.DBConnector = DBConnectorMock{}
+	mysqldb.DBConnector = &DBConnectorMock{}
 	projectdb = ProjectDBDummy{}
 	return &dataSet, nil
 }

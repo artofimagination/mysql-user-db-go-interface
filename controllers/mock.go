@@ -136,14 +136,14 @@ type DBConnectorMock struct {
 	err error
 }
 
-func (i DBConnectorMock) BootstrapSystem() error {
+func (i *DBConnectorMock) BootstrapSystem() error {
 	return i.err
 }
 
-func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
+func (i *DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 	return nil, i.err
 }
 
-func (i DBConnectorMock) Commit(tx *sql.Tx) error {
+func (i *DBConnectorMock) Commit(tx *sql.Tx) error {
 	return i.err
 }
