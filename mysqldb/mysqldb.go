@@ -47,6 +47,7 @@ type FunctionCommonInterface interface {
 	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
 
 	GetPrivileges() (models.Privileges, error)
+	GetPrivilege(name string) (*models.Privilege, error)
 }
 
 // MYSQL Interface implementation

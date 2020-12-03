@@ -34,7 +34,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 
 	dbController = &MYSQLController{}
 
-	productUsers, privileges := createTestUsersData()
+	_, privileges := createTestUsersData()
 
 	assetID, err := uuid.NewUUID()
 	if err != nil {
@@ -72,8 +72,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 
 	data.Data.(map[string]interface{})["input"] = product
 	data.Data.(map[string]interface{})["db_mock"] = nil
-	productUsers[userID] = 0
-	data.Data.(map[string]interface{})["product_users"] = productUsers
+	data.Data.(map[string]interface{})["user_id"] = userID
 	data.Data.(map[string]interface{})["privileges"] = privileges
 	data.Expected.(map[string]interface{})["data"] = &product
 	data.Expected.(map[string]interface{})["error"] = nil
@@ -88,27 +87,10 @@ func createProductTestData() (*test.OrderedTests, error) {
 
 	data.Data.(map[string]interface{})["input"] = product
 	data.Data.(map[string]interface{})["db_mock"] = &product
-	productUsers[userID] = 0
-	data.Data.(map[string]interface{})["product_users"] = productUsers
+	data.Data.(map[string]interface{})["user_id"] = userID
 	data.Data.(map[string]interface{})["privileges"] = privileges
 	data.Expected.(map[string]interface{})["data"] = nil
 	data.Expected.(map[string]interface{})["error"] = fmt.Errorf(ErrProductExistsString, product.Name)
-	dataSet.TestDataSet[testCase] = data
-	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
-
-	testCase = "incorrect_product_users"
-	data = test.Data{
-		Data:     make(map[string]interface{}),
-		Expected: make(map[string]interface{}),
-	}
-
-	data.Data.(map[string]interface{})["input"] = product
-	data.Data.(map[string]interface{})["db_mock"] = &product
-	productUsers = make(models.ProductUsers)
-	data.Data.(map[string]interface{})["product_users"] = productUsers
-	data.Data.(map[string]interface{})["privileges"] = privileges
-	data.Expected.(map[string]interface{})["data"] = nil
-	data.Expected.(map[string]interface{})["error"] = ErrEmptyUsersList
 	dataSet.TestDataSet[testCase] = data
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -240,7 +222,7 @@ func TestCreateProduct(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 			input := testCase.Data.(map[string]interface{})["input"].(models.Product)
-			productUsers := testCase.Data.(map[string]interface{})["product_users"].(models.ProductUsers)
+			userID := testCase.Data.(map[string]interface{})["user_id"].(uuid.UUID)
 			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
 			var DBMock *models.Product
 			if testCase.Data.(map[string]interface{})["db_mock"] != nil {
@@ -257,7 +239,7 @@ func TestCreateProduct(t *testing.T) {
 			output, err := dbController.CreateProduct(
 				input.Name,
 				input.Public,
-				productUsers,
+				&userID,
 				func(*uuid.UUID) string {
 					return "testPath"
 				})

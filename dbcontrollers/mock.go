@@ -70,6 +70,10 @@ func (i DBFunctionInterfaceMock) GetPrivileges() (models.Privileges, error) {
 	return i.privileges, i.err
 }
 
+func (i DBFunctionInterfaceMock) GetPrivilege(name string) (*models.Privilege, error) {
+	return &i.privileges[0], i.err
+}
+
 func (i DBFunctionInterfaceMock) GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
 	return i.user, i.err
 }

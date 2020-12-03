@@ -46,14 +46,7 @@ func validateUsers(users models.ProductUsers) error {
 	return nil
 }
 
-func (MYSQLController) CreateProduct(name string, public bool, users models.ProductUsers, generateAssetPath func(assetID *uuid.UUID) string) (*models.Product, error) {
-	// Need to check whether the product users list is valid.
-	// - is there exactly one owner
-	// - are the privilege id-s valid
-	if err := validateUsers(users); err != nil {
-		return nil, err
-	}
-
+func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) string) (*models.Product, error) {
 	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
 	if err != nil {
@@ -86,6 +79,13 @@ func (MYSQLController) CreateProduct(name string, public bool, users models.Prod
 		return nil, fmt.Errorf(ErrProductExistsString, product.Name)
 	}
 
+	users := make(models.ProductUsers)
+	privilege, err := mysqldb.Functions.GetPrivilege("Owner")
+	if err != nil {
+		return nil, err
+	}
+
+	users[*owner] = privilege.ID
 	if err := mysqldb.Functions.AddProductUsers(&product.ID, users, tx); err != nil {
 		return nil, err
 	}

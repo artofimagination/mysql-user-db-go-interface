@@ -1,22 +1,18 @@
 import pytest
 import json
 from functionalTest import httpConnection
-import uuid
 
 dataColumns = ("data", "expected")
-creatUserTestData = [
+createTestData = [
     ({
       'name': 'testUser',
       'email': 'testEmail',
       'password': 'testPassword'
     },
     { 
-      "ID":"65ae421d-343f-11eb-be1c-0242ac120003",
       "Name":"testUser",
       "Email":"testEmail",
       "Password":"dGVzdFBhc3N3b3Jk",
-      "SettingsID":"65ae4218-343f-11eb-be1c-0242ac120003",
-      "AssetsID":"65ae4211-343f-11eb-be1c-0242ac120003"
     }),
     ({
       'name': 'testUser',
@@ -34,7 +30,7 @@ creatUserTestData = [
 
 ids=['No existing email', 'Existing email', 'Existing name']
 
-@pytest.mark.parametrize(dataColumns, creatUserTestData, ids=ids)
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_CreateUser(httpConnection, data, expected):
   try:
     r = httpConnection.POST("/add-user", data)
@@ -57,7 +53,7 @@ def test_CreateUser(httpConnection, data, expected):
     pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
     return
 
-creatUserTestData = [
+createTestData = [
     ({
       'name': 'testUserGet',
       'email': 'testEmailGet',
@@ -73,9 +69,9 @@ creatUserTestData = [
     "The selected user not found")
 ]
 
-ids=['Existing user', 'Non existing user']
+ids=['Existing user', 'No existing user']
 
-@pytest.mark.parametrize(dataColumns, creatUserTestData, ids=ids)
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_GetUser(httpConnection, data, expected):
   uuid = ""
   if "name" in data:
@@ -121,7 +117,7 @@ def test_GetUser(httpConnection, data, expected):
     pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
     return
 
-# creatUserTestData = [
+# createTestData = [
 #     ({
 #       "user_to_delete": {
 #         "name": "testUserDelete",
@@ -149,7 +145,7 @@ def test_GetUser(httpConnection, data, expected):
 
 # ids=['Existing user', 'Non existing user']
 
-# @pytest.mark.parametrize(dataColumns, creatUserTestData, ids=ids)
+# @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 # def test_DeleteUser(httpConnection, data, expected):
 #   userUUID = ""
 #   if "user_to_delete" in data:

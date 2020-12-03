@@ -25,7 +25,7 @@ func (MYSQLFunctions) AddProductUsers(productID *uuid.UUID, productUsers models.
 			return RollbackWithErrorStack(tx, err)
 		}
 	}
-	return tx.Commit()
+	return nil
 }
 
 var DeleteProductUsersByProductIDQuery = "DELETE FROM users_products where products_id = UUID_TO_BIN(?)"
@@ -90,13 +90,13 @@ func (MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
 		case err != nil:
 			return RollbackWithErrorStack(tx, err)
 		default:
-			return tx.Commit()
+			return nil
 		}
 	}
-	return tx.Commit()
+	return nil
 }
 
-var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assets_id) FROM products WHERE id = UUID_TO_BIN(?)"
+var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE id = UUID_TO_BIN(?)"
 
 func (MYSQLFunctions) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
@@ -186,7 +186,7 @@ func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) ([]models.Product, e
 	return products, tx.Commit()
 }
 
-var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assests_id) FROM products WHERE name = ?"
+var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE name = ?"
 
 func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
@@ -194,9 +194,6 @@ func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product
 	query, err := tx.Query(GetProductByNameQuery, name)
 	switch {
 	case err == sql.ErrNoRows:
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
 		return nil, sql.ErrNoRows
 	case err != nil:
 		return nil, RollbackWithErrorStack(tx, err)
@@ -209,7 +206,7 @@ func (MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return &product, tx.Commit()
+	return &product, nil
 }
 
 var DeleteProductQuery = "DELETE FROM products where id = UUID_TO_BIN(?)"
@@ -272,4 +269,40 @@ func (MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 	}
 
 	return privileges, tx.Commit()
+}
+
+var GetPrivilegeQuery = "SELECT id, name, description from privileges where name = ?"
+
+func (MYSQLFunctions) GetPrivilege(name string) (*models.Privilege, error) {
+	tx, err := DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	rows := tx.QueryRow(GetPrivilegesQuery, name)
+	switch {
+	case err == sql.ErrNoRows:
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
+	}
+
+	privilege := models.Privilege{}
+	err = rows.Scan(&privilege.ID, &privilege.Name, &privilege.Description)
+	switch {
+	case err == sql.ErrNoRows:
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
+	}
+
+	return &privilege, tx.Commit()
 }
