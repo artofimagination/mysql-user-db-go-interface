@@ -34,7 +34,7 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	UUIDImpl = UUIDImplMock{
+	UUIDImpl = &UUIDImplMock{
 		uuidMock: productID,
 	}
 
@@ -52,9 +52,6 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 
 		data := make(map[string]interface{})
 		data["product"] = product
-		data["uuid_mock"] = UUIDImplMock{
-			uuidMock: productID,
-		}
 		expected := make(map[string]interface{})
 		expected["data"] = &product
 		expected["error"] = nil
@@ -69,9 +66,6 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		err := errors.New("Failed with error")
 		data = make(map[string]interface{})
 		data["product"] = product
-		data["uuid_mock"] = UUIDImplMock{
-			err: err,
-		}
 		expected = make(map[string]interface{})
 		expected["data"] = nil
 		expected["error"] = err
@@ -82,7 +76,7 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	Interface = RepoInterface{}
+	Interface = &RepoInterface{}
 
 	return &dataSet, nil
 }
@@ -109,8 +103,8 @@ func TestNewProduct(t *testing.T) {
 				expectedData = testCase.Expected.(map[string]interface{})["data"].(*Product)
 			}
 
-			UUIDImpl = testCase.Data.(map[string]interface{})["uuid_mock"].(UUIDImplMock)
 			inputData := testCase.Data.(map[string]interface{})["product"].(Product)
+			UUIDImpl.(*UUIDImplMock).err = expectedError
 
 			output, err := Interface.NewProduct(
 				inputData.Name,

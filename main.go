@@ -42,8 +42,8 @@ func insertUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	password := passwords[0]
-	models.Interface = models.RepoInterface{}
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
+	models.Interface = &models.RepoInterface{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	user, err := controllers.CreateUser(name, email, []byte(password),
 		func(*uuid.UUID) string {
 			return "testPath"
@@ -66,7 +66,7 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
@@ -90,7 +90,7 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
@@ -118,7 +118,7 @@ func checkUserPass(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())

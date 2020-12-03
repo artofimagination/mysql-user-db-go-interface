@@ -37,7 +37,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	UUIDImpl = UUIDImplMock{
+	UUIDImpl = &UUIDImplMock{
 		uuidMock: referenceID,
 	}
 	baseAssetPath := "test/path"
@@ -111,7 +111,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case NewAssetTest:
 		testCase := "valid"
-		UUIDImpl = UUIDImplMock{
+		UUIDImpl = &UUIDImplMock{
 			uuidMock: asset.ID,
 		}
 		expected := make(map[string]interface{})
@@ -125,7 +125,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 
 		testCase = "nil_reference"
 		var nilRef DataMap
-		UUIDImpl = UUIDImplMock{
+		UUIDImpl = &UUIDImplMock{
 			uuidMock: asset.ID,
 		}
 		expected = make(map[string]interface{})
@@ -138,7 +138,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	Interface = RepoInterface{}
+	Interface = &RepoInterface{}
 
 	return &dataSet, nil
 }

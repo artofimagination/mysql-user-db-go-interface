@@ -87,7 +87,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		DB:   db,
 		Mock: mock,
 	}
-	Functions = MYSQLFunctions{}
+	Functions = &MYSQLFunctions{}
 
 	return &dataSet, nil
 }
