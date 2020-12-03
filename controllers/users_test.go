@@ -194,7 +194,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	mysqldb.Functions = DBFunctionInterfaceMock{}
+	mysqldb.Functions = &DBFunctionInterfaceMock{}
 	mysqldb.DBConnector = &DBConnectorMock{}
 	projectdb = ProjectDBDummy{}
 	return &dataSet, nil
@@ -228,7 +228,7 @@ func TestCreateUser(t *testing.T) {
 			}
 
 			mockCopy := DBMock
-			mysqldb.Functions = DBFunctionInterfaceMock{
+			mysqldb.Functions = &DBFunctionInterfaceMock{
 				user:         mockCopy,
 				userAdded:    test.NewBool(false),
 				productAdded: test.NewBool(false),
@@ -294,7 +294,7 @@ func TestDeleteUser(t *testing.T) {
 				dbMockError = testCase.Data.(map[string]interface{})["db_mock_error"].(error)
 			}
 
-			mysqldb.Functions = DBFunctionInterfaceMock{
+			mysqldb.Functions = &DBFunctionInterfaceMock{
 				user:                 dbMockUser,
 				product:              dbMockProduct,
 				userProducts:         &dbMockUsersProducts,
@@ -311,18 +311,18 @@ func TestDeleteUser(t *testing.T) {
 				return
 			}
 
-			if !cmp.Equal(*mysqldb.Functions.(DBFunctionInterfaceMock).userDeleted, expectedUserDeleted) {
-				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(DBFunctionInterfaceMock).userDeleted, expectedUserDeleted)
+			if !cmp.Equal(*mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted) {
+				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted)
 				return
 			}
 
-			if !cmp.Equal(*mysqldb.Functions.(DBFunctionInterfaceMock).productDeleted, expectedProductDeleted) {
-				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(DBFunctionInterfaceMock).productDeleted, expectedProductDeleted)
+			if !cmp.Equal(*mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted) {
+				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted)
 				return
 			}
 
-			if !cmp.Equal(*mysqldb.Functions.(DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts) {
-				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts)
+			if !cmp.Equal(*mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts) {
+				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts)
 				return
 			}
 		})

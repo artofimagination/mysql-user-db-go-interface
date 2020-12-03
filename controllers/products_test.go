@@ -110,7 +110,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
-	mysqldb.Functions = DBFunctionInterfaceMock{}
+	mysqldb.Functions = &DBFunctionInterfaceMock{}
 	mysqldb.DBConnector = &DBConnectorMock{}
 	return &dataSet, nil
 }
@@ -240,7 +240,7 @@ func TestCreateProduct(t *testing.T) {
 			}
 
 			mockCopy := DBMock
-			mysqldb.Functions = DBFunctionInterfaceMock{
+			mysqldb.Functions = &DBFunctionInterfaceMock{
 				product:      mockCopy,
 				privileges:   privileges,
 				productAdded: test.NewBool(false),
@@ -290,7 +290,7 @@ func TestValidateUsers(t *testing.T) {
 			}
 			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
 
-			mysqldb.Functions = DBFunctionInterfaceMock{
+			mysqldb.Functions = &DBFunctionInterfaceMock{
 				privileges: privileges,
 			}
 

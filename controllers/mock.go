@@ -66,68 +66,68 @@ type DBFunctionInterfaceMock struct {
 	err                  error
 }
 
-func (i DBFunctionInterfaceMock) GetPrivileges() (models.Privileges, error) {
+func (i *DBFunctionInterfaceMock) GetPrivileges() (models.Privileges, error) {
 	return i.privileges, i.err
 }
 
-func (i DBFunctionInterfaceMock) GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
+func (i *DBFunctionInterfaceMock) GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
 	return i.user, i.err
 }
 
-func (i DBFunctionInterfaceMock) AddUser(user *models.User, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) AddUser(user *models.User, tx *sql.Tx) error {
 	*i.userAdded = true
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error {
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) AddProduct(product *models.Product, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) AddProduct(product *models.Product, tx *sql.Tx) error {
 	*i.productAdded = true
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
+func (i *DBFunctionInterfaceMock) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
 	return i.product, i.err
 }
 
-func (i DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
+func (i *DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
 	return i.userProducts, i.err
 }
 
-func (i DBFunctionInterfaceMock) DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
 	*i.productDeleted = true
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) DeleteUser(userID *uuid.UUID, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) DeleteUser(userID *uuid.UUID, tx *sql.Tx) error {
 	*i.userDeleted = true
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error {
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error {
+func (i *DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error {
 	*i.usersProductsUpdated = true
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
+func (i *DBFunctionInterfaceMock) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	return i.product, i.err
 }
 
-func (i DBFunctionInterfaceMock) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
+func (i *DBFunctionInterfaceMock) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
 	return nil, i.err
 }
 
