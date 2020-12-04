@@ -64,7 +64,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	usersProducts := models.UserProducts{
+	usersProducts := models.UserProductIDs{
 		ProductMap: make(map[uuid.UUID]int),
 	}
 
@@ -178,7 +178,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 			Expected: make(map[string]interface{}),
 		}
 
-		usersProducts = models.UserProducts{
+		usersProducts = models.UserProductIDs{
 			ProductMap: make(map[uuid.UUID]int),
 		}
 		data.Data.(map[string]interface{})["user_id"] = user.ID
@@ -289,7 +289,7 @@ func TestDeleteUser(t *testing.T) {
 
 			dbMockUser := testCase.Data.(map[string]interface{})["db_mock_user"].(*models.User)
 			dbMockProduct := testCase.Data.(map[string]interface{})["db_mock_product"].(*models.Product)
-			dbMockUsersProducts := testCase.Data.(map[string]interface{})["db_mock_users_products"].(models.UserProducts)
+			dbMockUsersProducts := testCase.Data.(map[string]interface{})["db_mock_users_products"].(models.UserProductIDs)
 
 			var dbMockError error
 			if testCase.Data.(map[string]interface{})["db_mock_error"] != nil {

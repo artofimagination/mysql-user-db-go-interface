@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func createTestUsersData() (models.ProductUsers, models.Privileges) {
+func createTestUsersData() (*models.ProductUserIDs, models.Privileges) {
 	privileges := make(models.Privileges, 2)
 	privileges[0].ID = 0
 	privileges[0].Name = "Owner"
@@ -21,9 +21,12 @@ func createTestUsersData() (models.ProductUsers, models.Privileges) {
 	privileges[1].Description = "description1"
 	mysqldb.DBConnector = DBConnectorMock{}
 
-	users := make(models.ProductUsers)
+	users := models.ProductUserIDs{
+		UserIDArray: make([]uuid.UUID, 0),
+		UserMap:     make(map[uuid.UUID]int),
+	}
 
-	return users, privileges
+	return &users, privileges
 }
 
 func createProductTestData() (*test.OrderedTests, error) {
@@ -118,7 +121,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		Expected: nil,
 	}
 
-	productUsers[userID] = 0
+	productUsers.UserMap[userID] = 0
 	data.Data.(map[string]interface{})["input"] = productUsers
 	data.Data.(map[string]interface{})["privileges"] = privileges
 
@@ -131,7 +134,10 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		Expected: ErrEmptyUsersList,
 	}
 
-	productUsers = make(models.ProductUsers)
+	productUsers = &models.ProductUserIDs{
+		UserIDArray: make([]uuid.UUID, 0),
+		UserMap:     make(map[uuid.UUID]int),
+	}
 	data.Data.(map[string]interface{})["input"] = productUsers
 	data.Data.(map[string]interface{})["privileges"] = privileges
 
@@ -156,8 +162,11 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		Expected: ErrInvalidOwnerCount,
 	}
 
-	productUsers = make(models.ProductUsers)
-	productUsers[userID] = 1
+	productUsers = &models.ProductUserIDs{
+		UserIDArray: make([]uuid.UUID, 0),
+		UserMap:     make(map[uuid.UUID]int),
+	}
+	productUsers.UserMap[userID] = 1
 	data.Data.(map[string]interface{})["input"] = productUsers
 	data.Data.(map[string]interface{})["privileges"] = privileges
 
@@ -170,13 +179,16 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		Expected: ErrInvalidOwnerCount,
 	}
 
-	productUsers = make(models.ProductUsers)
-	productUsers[userID] = 0
+	productUsers = &models.ProductUserIDs{
+		UserIDArray: make([]uuid.UUID, 0),
+		UserMap:     make(map[uuid.UUID]int),
+	}
+	productUsers.UserMap[userID] = 0
 	userID2, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
 	}
-	productUsers[userID2] = 0
+	productUsers.UserMap[userID2] = 0
 	data.Data.(map[string]interface{})["input"] = productUsers
 	data.Data.(map[string]interface{})["privileges"] = privileges
 
@@ -189,8 +201,11 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		Expected: fmt.Errorf(ErrUnknownPrivilegeString, 2, userID.String()),
 	}
 
-	productUsers = make(models.ProductUsers)
-	productUsers[userID] = 2
+	productUsers = &models.ProductUserIDs{
+		UserIDArray: make([]uuid.UUID, 0),
+		UserMap:     make(map[uuid.UUID]int),
+	}
+	productUsers.UserMap[userID] = 2
 	data.Data.(map[string]interface{})["input"] = productUsers
 	data.Data.(map[string]interface{})["privileges"] = privileges
 
@@ -274,9 +289,9 @@ func TestValidateUsers(t *testing.T) {
 			if testCase.Expected != nil {
 				expectedError = testCase.Expected.(error)
 			}
-			var input models.ProductUsers
+			var input *models.ProductUserIDs
 			if testCase.Data.(map[string]interface{})["input"] != nil {
-				input = testCase.Data.(map[string]interface{})["input"].(models.ProductUsers)
+				input = testCase.Data.(map[string]interface{})["input"].(*models.ProductUserIDs)
 			}
 			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
 

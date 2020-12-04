@@ -16,8 +16,8 @@ var ErrUnknownPrivilegeString = "Unknown privilege %d set for user %s"
 var ErrInvalidOwnerCount = errors.New("Product must have a single owner")
 var ErrProductNotFound = errors.New("The selected product not found")
 
-func validateUsers(users models.ProductUsers) error {
-	if users == nil || (users != nil && len(users) == 0) {
+func validateUsers(users *models.ProductUserIDs) error {
+	if users == nil || (users != nil && len(users.UserMap) == 0) {
 		return ErrEmptyUsersList
 	}
 
@@ -27,7 +27,7 @@ func validateUsers(users models.ProductUsers) error {
 	}
 
 	hasOwner := false
-	for ID, privilege := range users {
+	for ID, privilege := range users.UserMap {
 		if !privileges.IsValidPrivilege(privilege) {
 			return fmt.Errorf(ErrUnknownPrivilegeString, privilege, ID.String())
 		}
@@ -83,7 +83,10 @@ func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID,
 		return nil, fmt.Errorf(ErrProductExistsString, product.Name)
 	}
 
-	users := make(models.ProductUsers)
+	users := models.ProductUserIDs{
+		UserIDArray: make([]uuid.UUID, 0),
+		UserMap:     make(map[uuid.UUID]int),
+	}
 	privilege, err := mysqldb.Functions.GetPrivilege("Owner")
 	if err != nil {
 		return nil, err
@@ -101,8 +104,8 @@ func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID,
 		return nil, err
 	}
 
-	users[*owner] = privilege.ID
-	if err := mysqldb.Functions.AddProductUsers(&product.ID, users, tx); err != nil {
+	users.UserMap[*owner] = privilege.ID
+	if err := mysqldb.Functions.AddProductUsers(&product.ID, &users, tx); err != nil {
 		return nil, err
 	}
 

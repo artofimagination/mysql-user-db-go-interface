@@ -21,12 +21,24 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hi! I am an example server!")
 }
 
-func addUser(w http.ResponseWriter, r *http.Request) {
-	log.Println("Adding user")
-	if r.Method != "POST" {
+const (
+	POST = "POST"
+	GET  = "GET"
+)
+
+func checkRequestType(requestTypeString string, w http.ResponseWriter, r *http.Request) error {
+	if r.Method != requestTypeString {
 		w.WriteHeader(http.StatusBadRequest)
 		errorString := fmt.Sprintf("Invalid request type %s", r.Method)
 		fmt.Fprint(w, errorString)
+		return errors.New(errorString)
+	}
+	return nil
+}
+
+func addUser(w http.ResponseWriter, r *http.Request) {
+	log.Println("Adding user")
+	if err := checkRequestType(POST, w, r); err != nil {
 		return
 	}
 
@@ -111,10 +123,7 @@ func queryUser(r *http.Request) (*models.UserData, error) {
 
 func getUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Getting user")
-	if r.Method != "GET" {
-		w.WriteHeader(http.StatusBadRequest)
-		errorString := fmt.Sprintf("Invalid request type %s", r.Method)
-		fmt.Fprint(w, errorString)
+	if err := checkRequestType(GET, w, r); err != nil {
 		return
 	}
 
@@ -145,22 +154,59 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 
 func deleteUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Deleting user")
-	userData, err := queryUser(r)
+	if err := checkRequestType(POST, w, r); err != nil {
+		return
+	}
+
+	data := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, err.Error())
-			return
-		}
-		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
+		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
 		fmt.Fprint(w, err.Error())
 		return
 	}
 
-	nominees := make(map[uuid.UUID]uuid.UUID)
+	// Parse data info
+	userIDString, ok := data["id"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Missing 'id'")
+		return
+	}
 
-	err = dbController.DeleteUser(&userData.ID, nominees)
+	id, err := uuid.Parse(userIDString.(string))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Invalid 'id'")
+		return
+	}
+
+	nominees := make(map[uuid.UUID]uuid.UUID)
+	nomineesMap, ok := data["nominees"]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Missing 'nominees'")
+		return
+	}
+
+	for productIDString, nomineeIDString := range nomineesMap.(map[string]interface{}) {
+		productID, err := uuid.Parse(productIDString)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, "Invalid 'product id'")
+			return
+		}
+		nomineeID, err := uuid.Parse(nomineeIDString.(string))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, "Invalid 'nominee id'")
+			return
+		}
+		nominees[productID] = nomineeID
+	}
+
+	err = dbController.DeleteUser(&id, nominees)
 	if err != nil {
 		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
 			w.WriteHeader(http.StatusAccepted)
@@ -262,10 +308,7 @@ func updateUserAssets(w http.ResponseWriter, r *http.Request) {
 
 func addProduct(w http.ResponseWriter, r *http.Request) {
 	log.Println("Adding product")
-	if r.Method != "POST" {
-		w.WriteHeader(http.StatusBadRequest)
-		errorString := fmt.Sprintf("Invalid request type %s", r.Method)
-		fmt.Fprint(w, errorString)
+	if err := checkRequestType(POST, w, r); err != nil {
 		return
 	}
 
@@ -282,7 +325,7 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 	productJSON, ok := data["product"]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'name'")
+		fmt.Fprint(w, "Missing 'product'")
 		return
 	}
 
@@ -365,6 +408,9 @@ func queryProduct(r *http.Request) (*models.ProductData, error) {
 
 func getProduct(w http.ResponseWriter, r *http.Request) {
 	log.Println("Getting product")
+	if err := checkRequestType(GET, w, r); err != nil {
+		return
+	}
 
 	productData, err := queryProduct(r)
 	if err != nil {
@@ -452,6 +498,13 @@ func deleteProduct(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Product delete completed")
 }
 
+func addProductUser(w http.ResponseWriter, r *http.Request) {
+	log.Println("Adding product user")
+	if err := checkRequestType(POST, w, r); err != nil {
+		return
+	}
+}
+
 func main() {
 	http.HandleFunc("/", sayHello)
 	http.HandleFunc("/add-user", addUser)
@@ -459,6 +512,7 @@ func main() {
 	http.HandleFunc("/update-user-settings", updateUserSettings)
 	http.HandleFunc("/update-user-assets", updateUserAssets)
 	http.HandleFunc("/delete-user", deleteUser)
+	http.HandleFunc("/add-product-user", addProductUser)
 	http.HandleFunc("/authenticate-user", authenticateUser)
 	http.HandleFunc("/add-product", addProduct)
 	http.HandleFunc("/get-product", getProduct)

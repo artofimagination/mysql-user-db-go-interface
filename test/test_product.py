@@ -35,10 +35,22 @@ createTestData = [
       }
     },
     # Expected
-    "Product with name testProduct already exists")
+    "Product with name testProduct already exists"),
+
+    # Input data
+    ({
+      "product": {
+        "name": "testProductMissingUser",
+        "public": True
+      },
+      "user_id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    },
+    # Expected
+    "Details: Failed to create product: Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`users_products`, CONSTRAINT `users_products_ibfk_2` FOREIGN KEY (`users_id`) REFERENCES `users` (`id`))")
+    
 ]
 
-ids=['No existing product', 'Existing product']
+ids=['No existing product', 'Existing product', 'Missing user']
 
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_CreateProduct(httpConnection, data, expected):
@@ -59,6 +71,9 @@ def test_CreateProduct(httpConnection, data, expected):
     
     dataToSend["product"] = data["product"]
     dataToSend["user"] = response["ID"]
+  elif "user_id" in data:
+    dataToSend["product"] = data["product"]
+    dataToSend["user"] = data["user_id"]
   else:
     dataToSend = data
 
@@ -83,6 +98,7 @@ def test_CreateProduct(httpConnection, data, expected):
     return
 
 createTestData = [
+    # Input data
     ({
       "product": {
         "name": "testProductGet",
@@ -94,14 +110,18 @@ createTestData = [
         "password": "testPassword"
       }
     },
+    # Expected
     { 
       'Name': 'testProductGet',
       'Public': True,
       'base_asset_path': 'testPath'
     }),
+
+    # Input data
     ({
       "id": "c34a7368-344a-11eb-adc1-0242ac120002"
     },
+    # Expected
     "The selected product not found")
 ]
 
@@ -129,6 +149,9 @@ def test_GetProduct(httpConnection, data, expected):
   if "product" in data:
     dataToSend = dict()
     dataToSend["product"] = data["product"]
+    if userUUID == "":
+      pytest.fail(f"Missing user test data")
+      return
     dataToSend["user"] = userUUID
     try:
       r = httpConnection.POST("/add-product", dataToSend)

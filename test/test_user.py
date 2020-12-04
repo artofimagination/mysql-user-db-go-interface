@@ -14,12 +14,14 @@ createTestData = [
       "Email":"testEmail",
       "Password":"dGVzdFBhc3N3b3Jk",
     }),
+
     ({
       'name': 'testUser',
       'email': 'testEmail',
       'password': 'testPassword'
     },
     "User with this email already exists"),
+    
     ({
       'name': 'testUser',
       'email': 'testEmailNew',
@@ -63,6 +65,7 @@ createTestData = [
       "Name":"testUserGet",
       "Email":"testEmailGet",
     }),
+
     ({
       "id": "c34a7368-344a-11eb-adc1-0242ac120002"
     },
@@ -117,31 +120,35 @@ def test_GetUser(httpConnection, data, expected):
     pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
     return
 
-# createTestData = [
-#     ({
-#       "user_to_delete": {
-#         "name": "testUserDelete",
-#         "email": "testEmailDelete",
-#         'password': 'testPassword'
-#       },
-#       "nominated_users": [{
-#           "name": "testUserNominated1",
-#           "email": "testEmailNominated1",
-#           'password': 'testPassword'
-#         },
-#         {
-#           "name": "testUserNominated2",
-#           "email": "testEmailNominated2",
-#           'password': 'testPassword'
-#         }
-#       ]
-#     },
-#     "Delete completed"),
-#     ({
-#       "id": "c34a7368-344a-11eb-adc1-0242ac120002"
-#     },
-#     "The selected user not found")
-# ]
+createTestData = [
+    # Input data
+    ({
+      "user_to_delete": {
+        "name": "testUserDelete",
+        "email": "testEmailDelete",
+        'password': 'testPassword'
+      },
+      "products_to_delete": [{
+        "name": "testProductDelete",
+        "public": True,
+      }],
+      "nominated_users": [{
+          "name": "testUserNominated1",
+          "email": "testEmailNominated1",
+          'password': 'testPassword'
+        }
+      ]
+    },
+    # Expected
+    "Delete completed"),
+    
+    # Input data
+    ({
+      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    },
+    # Expected
+    "The selected user not found")
+]
 
 # ids=['Existing user', 'Non existing user']
 

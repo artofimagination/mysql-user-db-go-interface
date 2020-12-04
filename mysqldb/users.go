@@ -154,3 +154,37 @@ func (MYSQLFunctions) DeleteUser(ID *uuid.UUID, tx *sql.Tx) error {
 
 	return nil
 }
+
+var GetProductUserIDsQuery = "SELECT BIN_TO_UUID(users_id), privileges_id FROM users_products where products_id = UUID_TO_BIN(?)"
+
+func (MYSQLFunctions) GetProductUserIDs(productID *uuid.UUID, tx *sql.Tx) (*models.ProductUserIDs, error) {
+	rows, err := tx.Query(GetProductUserIDsQuery, productID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
+	}
+
+	defer rows.Close()
+	productUsers := models.ProductUserIDs{
+		UserMap:     make(map[uuid.UUID]int),
+		UserIDArray: make([]uuid.UUID, 0),
+	}
+	for rows.Next() {
+		userID := uuid.UUID{}
+		privilege := -1
+		err := rows.Scan(&userID, &privilege)
+		if err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		productUsers.UserMap[userID] = privilege
+		productUsers.UserIDArray = append(productUsers.UserIDArray, userID)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+	return &productUsers, nil
+}

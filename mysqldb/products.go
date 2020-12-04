@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrNoProductsForUser = errors.New("This user has no products")
 var ErrSQLDuplicateProductNameEntryString = "Duplicate entry '%s' for key 'products.name'"
 var ErrDuplicateProductNameEntry = errors.New("Product with this name already exists")
 var ErrNoUserWithProduct = errors.New("No user is associated to this product")
@@ -18,8 +17,8 @@ var ErrNoUsersProductUpdate = errors.New("No users product was updated")
 
 var AddProductUsersQuery = "INSERT INTO users_products (users_id, products_id, privileges_id) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
 
-func (MYSQLFunctions) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
-	for userID, privilege := range productUsers {
+func (MYSQLFunctions) AddProductUsers(productID *uuid.UUID, productUsers *models.ProductUserIDs, tx *sql.Tx) error {
+	for userID, privilege := range productUsers.UserMap {
 		_, err := tx.Exec(AddProductUsersQuery, userID, productID, privilege)
 		if err != nil {
 			return RollbackWithErrorStack(tx, err)
@@ -115,7 +114,7 @@ func (MYSQLFunctions) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product,
 
 var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privileges_id FROM users_products where users_id = UUID_TO_BIN(?)"
 
-func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
+func (MYSQLFunctions) GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProductIDs, error) {
 	rows, err := tx.Query(GetUserProductIDsQuery, userID)
 	switch {
 	case err == sql.ErrNoRows:
@@ -126,7 +125,7 @@ func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.U
 	}
 
 	defer rows.Close()
-	userProducts := models.UserProducts{
+	userProducts := models.UserProductIDs{
 		ProductMap:     make(map[uuid.UUID]int),
 		ProductIDArray: make([]uuid.UUID, 0),
 	}
@@ -145,39 +144,6 @@ func (MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.U
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 	return &userProducts, nil
-}
-
-// GetProductsByUserID returns all products belonging to the selected user.
-// The function first gets all rows matching with the user DI from users_products table,
-// then gets all products based on the product ids from the first query result.
-func (MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
-
-	ownershipMap, err := Functions.GetUserProductIDs(userID, tx)
-	switch {
-	case err == sql.ErrNoRows:
-		if err := tx.Commit(); err != nil {
-			return nil, err
-		}
-		return nil, sql.ErrNoRows
-	case err != nil:
-		return nil, RollbackWithErrorStack(tx, err)
-	default:
-	}
-
-	products := []models.Product{}
-	for _, productID := range ownershipMap.ProductIDArray {
-		product, err := Functions.GetProductByID(productID, tx)
-		if err != nil {
-			return nil, RollbackWithErrorStack(tx, err)
-		}
-		products = append(products, *product)
-	}
-
-	return products, tx.Commit()
 }
 
 var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE name = ?"

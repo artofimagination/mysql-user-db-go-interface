@@ -62,7 +62,8 @@ type DBFunctionInterfaceMock struct {
 	productDeleted       *bool
 	usersProductsUpdated *bool
 	privileges           models.Privileges
-	userProducts         *models.UserProducts
+	userProducts         *models.UserProductIDs
+	productUsers         *models.ProductUserIDs
 	err                  error
 }
 
@@ -83,6 +84,10 @@ func (i DBFunctionInterfaceMock) AddUser(user *models.User, tx *sql.Tx) error {
 	return i.err
 }
 
+func (i DBFunctionInterfaceMock) GetProductUserIDs(productID *uuid.UUID, tx *sql.Tx) (*models.ProductUserIDs, error) {
+	return i.productUsers, i.err
+}
+
 func (i DBFunctionInterfaceMock) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
 	return i.err
 }
@@ -91,7 +96,7 @@ func (i DBFunctionInterfaceMock) DeleteAsset(assetType string, assetID *uuid.UUI
 	return i.err
 }
 
-func (i DBFunctionInterfaceMock) AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error {
+func (i DBFunctionInterfaceMock) AddProductUsers(productID *uuid.UUID, productUsers *models.ProductUserIDs, tx *sql.Tx) error {
 	return i.err
 }
 
@@ -104,7 +109,7 @@ func (i DBFunctionInterfaceMock) GetProductByName(name string, tx *sql.Tx) (*mod
 	return i.product, i.err
 }
 
-func (i DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
+func (i DBFunctionInterfaceMock) GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProductIDs, error) {
 	return i.userProducts, i.err
 }
 
@@ -129,10 +134,6 @@ func (i DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, productI
 
 func (i DBFunctionInterfaceMock) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	return i.product, i.err
-}
-
-func (i DBFunctionInterfaceMock) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
-	return nil, i.err
 }
 
 // DBConnectorMock overwrites the mysqldb package implementations for DB connectionwith mock code.

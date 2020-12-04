@@ -100,9 +100,9 @@ func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]u
 	}
 
 	// Has products?
-	userProducts, err := mysqldb.Functions.GetUserProductIDs(user.ID, tx)
+	userProducts, err := mysqldb.Functions.GetUserProductIDs(&user.ID, tx)
 	if err != nil {
-		if err != mysqldb.ErrNoProductsForUser {
+		if err != sql.ErrNoRows {
 			return err
 		}
 	}
