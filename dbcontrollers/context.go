@@ -32,6 +32,10 @@ type DBControllerCommon interface {
 
 type MYSQLController struct{}
 
+func SetProjectDB(db ProjectDBCommon) {
+	projectdb = db
+}
+
 func NewDBController() (*MYSQLController, error) {
 	address := os.Getenv("MYSQL_DB_ADDRESS")
 	if address == "" {

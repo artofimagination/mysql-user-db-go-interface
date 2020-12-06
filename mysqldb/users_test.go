@@ -19,7 +19,17 @@ const (
 	AddUserTest           = 1
 	DeleteUserTest        = 2
 	GetProductUserIDsTest = 3
+	DeleteProductUserTest = 4
 )
+
+type UserExpectedTestData struct {
+	err error
+}
+
+type UserInputTestData struct {
+	productID uuid.UUID
+	user      models.User
+}
 
 func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error) {
 	dbConnector := DBConnectorMock{}
@@ -74,6 +84,11 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 	}
 
 	productUsers, err := createTestProductUsersData()
+	if err != nil {
+		return nil, dbConnector, err
+	}
+
+	productID, err := uuid.NewUUID()
 	if err != nil {
 		return nil, dbConnector, err
 	}
@@ -266,6 +281,25 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
+	case DeleteProductUserTest:
+		testCase := "valid_ids"
+		expected := UserExpectedTestData{
+			err: nil,
+		}
+		input := UserInputTestData{
+			user:      user,
+			productID: productID,
+		}
+
+		mock.ExpectBegin()
+		mock.ExpectExec(DeleteProductUserQuery).WithArgs(productID, user.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     input,
+			Expected: expected,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
 	default:
 		return nil, dbConnector, fmt.Errorf("Unknown test %d", testID)
 	}
@@ -432,6 +466,37 @@ func TestGetProductUserIDs(t *testing.T) {
 
 			if !test.ErrEqual(err, expectedError) {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				return
+			}
+		})
+	}
+}
+
+func TestDeleteProductUser(t *testing.T) {
+	// Create test data
+	dataSet, dbConnector, err := createUsersTestData(DeleteProductUserTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	defer dbConnector.DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			tx, err := dbConnector.DB.Begin()
+			if err != nil {
+				t.Errorf("Failed to setup DB transaction %s", err)
+				return
+			}
+			expected := dataSet.TestDataSet[testCaseString].Expected.(UserExpectedTestData)
+			input := dataSet.TestDataSet[testCaseString].Data.(UserInputTestData)
+
+			err = Functions.DeleteProductUser(&input.productID, &input.user.ID, tx)
+			if !test.ErrEqual(err, expected.err) {
+				t.Errorf(test.TestResultString, testCaseString, err, expected.err)
 				return
 			}
 		})

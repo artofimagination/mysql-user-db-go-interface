@@ -12,6 +12,7 @@ import (
 var ErrSQLDuplicateProductNameEntryString = "Duplicate entry '%s' for key 'products.name'"
 var ErrDuplicateProductNameEntry = errors.New("Product with this name already exists")
 var ErrNoUserWithProduct = errors.New("No user is associated to this product")
+var ErrNoProductUserAdded = errors.New("No product user relation has been added")
 var ErrNoProductDeleted = errors.New("No product was deleted")
 var ErrNoUsersProductUpdate = errors.New("No users product was updated")
 
@@ -19,9 +20,21 @@ var AddProductUsersQuery = "INSERT INTO users_products (users_id, products_id, p
 
 func (MYSQLFunctions) AddProductUsers(productID *uuid.UUID, productUsers *models.ProductUserIDs, tx *sql.Tx) error {
 	for userID, privilege := range productUsers.UserMap {
-		_, err := tx.Exec(AddProductUsersQuery, userID, productID, privilege)
+		result, err := tx.Exec(AddProductUsersQuery, userID, productID, privilege)
 		if err != nil {
 			return RollbackWithErrorStack(tx, err)
+		}
+
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return RollbackWithErrorStack(tx, err)
+		}
+
+		if affected == 0 {
+			if errRb := tx.Rollback(); errRb != nil {
+				return err
+			}
+			return ErrNoProductUserAdded
 		}
 	}
 	return nil

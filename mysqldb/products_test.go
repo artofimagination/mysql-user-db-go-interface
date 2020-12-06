@@ -188,6 +188,22 @@ func createProductsTestData(testID int) (*test.OrderedTests, DBConnectorMock, er
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
+		testCase = "failed_to_add"
+		data = test.Data{
+			Data:     make(map[string]interface{}),
+			Expected: ErrNoProductUserAdded,
+		}
+		data.Data.(map[string]interface{})["product_id"] = product.ID
+		data.Data.(map[string]interface{})["product_users"] = productUsers
+		mock.ExpectBegin()
+		for _, userID := range productUsers.UserIDArray {
+			privilege := productUsers.UserMap[userID]
+			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnResult(sqlmock.NewResult(1, 0))
+		}
+		mock.ExpectRollback()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
 	case DeleteProductUsersByProductIDTest:
 
 		testCase := "valid_id"

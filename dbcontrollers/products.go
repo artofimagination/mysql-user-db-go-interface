@@ -191,3 +191,45 @@ func (MYSQLController) UpdateProductDetails(details *models.Asset) error {
 func (MYSQLController) UpdateProductAssets(assets *models.Asset) error {
 	return mysqldb.UpdateAsset(mysqldb.ProductAssets, assets)
 }
+
+func (MYSQLController) UpdateProductUser(productID *uuid.UUID, userID *uuid.UUID, privilege int) error {
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return err
+	}
+
+	return mysqldb.DBConnector.Commit(tx)
+}
+
+func (c MYSQLController) GetProductsByUserID(userID *uuid.UUID) ([]models.UserProduct, error) {
+	products := make([]models.UserProduct, 0)
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	ownershipMap, err := mysqldb.Functions.GetUserProductIDs(userID, tx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrNoProductsForUser
+		}
+		return nil, err
+	}
+
+	for productID, privilege := range ownershipMap.ProductMap {
+		productID := productID
+		product, err := c.GetProduct(&productID)
+		if err != nil {
+			return nil, err
+		}
+
+		userProduct := models.UserProduct{
+			ProductData: *product,
+			Privilege:   privilege,
+		}
+
+		products = append(products, userProduct)
+	}
+
+	return products, mysqldb.DBConnector.Commit(tx)
+}

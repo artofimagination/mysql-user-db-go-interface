@@ -218,20 +218,16 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = queryUser(r)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, "Delete completed")
-			return
-		}
+	_, err = dbController.GetUser(&id)
+	if err != nil && err.Error() != dbcontrollers.ErrUserNotFound.Error() {
 		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, "Data still exists")
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "Delete completed")
 }
 
 func authenticateUser(w http.ResponseWriter, r *http.Request) {
@@ -503,6 +499,94 @@ func addProductUser(w http.ResponseWriter, r *http.Request) {
 	if err := checkRequestType(POST, w, r); err != nil {
 		return
 	}
+
+	data := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	productID, err := uuid.Parse(data["product_id"].(string))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Invalid 'productID'")
+		return
+	}
+
+	for _, users := range data["users"].([]interface{}) {
+		userData := users.(map[string]interface{})
+		userID, err := uuid.Parse(userData["id"].(string))
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, "Invalid 'productID'")
+			return
+		}
+
+		privilege := userData["privilege"].(float64)
+		if err := dbController.AddProductUser(&productID, &userID, int(privilege)); err != nil {
+			if err.Error() == dbcontrollers.ErrProductNotFound.Error() ||
+				err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
+				w.WriteHeader(http.StatusAccepted)
+				fmt.Fprint(w, err.Error())
+				return
+			}
+			err = errors.Wrap(errors.WithStack(err), "Failed to add product user")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprint(w, "Add product user completed")
+}
+
+func deleteProductUser(w http.ResponseWriter, r *http.Request) {
+	log.Println("Deleting product user")
+	if err := checkRequestType(POST, w, r); err != nil {
+		return
+	}
+
+	data := make(map[string]interface{})
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	productID, err := uuid.Parse(data["product_id"].(string))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Invalid 'productID'")
+		return
+	}
+
+	userID, err := uuid.Parse(data["user_id"].(string))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Invalid 'userID'")
+		return
+	}
+
+	if err := dbController.DeleteProductUser(&productID, &userID); err != nil {
+		if err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to delete product user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "Delete product user completed")
 }
 
 func main() {
@@ -513,6 +597,7 @@ func main() {
 	http.HandleFunc("/update-user-assets", updateUserAssets)
 	http.HandleFunc("/delete-user", deleteUser)
 	http.HandleFunc("/add-product-user", addProductUser)
+	http.HandleFunc("/delete-product-user", deleteProductUser)
 	http.HandleFunc("/authenticate-user", authenticateUser)
 	http.HandleFunc("/add-product", addProduct)
 	http.HandleFunc("/get-product", getProduct)
@@ -524,6 +609,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	project := dbcontrollers.ProjectDBDummy{}
+	dbcontrollers.SetProjectDB(project)
 	dbController = controller
 
 	mysqldb.DBConnection = fmt.Sprintf("%s:%s@tcp(user-db:3306)/%s?parseTime=true", os.Getenv("MYSQL_DB_USER"), os.Getenv("MYSQL_DB_PASSWORD"), os.Getenv("MYSQL_DB_NAME"))

@@ -46,8 +46,7 @@ createTestData = [
       "user_id": "c34a7368-344a-11eb-adc1-0242ac120002"
     },
     # Expected
-    "Details: Failed to create product: Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`users_products`, CONSTRAINT `users_products_ibfk_2` FOREIGN KEY (`users_id`) REFERENCES `users` (`id`))")
-    
+    "Failed to create product: Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`users_products`, CONSTRAINT `users_products_ibfk_2` FOREIGN KEY (`users_id`) REFERENCES `users` (`id`))") 
 ]
 
 ids=['No existing product', 'Existing product', 'Missing user']
@@ -94,7 +93,8 @@ def test_CreateProduct(httpConnection, data, expected):
       pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
     return
   else:
-    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
+    if r.text != expected:
+      pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
     return
 
 createTestData = [

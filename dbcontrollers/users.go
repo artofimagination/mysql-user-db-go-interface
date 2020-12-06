@@ -14,6 +14,8 @@ var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
 var ErrDuplicateNameEntry = errors.New("User with this name already exists")
 var ErrUserNotFound = errors.New("The selected user not found")
 var ErrInvalidEmailOrPasswd = errors.New("Invalid email or password")
+var ErrNoProductsForUser = errors.New("This user has no products")
+var ErrProductUserNotAssociated = errors.New("Unable to associate the product with the selected user")
 
 func (MYSQLController) CreateUser(
 	name string,
@@ -139,6 +141,12 @@ func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]u
 				if err := mysqldb.Functions.UpdateUsersProducts(&nominated, &productID, 0, tx); err != nil {
 					return err
 				}
+				if err := mysqldb.Functions.DeleteProductUser(&productID, ID, tx); err != nil {
+					if err == mysqldb.ErrNoUserWithProduct {
+						return ErrProductUserNotAssociated
+					}
+					return err
+				}
 			}
 		}
 	}
@@ -222,6 +230,77 @@ func (MYSQLController) Authenticate(email string, passwd []byte, authenticate fu
 	}
 
 	if err := authenticate(email, passwd, user); err != nil {
+		return err
+	}
+
+	return mysqldb.DBConnector.Commit(tx)
+}
+
+func (c MYSQLController) GetUsersByProductID(productID *uuid.UUID) ([]models.ProductUser, error) {
+	users := make([]models.ProductUser, 0)
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	ownershipMap, err := mysqldb.Functions.GetProductUserIDs(productID, tx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrNoProductsForUser
+		}
+		return nil, err
+	}
+
+	for userID, privilege := range ownershipMap.UserMap {
+		userID := userID
+		user, err := c.GetUser(&userID)
+		if err != nil {
+			return nil, err
+		}
+
+		productUser := models.ProductUser{
+			UserData:  *user,
+			Privilege: privilege,
+		}
+
+		users = append(users, productUser)
+	}
+
+	return users, mysqldb.DBConnector.Commit(tx)
+}
+
+func (MYSQLController) AddProductUser(productID *uuid.UUID, userID *uuid.UUID, privilege int) error {
+	productUsers := models.ProductUserIDs{
+		UserIDArray: make([]uuid.UUID, 0),
+		UserMap:     make(map[uuid.UUID]int),
+	}
+	productUsers.UserMap[*userID] = privilege
+
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.AddProductUsers(productID, &productUsers, tx); err != nil {
+		if err == mysqldb.ErrNoProductUserAdded {
+			return ErrProductUserNotAssociated
+		}
+		return err
+	}
+
+	return mysqldb.DBConnector.Commit(tx)
+}
+
+func (MYSQLController) DeleteProductUser(productID *uuid.UUID, userID *uuid.UUID) error {
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteProductUser(productID, userID, tx); err != nil {
+		if err == mysqldb.ErrNoUserWithProduct {
+			return ErrProductUserNotAssociated
+		}
 		return err
 	}
 

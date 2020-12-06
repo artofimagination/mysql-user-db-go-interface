@@ -12,6 +12,11 @@ type ProductData struct {
 	Details Asset
 }
 
+type UserProduct struct {
+	ProductData ProductData
+	Privilege   int
+}
+
 type Product struct {
 	ID        uuid.UUID `validation:"required"`
 	Name      string    `validation:"required"`
@@ -27,11 +32,14 @@ type Privilege struct {
 }
 
 type Privileges []Privilege
-type UserProducts struct {
+type UserProductIDs struct {
 	ProductMap     map[uuid.UUID]int
 	ProductIDArray []uuid.UUID
 }
-type ProductUsers map[uuid.UUID]int
+type ProductUserIDs struct {
+	UserMap     map[uuid.UUID]int
+	UserIDArray []uuid.UUID
+}
 
 func (l Privileges) IsValidPrivilege(privilege int) bool {
 	for _, value := range l {

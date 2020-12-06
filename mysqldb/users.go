@@ -188,3 +188,26 @@ func (MYSQLFunctions) GetProductUserIDs(productID *uuid.UUID, tx *sql.Tx) (*mode
 	}
 	return &productUsers, nil
 }
+
+var DeleteProductUserQuery = "DELETE FROM users_products where products_id = UUID_TO_BIN(?) AND users_id = UUID_TO_BIN(?)"
+
+func (MYSQLFunctions) DeleteProductUser(productID *uuid.UUID, userID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProductUserQuery, productID, userID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoUserWithProduct
+	}
+
+	return nil
+}

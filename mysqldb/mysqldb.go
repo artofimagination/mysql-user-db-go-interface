@@ -39,6 +39,7 @@ type FunctionCommonInterface interface {
 	UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error
 	AddProductUsers(productID *uuid.UUID, productUsers *models.ProductUserIDs, tx *sql.Tx) error
 	DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error
+	DeleteProductUser(productID *uuid.UUID, userID *uuid.UUID, tx *sql.Tx) error
 	GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProductIDs, error)
 
 	GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error)

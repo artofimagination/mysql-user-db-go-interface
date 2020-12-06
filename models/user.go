@@ -19,6 +19,11 @@ type UserData struct {
 	Assets   Asset
 }
 
+type ProductUser struct {
+	UserData  UserData
+	Privilege int
+}
+
 // User defines the user structures. Each user must have an associated settings entry.
 type User struct {
 	ID         uuid.UUID

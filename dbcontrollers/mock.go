@@ -127,6 +127,10 @@ func (i DBFunctionInterfaceMock) DeleteProductUsersByProductID(productID *uuid.U
 	return i.err
 }
 
+func (i DBFunctionInterfaceMock) DeleteProductUser(productID *uuid.UUID, userID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
 func (i DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error {
 	*i.usersProductsUpdated = true
 	return i.err
