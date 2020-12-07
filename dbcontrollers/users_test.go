@@ -73,6 +73,24 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		Public: true,
 	}
 
+	dataMap := make(models.DataMap)
+	assets := models.Asset{
+		ID:      assetID,
+		DataMap: dataMap,
+	}
+
+	settings := models.Asset{
+		ID:      settingsID,
+		DataMap: dataMap,
+	}
+
+	userData := models.UserData{
+		ID:       product.ID,
+		Name:     product.Name,
+		Settings: settings,
+		Assets:   assets,
+	}
+
 	privileges := make(models.Privileges, 2)
 	privileges[0].ID = 0
 	privileges[0].Name = "Owner"
@@ -89,9 +107,10 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["input"] = user
+		data.Data.(map[string]interface{})["input"] = userData
+		data.Data.(map[string]interface{})["password"] = user.Password
 		data.Data.(map[string]interface{})["db_mock"] = nil
-		data.Expected.(map[string]interface{})["data"] = &user
+		data.Expected.(map[string]interface{})["data"] = &userData
 		data.Expected.(map[string]interface{})["error"] = nil
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -102,7 +121,8 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["input"] = user
+		data.Data.(map[string]interface{})["input"] = userData
+		data.Data.(map[string]interface{})["password"] = user.Password
 		data.Data.(map[string]interface{})["db_mock"] = &user
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = ErrDuplicateEmailEntry
@@ -215,19 +235,21 @@ func TestCreateUser(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedData *models.User
+			var expectedData *models.UserData
 			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.User)
+				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.UserData)
 			}
 			var expectedError error
 			if testCase.Expected.(map[string]interface{})["error"] != nil {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
-			input := testCase.Data.(map[string]interface{})["input"].(models.User)
+			input := testCase.Data.(map[string]interface{})["input"].(models.UserData)
 			var DBMock *models.User
 			if testCase.Data.(map[string]interface{})["db_mock"] != nil {
 				DBMock = testCase.Data.(map[string]interface{})["db_mock"].(*models.User)
 			}
+
+			password := testCase.Data.(map[string]interface{})["password"].([]byte)
 
 			mockCopy := DBMock
 			mysqldb.Functions = DBFunctionInterfaceMock{
@@ -239,16 +261,23 @@ func TestCreateUser(t *testing.T) {
 			output, err := dbController.CreateUser(
 				input.Name,
 				input.Email,
-				input.Password,
+				password,
 				func(*uuid.UUID) string {
 					return "testPath"
 				}, func([]byte) ([]byte, error) {
 					return []byte{}, nil
 				})
 
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
-				return
+			if output != nil {
+				if output.Name != expectedData.Name || output.Email != expectedData.Email {
+					t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+					return
+				}
+			} else {
+				if output != expectedData {
+					t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+					return
+				}
 			}
 
 			if !test.ErrEqual(err, expectedError) {

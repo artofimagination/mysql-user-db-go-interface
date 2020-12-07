@@ -43,8 +43,7 @@ def test_CreateUser(httpConnection, data, expected):
   if r.status_code == 201:
     response = json.loads(r.text)
     if response["Name"] != expected["Name"] or \
-      response["Email"] != expected["Email"] or \
-      response["Password"] != expected["Password"]:
+      response["Email"] != expected["Email"]:
       pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
       return
   elif r.status_code == 202:

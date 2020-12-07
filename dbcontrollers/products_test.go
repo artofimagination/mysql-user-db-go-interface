@@ -7,7 +7,6 @@ import (
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 )
 
@@ -67,17 +66,36 @@ func createProductTestData() (*test.OrderedTests, error) {
 		return nil, err
 	}
 
+	dataMap := make(models.DataMap)
+	assets := models.Asset{
+		ID:      assetID,
+		DataMap: dataMap,
+	}
+
+	details := models.Asset{
+		ID:      assetID,
+		DataMap: dataMap,
+	}
+
+	productData := models.ProductData{
+		ID:      product.ID,
+		Name:    product.Name,
+		Public:  product.Public,
+		Details: details,
+		Assets:  assets,
+	}
+
 	testCase := "no_existing_product"
 	data := test.Data{
 		Data:     make(map[string]interface{}),
 		Expected: make(map[string]interface{}),
 	}
 
-	data.Data.(map[string]interface{})["input"] = product
+	data.Data.(map[string]interface{})["input"] = productData
 	data.Data.(map[string]interface{})["db_mock"] = nil
 	data.Data.(map[string]interface{})["user_id"] = userID
 	data.Data.(map[string]interface{})["privileges"] = privileges
-	data.Expected.(map[string]interface{})["data"] = &product
+	data.Expected.(map[string]interface{})["data"] = &productData
 	data.Expected.(map[string]interface{})["error"] = nil
 	dataSet.TestDataSet[testCase] = data
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -88,7 +106,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 		Expected: make(map[string]interface{}),
 	}
 
-	data.Data.(map[string]interface{})["input"] = product
+	data.Data.(map[string]interface{})["input"] = productData
 	data.Data.(map[string]interface{})["db_mock"] = &product
 	data.Data.(map[string]interface{})["user_id"] = userID
 	data.Data.(map[string]interface{})["privileges"] = privileges
@@ -228,15 +246,15 @@ func TestCreateProduct(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedData *models.Product
+			var expectedData *models.ProductData
 			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.Product)
+				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.ProductData)
 			}
 			var expectedError error
 			if testCase.Expected.(map[string]interface{})["error"] != nil {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
-			input := testCase.Data.(map[string]interface{})["input"].(models.Product)
+			input := testCase.Data.(map[string]interface{})["input"].(models.ProductData)
 			userID := testCase.Data.(map[string]interface{})["user_id"].(uuid.UUID)
 			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
 			var DBMock *models.Product
@@ -259,9 +277,16 @@ func TestCreateProduct(t *testing.T) {
 					return "testPath"
 				})
 
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
-				return
+			if output != nil {
+				if output.Name != expectedData.Name || output.Public != expectedData.Public {
+					t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+					return
+				}
+			} else {
+				if output != expectedData {
+					t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+					return
+				}
 			}
 
 			if !test.ErrEqual(err, expectedError) {

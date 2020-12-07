@@ -16,13 +16,15 @@ var ErrUserNotFound = errors.New("The selected user not found")
 var ErrInvalidEmailOrPasswd = errors.New("Invalid email or password")
 var ErrNoProductsForUser = errors.New("This user has no products")
 var ErrProductUserNotAssociated = errors.New("Unable to associate the product with the selected user")
+var ErrMissingUserSettings = errors.New("Settings for the selected user not found")
+var ErrMissingUserAssets = errors.New("Assets for the selected user not found")
 
 func (MYSQLController) CreateUser(
 	name string,
 	email string,
 	passwd []byte,
 	generateAssetPath func(assetID *uuid.UUID) string,
-	encryptPassword func(password []byte) ([]byte, error)) (*models.User, error) {
+	encryptPassword func(password []byte) ([]byte, error)) (*models.UserData, error) {
 
 	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
@@ -80,7 +82,15 @@ func (MYSQLController) CreateUser(
 		return nil, err
 	}
 
-	return user, mysqldb.DBConnector.Commit(tx)
+	userData := models.UserData{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		Settings: *userSettings,
+		Assets:   *asset,
+	}
+
+	return &userData, mysqldb.DBConnector.Commit(tx)
 }
 
 func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
@@ -126,10 +136,6 @@ func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]u
 			nominated, hasNominatedOwner := nominatedOwners[productID]
 			if nominatedOwners == nil || !hasNominatedOwner {
 				if err := projectdb.DeleteProjects(productID); err != nil {
-					return err
-				}
-
-				if err := mysqldb.Functions.DeleteProductUsersByProductID(&productID, tx); err != nil {
 					return err
 				}
 
@@ -204,12 +210,24 @@ func (MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 	return &userData, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) UpdateUserSettings(settings *models.Asset) error {
-	return mysqldb.UpdateAsset(mysqldb.UserSettings, settings)
+func (MYSQLController) UpdateUserSettings(userData *models.UserData) error {
+	if err := mysqldb.UpdateAsset(mysqldb.UserSettings, &userData.Settings); err != nil {
+		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.UserSettings).Error() == err.Error() {
+			return ErrMissingUserSettings
+		}
+		return err
+	}
+	return nil
 }
 
-func (MYSQLController) UpdateUserAssets(assets *models.Asset) error {
-	return mysqldb.UpdateAsset(mysqldb.UserAssets, assets)
+func (MYSQLController) UpdateUserAssets(userData *models.UserData) error {
+	if err := mysqldb.UpdateAsset(mysqldb.UserAssets, &userData.Assets); err != nil {
+		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.UserAssets).Error() == err.Error() {
+			return ErrMissingUserAssets
+		}
+		return err
+	}
+	return nil
 }
 
 func (MYSQLController) Authenticate(email string, passwd []byte, authenticate func(string, []byte, *models.User) error) error {

@@ -54,7 +54,6 @@ ids=['No existing product', 'Existing product', 'Missing user']
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_CreateProduct(httpConnection, data, expected):
   dataToSend = dict()
-  print(data)
   if "user" in data:
     try:
       r = httpConnection.POST("/add-user", data["user"])
@@ -194,3 +193,77 @@ def test_GetProduct(httpConnection, data, expected):
   else:
     pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
     return
+
+createTestData = [
+    (# Input data
+      {
+      "product": {
+        "name": "testProductDeleteProduct",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerDeleteProduct",
+        "email": "testEmailOwnerDeleteProduct",
+        "password": "testPassword"
+      }
+    },
+    # Expected
+    "Delete completed"
+    ),
+    # Input data
+    ({
+      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    },
+    # Expected
+    "The selected product not found"),]
+
+ids=['Existing product', 'No existing product']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_DeleteProduct(httpConnection, data, expected):
+  dataToSend = dict()
+  productUUID = ""
+  if "user" in data:
+    try:
+      r = httpConnection.POST("/add-user", data["user"])
+    except:
+      pytest.fail(f"Failed to send POST request")
+      return
+
+    if r.status_code != 201:
+      pytest.fail(f"Failed to add user.\nDetails: {r.text}")
+      return
+
+    response = json.loads(r.text)
+    
+    dataToSend["product"] = data["product"]
+    dataToSend["user"] = response["ID"]
+
+  if "product" in data:
+    try:
+      r = httpConnection.POST("/add-product", dataToSend)
+    except Exception as e:
+      pytest.fail(f"Failed to send POST request")
+      return
+
+    if r.status_code != 201:
+      pytest.fail(f"Failed to add product.\nDetails: {r.text}")
+      return
+    
+    response = json.loads(r.text)
+    productUUID = response["ID"]
+
+  if "id" in data:
+    productUUID = data["id"]
+
+  dataToSend = dict()
+  dataToSend["product_id"] = productUUID
+
+  try:
+    r = httpConnection.POST("/delete-product", dataToSend)
+  except Exception as e:
+    pytest.fail(f"Failed to send POST request")
+    return
+
+  if r.text != expected:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")

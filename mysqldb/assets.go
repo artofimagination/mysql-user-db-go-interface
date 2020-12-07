@@ -40,7 +40,7 @@ func (MYSQLFunctions) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx
 var UpdateAssetQuery = "UPDATE %s set data = ? where id = UUID_TO_BIN(?)"
 
 func UpdateAsset(assetType string, asset *models.Asset) error {
-	refRaw, err := ConvertToJSONRaw(&asset.DataMap)
+	binary, err := json.Marshal(asset.DataMap)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func UpdateAsset(assetType string, asset *models.Asset) error {
 	}
 
 	query := fmt.Sprintf(UpdateAssetQuery, assetType)
-	result, err := tx.Exec(query, refRaw, asset.ID)
+	result, err := tx.Exec(query, binary, asset.ID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
