@@ -25,8 +25,8 @@ type UserProducts struct {
 }
 type ProductUsers map[uuid.UUID]int
 
-func (l Privileges) IsValidPrivilege(privilege int) bool {
-	for _, value := range l {
+func (l *Privileges) IsValidPrivilege(privilege int) bool {
+	for _, value := range *l {
 		if value.ID == privilege {
 			return true
 		}
@@ -34,8 +34,8 @@ func (l Privileges) IsValidPrivilege(privilege int) bool {
 	return false
 }
 
-func (l Privileges) IsOwnerPrivilege(privilege int) bool {
-	for _, value := range l {
+func (l *Privileges) IsOwnerPrivilege(privilege int) bool {
+	for _, value := range *l {
 		if value.ID == privilege && value.Name == "Owner" {
 			return true
 		}
@@ -43,8 +43,8 @@ func (l Privileges) IsOwnerPrivilege(privilege int) bool {
 	return false
 }
 
-func (l Privileges) IsPartnerPrivilege(privilege int) bool {
-	for _, value := range l {
+func (l *Privileges) IsPartnerPrivilege(privilege int) bool {
+	for _, value := range *l {
 		if value.ID == privilege && value.Name == "Partner" {
 			return true
 		}

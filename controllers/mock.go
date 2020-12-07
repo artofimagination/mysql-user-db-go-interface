@@ -17,7 +17,7 @@ type ModelInterfaceMock struct {
 	err error
 }
 
-func (i ModelInterfaceMock) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Product, error) {
+func (i *ModelInterfaceMock) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Product, error) {
 	p := models.Product{
 		Name:      name,
 		Public:    public,
@@ -28,13 +28,13 @@ func (i ModelInterfaceMock) NewProduct(name string, public bool, detailsID *uuid
 	return &p, i.err
 }
 
-func (i ModelInterfaceMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) string) (*models.Asset, error) {
+func (i *ModelInterfaceMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) string) (*models.Asset, error) {
 	var a models.Asset
 	a.ID = i.assetID
 	return &a, i.err
 }
 
-func (i ModelInterfaceMock) NewUser(
+func (i *ModelInterfaceMock) NewUser(
 	name string,
 	email string,
 	password []byte,

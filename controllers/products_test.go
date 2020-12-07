@@ -44,7 +44,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	models.Interface = ModelInterfaceMock{
+	models.Interface = &ModelInterfaceMock{
 		assetID:   assetID,
 		productID: productID,
 	}
