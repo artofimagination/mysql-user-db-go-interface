@@ -230,28 +230,24 @@ func (MYSQLController) UpdateUserAssets(userData *models.UserData) error {
 	return nil
 }
 
-func (MYSQLController) Authenticate(email string, passwd []byte, authenticate func(string, []byte, *models.User) error) error {
+func (MYSQLController) GetUserPassword(userID *uuid.UUID) ([]byte, error) {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
+	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByIDQuery, userID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
-				return err
+				return nil, err
 			}
-			return ErrInvalidEmailOrPasswd
+			return nil, ErrUserNotFound
 		}
-		return err
+		return nil, err
 	}
 
-	if err := authenticate(email, passwd, user); err != nil {
-		return err
-	}
-
-	return mysqldb.DBConnector.Commit(tx)
+	return user.Password, mysqldb.DBConnector.Commit(tx)
 }
 
 func (c MYSQLController) GetUsersByProductID(productID *uuid.UUID) ([]models.ProductUser, error) {

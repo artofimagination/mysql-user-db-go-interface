@@ -37,7 +37,8 @@ func (MYSQLFunctions) GetUser(queryString string, keyValue interface{}, tx *sql.
 
 	var user models.User
 	query := tx.QueryRow(queryString, keyValue)
-	err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID)
+	password := ""
+	err := query.Scan(&user.ID, &user.Name, &user.Email, &password, &user.SettingsID, &user.AssetsID)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, err
@@ -45,6 +46,7 @@ func (MYSQLFunctions) GetUser(queryString string, keyValue interface{}, tx *sql.
 		return nil, RollbackWithErrorStack(tx, err)
 	default:
 	}
+	user.Password = []byte(password)
 	return &user, nil
 }
 
@@ -108,7 +110,7 @@ var InsertUserQuery = "INSERT INTO users (id, name, email, password, user_settin
 // Whitespaces in the email are automatically deleted
 // Email/Name are unique in DB. Duplicates will return error.
 func (MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
-	_, err := tx.Exec(InsertUserQuery, user.ID, user.Name, user.Email, user.Password, user.SettingsID, user.AssetsID)
+	_, err := tx.Exec(InsertUserQuery, user.ID, user.Name, user.Email, string(user.Password), user.SettingsID, user.AssetsID)
 	errDuplicateName := fmt.Errorf(ErrSQLDuplicateUserNameEntryString, user.Name)
 	errDuplicateEmail := fmt.Errorf(ErrSQLDuplicateEmailEntryString, user.Email)
 	if err != nil {

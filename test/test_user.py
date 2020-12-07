@@ -120,6 +120,54 @@ def test_GetUser(httpConnection, data, expected):
     return
 
 createTestData = [
+    ({
+      'name': 'testUserGetPassword',
+      'email': 'testEmailGetPassword',
+      'password': 'testPassword'
+    },
+    'testPassword'),
+
+    ({
+      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    },
+    "The selected user not found")
+]
+
+ids=['Existing user', 'No existing user']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_GetUserPassword(httpConnection, data, expected):
+  uuid = ""
+  if "name" in data:
+    try:
+      r = httpConnection.POST("/add-user", data)
+    except Exception as e:
+      pytest.fail(f"Failed to send POST request")
+      return
+
+    if r.status_code != 201:
+      pytest.fail(f"Failed to add user.\nDetails: {r.text}")
+      return
+
+    response = json.loads(r.text)
+    uuid = response["ID"]
+  else:
+    uuid = data["id"]
+  
+  try:
+    r = httpConnection.GET("/get-user-password", {"id": uuid})
+  except Exception as e:
+    pytest.fail(f"Failed to send GET request")
+    return
+
+  if r.status_code == 200 or r.status_code == 202:
+    if r.text != expected:
+      pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {repr(r.text)}\nExpected: {repr(expected)}")
+  else:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
+    return
+
+createTestData = [
     # Input data
     ({
       "product": {

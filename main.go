@@ -55,35 +55,26 @@ func decodePostData(w http.ResponseWriter, r *http.Request) (map[string]interfac
 
 func addUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Adding user")
-	if err := checkRequestType(POST, w, r); err != nil {
-		return
-	}
-
-	// Parse input data
-	data := make(map[string]string)
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data, err := decodePostData(w, r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
-		fmt.Fprint(w, err.Error())
 		return
 	}
 
-	name, ok := data["name"]
+	name, ok := data["name"].(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, "Missing 'name'")
 		return
 	}
 
-	email, ok := data["email"]
+	email, ok := data["email"].(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, "Missing 'email'")
 		return
 	}
 
-	password, ok := data["password"]
+	password, ok := data["password"].(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, "Missing 'password'")
@@ -173,16 +164,8 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 
 func deleteUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Deleting user")
-	if err := checkRequestType(POST, w, r); err != nil {
-		return
-	}
-
-	data := make(map[string]interface{})
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data, err := decodePostData(w, r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
-		fmt.Fprint(w, err.Error())
 		return
 	}
 
@@ -249,30 +232,40 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Delete completed")
 }
 
-func authenticateUser(w http.ResponseWriter, r *http.Request) {
-	log.Println("Authenticate user")
-	emails, ok := r.URL.Query()["email"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'email' is missing")
+func getUserPassword(w http.ResponseWriter, r *http.Request) {
+	log.Println("Get user password")
+	if err := checkRequestType(GET, w, r); err != nil {
 		return
 	}
 
-	email := emails[0]
-
-	passwords, ok := r.URL.Query()["password"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'password' is missing")
-		return
+	ids, ok := r.URL.Query()["id"]
+	if !ok || len(ids[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, errors.New("Missing 'id'"))
 	}
 
-	password := []byte(passwords[0])
-
-	err := dbController.Authenticate(email, password, func(string, []byte, *models.User) error { return nil })
+	id, err := uuid.Parse(ids[0])
 	if err != nil {
-		fmt.Fprintln(w, err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, err.Error())
 		return
 	}
-	fmt.Fprintln(w, "User authenticated")
+
+	passwd, err := dbController.GetUserPassword(&id)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(passwd))
 }
 
 func parseUserData(data map[string]interface{}) (*models.UserData, error) {
@@ -379,16 +372,8 @@ func updateUserAssets(w http.ResponseWriter, r *http.Request) {
 
 func addProduct(w http.ResponseWriter, r *http.Request) {
 	log.Println("Adding product")
-	if err := checkRequestType(POST, w, r); err != nil {
-		return
-	}
-
-	data := make(map[string]interface{})
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data, err := decodePostData(w, r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
-		fmt.Fprint(w, err.Error())
 		return
 	}
 
@@ -657,16 +642,8 @@ func deleteProduct(w http.ResponseWriter, r *http.Request) {
 
 func addProductUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Adding product user")
-	if err := checkRequestType(POST, w, r); err != nil {
-		return
-	}
-
-	data := make(map[string]interface{})
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data, err := decodePostData(w, r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
-		fmt.Fprint(w, err.Error())
 		return
 	}
 
@@ -707,16 +684,8 @@ func addProductUser(w http.ResponseWriter, r *http.Request) {
 
 func deleteProductUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Deleting product user")
-	if err := checkRequestType(POST, w, r); err != nil {
-		return
-	}
-
-	data := make(map[string]interface{})
-	err := json.NewDecoder(r.Body).Decode(&data)
+	data, err := decodePostData(w, r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
-		fmt.Fprint(w, err.Error())
 		return
 	}
 
@@ -759,7 +728,7 @@ func main() {
 	http.HandleFunc("/delete-user", deleteUser)
 	http.HandleFunc("/add-product-user", addProductUser)
 	http.HandleFunc("/delete-product-user", deleteProductUser)
-	http.HandleFunc("/authenticate-user", authenticateUser)
+	http.HandleFunc("/get-user-password", getUserPassword)
 	http.HandleFunc("/add-product", addProduct)
 	http.HandleFunc("/get-product", getProduct)
 	http.HandleFunc("/update-product-details", updateProductDetails)
