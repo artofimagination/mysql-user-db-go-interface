@@ -211,6 +211,44 @@ func (MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 	return &userData, mysqldb.DBConnector.Commit(tx)
 }
 
+func (MYSQLController) GetUserByEmail(email string) (*models.UserData, error) {
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := mysqldb.Functions.GetUser(mysqldb.ByEmail, email, tx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+				return nil, err
+			}
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	settings, err := mysqldb.GetAsset(mysqldb.UserSettings, &user.SettingsID)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, err := mysqldb.GetAsset(mysqldb.UserAssets, &user.AssetsID)
+	if err != nil {
+		return nil, err
+	}
+
+	userData := models.UserData{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		Settings: *settings,
+		Assets:   *assets,
+	}
+
+	return &userData, mysqldb.DBConnector.Commit(tx)
+}
+
 func (MYSQLController) GetUsers(userIDs []uuid.UUID) ([]models.UserData, error) {
 	if len(userIDs) == 0 {
 		return nil, ErrEmptyUserIDList

@@ -120,6 +120,71 @@ def test_GetUser(httpConnection, data, expected):
     return
 
 createTestData = [
+    ({
+      'name': 'testUserGetByEmail',
+      'email': 'testEmailGetByEmail',
+      'password': 'testPassword'
+    },
+    { 
+      "Name":"testUserGetByEmail",
+      "Email":"testEmailGetByEmail",
+    }),
+
+    ({
+      "email": "testEmailGetWrong"
+    },
+    "The selected user not found")
+]
+
+ids=['Existing user', 'No existing user']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_GetUserByEmail(httpConnection, data, expected):
+  email = ""
+  if "name" in data:
+    try:
+      r = httpConnection.POST("/add-user", data)
+    except Exception as e:
+      pytest.fail(f"Failed to send POST request")
+      return
+
+    if r.status_code != 201:
+      pytest.fail(f"Failed to add user.\nDetails: {r.text}")
+      return
+
+    response = json.loads(r.text)
+    email = response["Email"]
+  else:
+    email = data["email"]
+  
+  try:
+    r = httpConnection.GET("/get-user-by-email", {"email": email})
+  except Exception as e:
+    pytest.fail(f"Failed to send GET request")
+    return
+
+  if r.status_code == 200:
+    response = json.loads(r.text)
+    try:
+      if response["Name"] != expected["Name"] or \
+        response["Email"] != expected["Email"] or \
+        response["Settings"]["ID"] == '' or \
+        response["Settings"]["ID"] == '00000000-0000-0000-0000-000000000000' or \
+        response["Assets"]["ID"] == '' or \
+        response["Assets"]["ID"] == '00000000-0000-0000-0000-000000000000':
+        pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
+        return
+    except Exception as e:
+      pytest.fail(f"Failed to compare results.\nDetails: {e}")
+      return
+  elif r.status_code == 202:
+    if r.text != expected:
+      pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
+  else:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
+    return
+
+createTestData = [
     ([{
       'name': 'testUserGetMultiple1',
       'email': 'testEmailGetMultiple1',

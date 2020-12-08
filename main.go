@@ -160,6 +160,44 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(b))
 }
 
+func getUserByEmail(w http.ResponseWriter, r *http.Request) {
+	log.Println("Getting user by email")
+	if err := checkRequestType(GET, w, r); err != nil {
+		return
+	}
+
+	emails, ok := r.URL.Query()["email"]
+	if !ok || len(emails[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, errors.New("Url Param 'email' is missing"))
+		return
+	}
+
+	userData, err := dbController.GetUserByEmail(emails[0])
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	b, err := json.Marshal(userData)
+	if err != nil {
+		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(b))
+}
+
 func parseIDList(w http.ResponseWriter, r *http.Request) ([]uuid.UUID, error) {
 	ids, ok := r.URL.Query()["ids"]
 	if !ok || len(ids[0]) < 1 {
@@ -836,6 +874,7 @@ func main() {
 	http.HandleFunc("/", sayHello)
 	http.HandleFunc("/add-user", addUser)
 	http.HandleFunc("/get-user", getUser)
+	http.HandleFunc("/get-user-by-email", getUserByEmail)
 	http.HandleFunc("/get-users", getUsers)
 	http.HandleFunc("/update-user-settings", updateUserSettings)
 	http.HandleFunc("/update-user-assets", updateUserAssets)
