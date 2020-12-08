@@ -230,8 +230,8 @@ func TestCreateUser(t *testing.T) {
 			mockCopy := DBMock
 			mysqldb.Functions = &DBFunctionInterfaceMock{
 				user:         mockCopy,
-				userAdded:    test.NewBool(false),
-				productAdded: test.NewBool(false),
+				userAdded:    false,
+				productAdded: false,
 			}
 
 			output, err := CreateUser(
@@ -299,9 +299,9 @@ func TestDeleteUser(t *testing.T) {
 				product:              dbMockProduct,
 				userProducts:         &dbMockUsersProducts,
 				err:                  dbMockError,
-				userDeleted:          test.NewBool(false),
-				productDeleted:       test.NewBool(false),
-				usersProductsUpdated: test.NewBool(false),
+				userDeleted:          false,
+				productDeleted:       false,
+				usersProductsUpdated: false,
 				privileges:           testCase.Data.(map[string]interface{})["db_mock_privileges"].(models.Privileges),
 			}
 
@@ -311,18 +311,18 @@ func TestDeleteUser(t *testing.T) {
 				return
 			}
 
-			if !cmp.Equal(*mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted) {
-				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted)
+			if !cmp.Equal(mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted) {
+				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted)
 				return
 			}
 
-			if !cmp.Equal(*mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted) {
-				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted)
+			if !cmp.Equal(mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted) {
+				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted)
 				return
 			}
 
-			if !cmp.Equal(*mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts) {
-				t.Errorf(test.TestResultString, testCaseString, *mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts)
+			if !cmp.Equal(mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts) {
+				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts)
 				return
 			}
 		})

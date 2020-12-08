@@ -243,7 +243,7 @@ func TestCreateProduct(t *testing.T) {
 			mysqldb.Functions = &DBFunctionInterfaceMock{
 				product:      mockCopy,
 				privileges:   privileges,
-				productAdded: test.NewBool(false),
+				productAdded: false,
 			}
 
 			output, err := CreateProduct(

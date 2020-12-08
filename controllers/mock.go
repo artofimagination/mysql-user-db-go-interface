@@ -18,20 +18,21 @@ type ModelInterfaceMock struct {
 }
 
 func (i *ModelInterfaceMock) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Product, error) {
-	p := models.Product{
+	p := &models.Product{
 		Name:      name,
 		Public:    public,
 		ID:        i.productID,
 		DetailsID: *detailsID,
 		AssetsID:  *assetsID,
 	}
-	return &p, i.err
+	return p, i.err
 }
 
 func (i *ModelInterfaceMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) string) (*models.Asset, error) {
-	var a models.Asset
-	a.ID = i.assetID
-	return &a, i.err
+	a := &models.Asset{
+		ID: i.assetID,
+	}
+	return a, i.err
 }
 
 func (i *ModelInterfaceMock) NewUser(
@@ -40,7 +41,7 @@ func (i *ModelInterfaceMock) NewUser(
 	password []byte,
 	settingsID uuid.UUID,
 	assetsID uuid.UUID) (*models.User, error) {
-	u := models.User{
+	u := &models.User{
 		ID:         i.userID,
 		Name:       name,
 		Email:      email,
@@ -49,18 +50,18 @@ func (i *ModelInterfaceMock) NewUser(
 		AssetsID:   assetsID,
 	}
 
-	return &u, i.err
+	return u, i.err
 }
 
 // DBFunctionInterfaceMock overwrites the mysqldb package function implementations with mock code.
 type DBFunctionInterfaceMock struct {
 	user                 *models.User
-	userDeleted          *bool
-	userAdded            *bool
+	userDeleted          bool
+	userAdded            bool
 	product              *models.Product
-	productAdded         *bool
-	productDeleted       *bool
-	usersProductsUpdated *bool
+	productAdded         bool
+	productDeleted       bool
+	usersProductsUpdated bool
 	privileges           models.Privileges
 	userProducts         *models.UserProducts
 	err                  error
@@ -75,7 +76,7 @@ func (i *DBFunctionInterfaceMock) GetUser(queryString string, keyValue interface
 }
 
 func (i *DBFunctionInterfaceMock) AddUser(user *models.User, tx *sql.Tx) error {
-	*i.userAdded = true
+	i.userAdded = true
 	return i.err
 }
 
@@ -92,7 +93,7 @@ func (i *DBFunctionInterfaceMock) AddProductUsers(productID *uuid.UUID, productU
 }
 
 func (i *DBFunctionInterfaceMock) AddProduct(product *models.Product, tx *sql.Tx) error {
-	*i.productAdded = true
+	i.productAdded = true
 	return i.err
 }
 
@@ -105,12 +106,12 @@ func (i *DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx
 }
 
 func (i *DBFunctionInterfaceMock) DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
-	*i.productDeleted = true
+	i.productDeleted = true
 	return i.err
 }
 
 func (i *DBFunctionInterfaceMock) DeleteUser(userID *uuid.UUID, tx *sql.Tx) error {
-	*i.userDeleted = true
+	i.userDeleted = true
 	return i.err
 }
 
@@ -119,7 +120,7 @@ func (i *DBFunctionInterfaceMock) DeleteProductUsersByProductID(productID *uuid.
 }
 
 func (i *DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error {
-	*i.usersProductsUpdated = true
+	i.usersProductsUpdated = true
 	return i.err
 }
 
