@@ -50,7 +50,7 @@ func validateUsers(users *models.ProductUserIDs) error {
 	return nil
 }
 
-func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) string) (*models.ProductData, error) {
+func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProductData, error) {
 	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
 	if err != nil {

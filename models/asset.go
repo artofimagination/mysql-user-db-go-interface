@@ -23,7 +23,7 @@ type Asset struct {
 // Assets structure contains the identification of all user related documents images.
 type DataMap map[string]interface{}
 
-func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) string) (*Asset, error) {
+func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*Asset, error) {
 	var a Asset
 
 	if references == nil {
@@ -37,7 +37,10 @@ func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uui
 
 	a.ID = newID
 	a.DataMap = references
-	a.DataMap[BaseAssetPath] = generatePath(&a.ID)
+	a.DataMap[BaseAssetPath], err = generatePath(&a.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	return &a, nil
 }

@@ -262,8 +262,8 @@ func TestCreateUser(t *testing.T) {
 				input.Name,
 				input.Email,
 				password,
-				func(*uuid.UUID) string {
-					return "testPath"
+				func(*uuid.UUID) (string, error) {
+					return "testPath", nil
 				}, func([]byte) ([]byte, error) {
 					return []byte{}, nil
 				})

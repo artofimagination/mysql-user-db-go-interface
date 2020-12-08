@@ -265,8 +265,8 @@ func TestNewAsset(t *testing.T) {
 
 			output, err := Interface.NewAsset(
 				references,
-				func(*uuid.UUID) string {
-					return "test/path"
+				func(*uuid.UUID) (string, error) {
+					return "test/path", nil
 				})
 			if !cmp.Equal(output, expectedData) {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)

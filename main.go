@@ -81,8 +81,8 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 
 	// Execute function
 	user, err := dbController.CreateUser(name, email, []byte(password),
-		func(*uuid.UUID) string {
-			return "testPath"
+		func(*uuid.UUID) (string, error) {
+			return "testPath", nil
 		}, func(password []byte) ([]byte, error) {
 			return password, nil
 		})
@@ -529,8 +529,8 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	product, err := dbController.CreateProduct(name, public, &userID,
-		func(*uuid.UUID) string {
-			return "testPath"
+		func(*uuid.UUID) (string, error) {
+			return "testPath", nil
 		})
 	if err != nil {
 		duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)

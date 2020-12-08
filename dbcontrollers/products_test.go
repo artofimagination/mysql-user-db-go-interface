@@ -273,8 +273,8 @@ func TestCreateProduct(t *testing.T) {
 				input.Name,
 				input.Public,
 				&userID,
-				func(*uuid.UUID) string {
-					return "testPath"
+				func(*uuid.UUID) (string, error) {
+					return "testPath", nil
 				})
 
 			if output != nil {

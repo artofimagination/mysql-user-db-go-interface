@@ -24,7 +24,7 @@ func (MYSQLController) CreateUser(
 	name string,
 	email string,
 	passwd []byte,
-	generateAssetPath func(assetID *uuid.UUID) string,
+	generateAssetPath func(assetID *uuid.UUID) (string, error),
 	encryptPassword func(password []byte) ([]byte, error)) (*models.UserData, error) {
 
 	references := make(models.DataMap)

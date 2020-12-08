@@ -7,7 +7,7 @@ import (
 var NullUUID = uuid.MustParse("00000000-0000-0000-0000-000000000000")
 
 type InterfaceCommon interface {
-	NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) string) (*Asset, error)
+	NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*Asset, error)
 	NewUser(
 		name string,
 		email string,

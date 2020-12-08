@@ -28,7 +28,7 @@ func (i ModelInterfaceMock) NewProduct(name string, public bool, detailsID *uuid
 	return &p, i.err
 }
 
-func (i ModelInterfaceMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) string) (*models.Asset, error) {
+func (i ModelInterfaceMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*models.Asset, error) {
 	var a models.Asset
 	a.ID = i.assetID
 	return &a, i.err
