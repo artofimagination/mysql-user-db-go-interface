@@ -3,16 +3,13 @@ package models
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/google/uuid"
 )
 
 const (
-	BaseAssetPath  = "base_asset_path"
-	UserAvatar     = "user_avatar"
-	UserBackground = "user_background"
-
-	ProductDescription = "product_description"
+	BaseAssetPath = "base_asset_path"
 )
 
 // Errors called in multiple places (for example in unittests).
@@ -42,6 +39,9 @@ func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uui
 	a.ID = newID
 	a.DataMap = references
 	a.DataMap[BaseAssetPath] = generatePath(&a.ID)
+	if err := os.MkdirAll(a.DataMap[BaseAssetPath].(string), os.ModePerm); err != nil {
+		return nil, err
+	}
 
 	return &a, nil
 }
