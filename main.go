@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
@@ -859,9 +858,6 @@ func main() {
 	project := dbcontrollers.ProjectDBDummy{}
 	dbcontrollers.SetProjectDB(project)
 	dbController = controller
-
-	mysqldb.DBConnection = fmt.Sprintf("%s:%s@tcp(user-db:3306)/%s?parseTime=true", os.Getenv("MYSQL_DB_USER"), os.Getenv("MYSQL_DB_PASSWORD"), os.Getenv("MYSQL_DB_NAME"))
-	mysqldb.MigrationDirectory = fmt.Sprintf("%s/src/mysql-user-db-go-interface/db/migrations/mysql", os.Getenv("GOPATH"))
 
 	mysqldb.DBConnector = mysqldb.MYSQLConnector{}
 	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {

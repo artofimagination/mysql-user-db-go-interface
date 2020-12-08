@@ -58,10 +58,11 @@ func NewDBController() (*MYSQLController, error) {
 		return nil, errors.New("MYSQL DB name not defined")
 	}
 
-	mysqldb.MigrationDirectory = os.Getenv("MYSQL_DB_PASSWORD")
+	mysqldb.MigrationDirectory = os.Getenv("MYSQL_DB_MIGRATION_DIR")
 	if mysqldb.MigrationDirectory == "" {
 		return nil, errors.New("MYSQL DB migration folder not defined")
 	}
+
 	mysqldb.DBConnection = fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		username,
