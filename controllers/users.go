@@ -170,8 +170,8 @@ func GetUser(userID *uuid.UUID) (*models.UserData, error) {
 		ID:       user.ID,
 		Name:     user.Name,
 		Email:    user.Email,
-		Settings: *settings,
-		Assets:   *assets,
+		Settings: settings,
+		Assets:   assets,
 	}
 
 	return &userData, nil

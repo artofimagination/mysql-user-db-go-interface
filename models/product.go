@@ -8,8 +8,8 @@ type ProductData struct {
 	ID      uuid.UUID
 	Name    string
 	Public  bool
-	Assets  Asset
-	Details Asset
+	Assets  *Asset
+	Details *Asset
 }
 
 type Product struct {

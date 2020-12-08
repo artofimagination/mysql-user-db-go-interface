@@ -152,8 +152,8 @@ func GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
 		ID:      product.ID,
 		Name:    product.Name,
 		Public:  product.Public,
-		Details: *details,
-		Assets:  *assets,
+		Details: details,
+		Assets:  assets,
 	}
 
 	return &productData, nil
