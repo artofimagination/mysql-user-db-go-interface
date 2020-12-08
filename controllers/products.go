@@ -15,7 +15,7 @@ var ErrEmptyUsersList = errors.New("At least one product user is required")
 var ErrUnknownPrivilegeString = "Unknown privilege %d set for user %s"
 var ErrInvalidOwnerCount = errors.New("Product must have a single owner")
 
-func validateUsers(users models.ProductUsers) error {
+func validateOwnership(users models.ProductUsers) error {
 	if users == nil || (users != nil && len(users) == 0) {
 		return ErrEmptyUsersList
 	}
@@ -50,7 +50,7 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 	// Need to check whether the product users list is valid.
 	// - is there exactly one owner
 	// - are the privilege id-s valid
-	if err := validateUsers(users); err != nil {
+	if err := validateOwnership(users); err != nil {
 		return nil, err
 	}
 
