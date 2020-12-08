@@ -18,6 +18,7 @@ var ErrInvalidOwnerCount = errors.New("Product must have a single owner")
 var ErrProductNotFound = errors.New("The selected product not found")
 var ErrMissingProductDetail = errors.New("Details for the selected product not found")
 var ErrMissingProductAsset = errors.New("Assets for the selected product not found")
+var ErrEmptyProductIDList = errors.New("Request does not contain any product identifiers")
 
 func validateUsers(users *models.ProductUserIDs) error {
 	if users == nil || (users != nil && len(users.UserMap) == 0) {
@@ -206,7 +207,7 @@ func (MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, er
 }
 
 func (MYSQLController) UpdateProductDetails(productData *models.ProductData) error {
-	log.Println(*productData)
+
 	if err := mysqldb.UpdateAsset(mysqldb.ProductDetails, &productData.Details); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProductDetails).Error() == err.Error() {
 			return ErrMissingProductDetail
@@ -266,4 +267,57 @@ func (c MYSQLController) GetProductsByUserID(userID *uuid.UUID) ([]models.UserPr
 	}
 
 	return products, mysqldb.DBConnector.Commit(tx)
+}
+
+func (MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductData, error) {
+	if len(productIDs) == 0 {
+		return nil, ErrEmptyProductIDList
+	}
+
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	products, err := mysqldb.Functions.GetProductsByIDs(productIDs, tx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+				return nil, err
+			}
+			return nil, ErrProductNotFound
+		}
+		return nil, err
+	}
+
+	assetIDs := make([]uuid.UUID, 0)
+	detailsIDs := make([]uuid.UUID, 0)
+	for _, product := range products {
+		assetIDs = append(assetIDs, product.AssetsID)
+		detailsIDs = append(detailsIDs, product.DetailsID)
+	}
+
+	details, err := mysqldb.Functions.GetAssets(mysqldb.ProductDetails, detailsIDs, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, err := mysqldb.Functions.GetAssets(mysqldb.ProductAssets, assetIDs, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	productDataList := make([]models.ProductData, 0)
+	for index, product := range products {
+		productData := models.ProductData{
+			ID:      product.ID,
+			Name:    product.Name,
+			Public:  product.Public,
+			Details: details[index],
+			Assets:  assets[index],
+		}
+		productDataList = append(productDataList, productData)
+	}
+
+	return productDataList, mysqldb.DBConnector.Commit(tx)
 }

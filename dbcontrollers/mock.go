@@ -75,13 +75,21 @@ func (i DBFunctionInterfaceMock) GetPrivilege(name string) (*models.Privilege, e
 	return &i.privileges[0], i.err
 }
 
-func (i DBFunctionInterfaceMock) GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
+func (i DBFunctionInterfaceMock) GetUser(queryType int, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
 	return i.user, i.err
 }
 
 func (i DBFunctionInterfaceMock) AddUser(user *models.User, tx *sql.Tx) error {
 	*i.userAdded = true
 	return i.err
+}
+
+func (i DBFunctionInterfaceMock) GetUsersByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.User, error) {
+	return nil, i.err
+}
+
+func (i DBFunctionInterfaceMock) GetAssets(assetType string, IDs []uuid.UUID, tx *sql.Tx) ([]models.Asset, error) {
+	return nil, i.err
 }
 
 func (i DBFunctionInterfaceMock) GetProductUserIDs(productID *uuid.UUID, tx *sql.Tx) (*models.ProductUserIDs, error) {
@@ -103,6 +111,10 @@ func (i DBFunctionInterfaceMock) AddProductUsers(productID *uuid.UUID, productUs
 func (i DBFunctionInterfaceMock) AddProduct(product *models.Product, tx *sql.Tx) error {
 	*i.productAdded = true
 	return i.err
+}
+
+func (i DBFunctionInterfaceMock) GetProductsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Product, error) {
+	return nil, i.err
 }
 
 func (i DBFunctionInterfaceMock) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {

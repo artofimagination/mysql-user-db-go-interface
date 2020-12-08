@@ -120,12 +120,123 @@ def test_GetUser(httpConnection, data, expected):
     return
 
 createTestData = [
+    ([{
+      'name': 'testUserGetMultiple1',
+      'email': 'testEmailGetMultiple1',
+      'password': 'testPassword'
+    },
+    {
+      'name': 'testUserGetMultiple2',
+      'email': 'testEmailGetMultiple2',
+      'password': 'testPassword'
+    }],
+    [{ 
+      "Name":"testUserGetMultiple1",
+      "Email":"testEmailGetMultiple1"
+    },
+    { 
+      "Name":"testUserGetMultiple2",
+      "Email":"testEmailGetMultiple2"
+    }]
+    ),
+
+    ([{
+      'name': 'testUserGetMultipleFail',
+      'email': 'testEmailGetMultipleFail',
+      'password': 'testPassword'
+    },
+    {
+      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    }],
+    [{ 
+      "Name":"testUserGetMultipleFail",
+      "Email":"testEmailGetMultipleFail"
+    }]),
+
+    ([{
+      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    }],
+    "The selected user not found")
+]
+
+ids=['Existing users', 'Missing a user', 'No user']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_GetUsers(httpConnection, data, expected):
+  uuidList = list()
+  for element in data:
+    if "name" in element:
+      try:
+        r = httpConnection.POST("/add-user", element)
+      except Exception as e:
+        pytest.fail(f"Failed to send POST request")
+        return
+
+      if r.status_code != 201:
+        pytest.fail(f"Failed to add user.\nDetails: {r.text}")
+        return
+
+      response = json.loads(r.text)
+      uuidList.append(response["ID"])
+    else:
+      uuidList.append(element["id"])
+  
+  try:
+    r = httpConnection.GET("/get-users", {"ids": uuidList})
+  except Exception as e:
+    pytest.fail(f"Failed to send GET request")
+    return
+
+  if r.status_code == 200:
+    response = json.loads(r.text)
+    print(response)
+    print(expected)
+    try:
+      for index, user in enumerate(response):
+        if user["Name"] != expected[index]["Name"] or \
+          user["Email"] != expected[index]["Email"] or \
+          "base_asset_path" not in user["Assets"]["DataMap"] or \
+          user["Assets"]["DataMap"]["base_asset_path"] != "testPath" or \
+          "base_asset_path" not in user["Settings"]["DataMap"] or \
+          user["Settings"]["DataMap"]["base_asset_path"] != "testPath":
+          pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
+          return
+    except Exception as e:
+      pytest.fail(f"Failed to compare results.\nDetails: {e}")
+      return
+  elif r.status_code == 202:
+    if r.text != expected:
+      pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
+  else:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
+    return
+
+createTestData = [
     ({
+      "user" : {
       'name': 'testUserGetPassword',
       'email': 'testEmailGetPassword',
       'password': 'testPassword'
+      },
+      "login" : {
+        "email": "testEmailGetPassword",
+        "password": "testPassword",
+      }
     },
-    'testPassword'),
+    'Authentication successful'),
+
+    ({
+      "user" : {
+       'name': 'testUserGetPasswordInvalid',
+       'email': 'testEmailGetPasswordInvalid',
+       'password': 'testPassword'
+      },
+      "login" : {
+        "email": "testEmailGetPasswordInvalid",
+        "password": "testPasswordWrong"
+      }
+    },
+    'Invalid password'),
 
     ({
       "id": "c34a7368-344a-11eb-adc1-0242ac120002"
@@ -133,14 +244,16 @@ createTestData = [
     "The selected user not found")
 ]
 
-ids=['Existing user', 'No existing user']
+ids=['Valid password', 'Invalid Password', 'No user found']
 
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
-def test_GetUserPassword(httpConnection, data, expected):
+def test_Authenticate(httpConnection, data, expected):
   uuid = ""
-  if "name" in data:
+  email = "empty"
+  password = "empty"
+  if "user" in data:
     try:
-      r = httpConnection.POST("/add-user", data)
+      r = httpConnection.POST("/add-user", data["user"])
     except Exception as e:
       pytest.fail(f"Failed to send POST request")
       return
@@ -151,11 +264,13 @@ def test_GetUserPassword(httpConnection, data, expected):
 
     response = json.loads(r.text)
     uuid = response["ID"]
+    email = data["login"]["email"]
+    password = data["login"]["password"]
   else:
     uuid = data["id"]
   
   try:
-    r = httpConnection.GET("/get-user-password", {"id": uuid})
+    r = httpConnection.GET("/authenticate", {"id": uuid, "email": email, "password" : password})
   except Exception as e:
     pytest.fail(f"Failed to send GET request")
     return

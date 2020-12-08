@@ -3,6 +3,7 @@ package mysqldb
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/uuid"
@@ -123,6 +124,42 @@ func (MYSQLFunctions) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product,
 	}
 
 	return &product, nil
+}
+
+var GetProductsByIDsQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE id IN (UUID_TO_BIN(?)"
+
+func (MYSQLFunctions) GetProductsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Product, error) {
+	query := GetProductsByIDsQuery + strings.Repeat(",UUID_TO_BIN(?)", len(IDs)-1) + ")"
+	interfaceList := make([]interface{}, len(IDs))
+	for i := range IDs {
+		interfaceList[i] = IDs[i]
+	}
+	rows, err := tx.Query(query, interfaceList...)
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	defer rows.Close()
+
+	products := make([]models.Product, 0)
+	for rows.Next() {
+		product := models.Product{}
+		err := rows.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID)
+		if err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		products = append(products, product)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	if len(products) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
+	return products, nil
 }
 
 var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privileges_id FROM users_products where users_id = UUID_TO_BIN(?)"

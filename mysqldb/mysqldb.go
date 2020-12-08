@@ -28,13 +28,15 @@ type MYSQLConnector struct {
 
 // Data handling common function interface. Needed in order to allow mock and custom functionality implementations.
 type FunctionCommonInterface interface {
-	GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error)
+	GetUser(queryType int, keyValue interface{}, tx *sql.Tx) (*models.User, error)
 	AddUser(user *models.User, tx *sql.Tx) error
 	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
 	GetProductUserIDs(productID *uuid.UUID, tx *sql.Tx) (*models.ProductUserIDs, error)
+	GetUsersByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.User, error)
 
 	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
 	DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error
+	GetAssets(assetType string, IDs []uuid.UUID, tx *sql.Tx) ([]models.Asset, error)
 
 	UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error
 	AddProductUsers(productID *uuid.UUID, productUsers *models.ProductUserIDs, tx *sql.Tx) error
@@ -46,6 +48,7 @@ type FunctionCommonInterface interface {
 	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)
 	AddProduct(product *models.Product, tx *sql.Tx) error
 	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
+	GetProductsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Product, error)
 
 	GetPrivileges() (models.Privileges, error)
 	GetPrivilege(name string) (*models.Privilege, error)

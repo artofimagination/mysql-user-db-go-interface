@@ -102,7 +102,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["query"] = GetUserByEmailQuery
+		data.Data.(map[string]interface{})["query_type"] = ByEmail
 		data.Data.(map[string]interface{})["key_value"] = user.Email
 		data.Expected.(map[string]interface{})["data"] = &user
 		data.Expected.(map[string]interface{})["error"] = nil
@@ -119,7 +119,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["query"] = GetUserByEmailQuery
+		data.Data.(map[string]interface{})["query_type"] = ByEmail
 		data.Data.(map[string]interface{})["key_value"] = user.Email
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = errors.New("This is a failure test")
@@ -135,7 +135,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["query"] = GetUserByEmailQuery
+		data.Data.(map[string]interface{})["query_type"] = ByEmail
 		data.Data.(map[string]interface{})["key_value"] = user.Email
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
@@ -150,7 +150,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["query"] = GetUserByIDQuery
+		data.Data.(map[string]interface{})["query_type"] = ByID
 		data.Data.(map[string]interface{})["key_value"] = user.ID
 		data.Expected = make(map[string]interface{})
 		data.Expected.(map[string]interface{})["data"] = &user
@@ -168,7 +168,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["query"] = GetUserByIDQuery
+		data.Data.(map[string]interface{})["query_type"] = ByID
 		data.Data.(map[string]interface{})["key_value"] = user.ID
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = errors.New("This is a failure test")
@@ -184,7 +184,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 			Expected: make(map[string]interface{}),
 		}
 
-		data.Data.(map[string]interface{})["query"] = GetUserByIDQuery
+		data.Data.(map[string]interface{})["query_type"] = ByID
 		data.Data.(map[string]interface{})["key_value"] = user.ID
 		data.Expected.(map[string]interface{})["data"] = nil
 		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
@@ -194,7 +194,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, DBConnectorMock, error
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case AddUserTest:
 		testCase := "valid_user"
-		password := []byte{}
+		password := ""
 		data = test.Data{
 			Data:     user,
 			Expected: nil,
@@ -334,7 +334,7 @@ func TestGetUser(t *testing.T) {
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
 			keyValue := testCase.Data.(map[string]interface{})["key_value"]
-			query := testCase.Data.(map[string]interface{})["query"].(string)
+			query := testCase.Data.(map[string]interface{})["query_type"].(int)
 			var expectedData *models.User
 			if testCase.Expected.(map[string]interface{})["data"] != nil {
 				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.User)

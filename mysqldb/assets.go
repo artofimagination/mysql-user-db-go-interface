@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/uuid"
@@ -126,4 +127,45 @@ func (MYSQLFunctions) DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.
 		return fmt.Errorf(ErrAssetMissing, assetType)
 	}
 	return nil
+}
+
+var GetAssetsQuery = "SELECT BIN_TO_UUID(id), data FROM %s WHERE id IN (UUID_TO_BIN(?)"
+
+func (MYSQLFunctions) GetAssets(assetType string, IDs []uuid.UUID, tx *sql.Tx) ([]models.Asset, error) {
+	query := GetAssetsQuery + strings.Repeat(",UUID_TO_BIN(?)", len(IDs)-1) + ")"
+	interfaceList := make([]interface{}, len(IDs))
+	for i := range IDs {
+		interfaceList[i] = IDs[i]
+	}
+	query = fmt.Sprintf(query, assetType)
+	rows, err := tx.Query(query, interfaceList...)
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	defer rows.Close()
+
+	assets := make([]models.Asset, 0)
+	for rows.Next() {
+		dataMap := []byte{}
+		asset := models.Asset{}
+		err := rows.Scan(&asset.ID, &dataMap)
+		if err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		if err := json.Unmarshal(dataMap, &asset.DataMap); err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		assets = append(assets, asset)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	if len(assets) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
+	return assets, nil
 }

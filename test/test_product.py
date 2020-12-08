@@ -195,6 +195,145 @@ def test_GetProduct(httpConnection, data, expected):
     return
 
 createTestData = [
+    # Input data
+    ({
+      "product": [{
+        "name": "testProductGetMultiple1",
+        "public": True
+      },
+      {
+        "name": "testProductGetMultiple2",
+        "public": True
+      }],
+      "user": {
+        "name": "testUserOwnerGetMultiple",
+        "email": "testEmailOwnerGetMultiple",
+        "password": "testPassword"
+      }
+    },
+    # Expected
+    [{ 
+      'Name': 'testProductGetMultiple1',
+      'Public': True,
+      'base_asset_path': 'testPath'
+    },
+    { 
+      'Name': 'testProductGetMultiple2',
+      'Public': True,
+      'base_asset_path': 'testPath'
+    }]),
+
+    # Input data
+    ({
+      "product": [{
+        "name": "testProductGetMultipleFail",
+        "public": True
+      },
+      {
+        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+      }],
+      "user": {
+        "name": "testUserOwnerGetMultipleFail",
+        "email": "testEmailOwnerGetMultipleFail",
+        "password": "testPassword"
+      }
+    },
+    # Expected
+    [{ 
+      'Name': 'testProductGetMultipleFail',
+      'Public': True,
+      'base_asset_path': 'testPath'
+    }]),
+
+    # Input data
+    ({
+      "product": [{
+        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+      }],
+      "user": {
+        "name": "testUserOwnerGetMultipleNoProduct",
+        "email": "testEmailOwnerGetMultipleNoProduct",
+        "password": "testPassword"
+      }
+    },
+    # Expected
+    "The selected product not found")
+]
+
+ids=['Existing products', 'Missing a product', 'No product']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_GetProducts(httpConnection, data, expected):
+  userUUID = ""
+  uuidList = list()
+
+  if "user" in data:
+    try:
+      r = httpConnection.POST("/add-user", data["user"])
+    except Exception as e:
+      pytest.fail(f"Failed to send POST request")
+      return
+
+    if r.status_code != 201:
+      pytest.fail(f"Failed to add product.\nDetails: {r.text}")
+      return
+
+    response = json.loads(r.text)
+    userUUID = response["ID"]
+    
+  if "product" in data:
+    for element in data["product"]:
+      if "name" in element:
+        dataToSend = dict()
+        dataToSend["product"] = element
+        if userUUID == "":
+          pytest.fail(f"Missing user test data")
+          return
+        dataToSend["user"] = userUUID
+        try:
+          r = httpConnection.POST("/add-product", dataToSend)
+        except Exception as e:
+          pytest.fail(f"Failed to send POST request")
+          return
+
+        if r.status_code != 201:
+          pytest.fail(f"Failed to add product.\nDetails: {r.text}")
+          return
+
+        response = json.loads(r.text)
+        uuidList.append(response["ID"])
+      else:
+        uuidList.append(element["id"])
+  
+  try:
+    r = httpConnection.GET("/get-products", {"ids": uuidList})
+  except Exception as e:
+    pytest.fail(f"Failed to send GET request")
+    return
+
+  if r.status_code == 200:
+    response = json.loads(r.text)
+    try:
+      for index, product in enumerate(response):
+        if product["Name"] != expected[index]["Name"] or \
+          product["Public"] != expected[index]["Public"] or \
+          "base_asset_path" not in product["Assets"]["DataMap"] or \
+          product["Assets"]["DataMap"]["base_asset_path"] != "testPath" or \
+          "base_asset_path" not in product["Details"]["DataMap"] or \
+          product["Details"]["DataMap"]["base_asset_path"] != "testPath":
+          pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
+          return
+    except Exception as e:
+      pytest.fail(f"Failed to compare results.\nDetails: {e}")
+      return
+  elif r.status_code == 202:
+    if r.text != expected:
+      pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
+  else:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
+    return
+
+createTestData = [
     (# Input data
       {
       "product": {

@@ -162,6 +162,63 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(b))
 }
 
+func parseIDList(w http.ResponseWriter, r *http.Request) ([]uuid.UUID, error) {
+	ids, ok := r.URL.Query()["ids"]
+	if !ok || len(ids[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		return nil, errors.New("Missing 'ids'")
+	}
+
+	idList := make([]uuid.UUID, 0)
+	for _, idString := range ids {
+		id, err := uuid.Parse(idString)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return nil, errors.New("Invalid 'ids'")
+		}
+		idList = append(idList, id)
+	}
+
+	return idList, nil
+}
+
+func getUsers(w http.ResponseWriter, r *http.Request) {
+	log.Println("Getting multiple users")
+	if err := checkRequestType(GET, w, r); err != nil {
+		return
+	}
+
+	idList, err := parseIDList(w, r)
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
+	}
+
+	userData, err := dbController.GetUsers(idList)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get users")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	b, err := json.Marshal(userData)
+	if err != nil {
+		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(b))
+}
+
 func deleteUser(w http.ResponseWriter, r *http.Request) {
 	log.Println("Deleting user")
 	data, err := decodePostData(w, r)
@@ -232,9 +289,23 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Delete completed")
 }
 
-func getUserPassword(w http.ResponseWriter, r *http.Request) {
-	log.Println("Get user password")
+func authenticate(w http.ResponseWriter, r *http.Request) {
+	log.Println("Authenticate")
 	if err := checkRequestType(GET, w, r); err != nil {
+		return
+	}
+
+	emails, ok := r.URL.Query()["email"]
+	if !ok || len(emails[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, errors.New("Missing 'email'"))
+		return
+	}
+
+	passwords, ok := r.URL.Query()["password"]
+	if !ok || len(passwords[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, errors.New("Missing 'password'"))
 		return
 	}
 
@@ -242,6 +313,7 @@ func getUserPassword(w http.ResponseWriter, r *http.Request) {
 	if !ok || len(ids[0]) < 1 {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, errors.New("Missing 'id'"))
+		return
 	}
 
 	id, err := uuid.Parse(ids[0])
@@ -251,9 +323,15 @@ func getUserPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	passwd, err := dbController.GetUserPassword(&id)
+	err = dbController.Authenticate(&id, emails[0], passwords[0],
+		func(string, pass string, user *models.User) error {
+			if !cmp.Equal([]byte(pass), user.Password) {
+				return errors.New("Invalid password")
+			}
+			return nil
+		})
 	if err != nil {
-		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+		if err.Error() == "Invalid password" || err.Error() == dbcontrollers.ErrUserNotFound.Error() {
 			w.WriteHeader(http.StatusAccepted)
 			fmt.Fprint(w, err.Error())
 			return
@@ -265,7 +343,7 @@ func getUserPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, string(passwd))
+	fmt.Fprint(w, "Authentication successful")
 }
 
 func parseUserData(data map[string]interface{}) (*models.UserData, error) {
@@ -491,6 +569,43 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, string(b))
+}
+
+func getProducts(w http.ResponseWriter, r *http.Request) {
+	log.Println("Getting multiple products")
+	if err := checkRequestType(GET, w, r); err != nil {
+		return
+	}
+
+	idList, err := parseIDList(w, r)
+	if err != nil {
+		fmt.Fprint(w, err)
+		return
+	}
+
+	productData, err := dbController.GetProducts(idList)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get products")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	b, err := json.Marshal(productData)
+	if err != nil {
+		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(b))
 }
 
 func parseProductData(data map[string]interface{}) (*models.ProductData, error) {
@@ -723,14 +838,16 @@ func main() {
 	http.HandleFunc("/", sayHello)
 	http.HandleFunc("/add-user", addUser)
 	http.HandleFunc("/get-user", getUser)
+	http.HandleFunc("/get-users", getUsers)
 	http.HandleFunc("/update-user-settings", updateUserSettings)
 	http.HandleFunc("/update-user-assets", updateUserAssets)
 	http.HandleFunc("/delete-user", deleteUser)
 	http.HandleFunc("/add-product-user", addProductUser)
 	http.HandleFunc("/delete-product-user", deleteProductUser)
-	http.HandleFunc("/get-user-password", getUserPassword)
+	http.HandleFunc("/authenticate", authenticate)
 	http.HandleFunc("/add-product", addProduct)
 	http.HandleFunc("/get-product", getProduct)
+	http.HandleFunc("/get-products", getProducts)
 	http.HandleFunc("/update-product-details", updateProductDetails)
 	http.HandleFunc("/update-product-assets", updateProductAssets)
 	http.HandleFunc("/delete-product", deleteProduct)
