@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Start test server
-        run: docker-compose up -d main-server
+        run: cp test/.env_functional_test .env && docker-compose up -d main-server
 
       - name: Run functional test
-        run: cp test/.env_functional_test .env && docker ps && docker logs --tail 500 main-server && ss -ntlp && pip3 install -r test/requirements.txt && pytest test
+        run: pip3 install -r test/requirements.txt && pytest -v test
