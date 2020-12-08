@@ -8,7 +8,6 @@ import (
 
 	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -858,11 +857,6 @@ func main() {
 	project := dbcontrollers.ProjectDBDummy{}
 	dbcontrollers.SetProjectDB(project)
 	dbController = controller
-
-	mysqldb.DBConnector = mysqldb.MYSQLConnector{}
-	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
-		log.Fatalf("System bootstrap failed. %s", errors.WithStack(err))
-	}
 
 	// Start HTTP server that accepts requests from the offer process to exchange SDP and Candidates
 	panic(http.ListenAndServe(":8080", nil))
