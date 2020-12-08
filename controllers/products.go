@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -14,7 +15,7 @@ var ErrEmptyUsersList = errors.New("At least one product user is required")
 var ErrUnknownPrivilegeString = "Unknown privilege %d set for user %s"
 var ErrInvalidOwnerCount = errors.New("Product must have a single owner")
 
-func validateUsers(users models.ProductUsers) error {
+func validateOwnership(users models.ProductUsers) error {
 	if users == nil || (users != nil && len(users) == 0) {
 		return ErrEmptyUsersList
 	}
@@ -49,7 +50,7 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 	// Need to check whether the product users list is valid.
 	// - is there exactly one owner
 	// - are the privilege id-s valid
-	if err := validateUsers(users); err != nil {
+	if err := validateOwnership(users); err != nil {
 		return nil, err
 	}
 
@@ -102,4 +103,26 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 	}
 
 	return product, nil
+}
+
+func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
+	// Valid user
+	product, err := mysqldb.Functions.GetProductByID(*productID, tx)
+	if err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteProduct(productID, tx); err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteAsset(mysqldb.ProductAssets, &product.AssetsID, tx); err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteAsset(mysqldb.ProductDetails, &product.DetailsID, tx); err != nil {
+		return err
+	}
+
+	return nil
 }

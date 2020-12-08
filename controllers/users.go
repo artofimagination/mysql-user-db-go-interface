@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"database/sql"
 	"errors"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
@@ -8,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrProductsStillAssociated = errors.New("There are stillsome products associated to this user")
 var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
+var ErrUserNotFound = errors.New("The selected user not found")
 
 func CreateUser(
 	name string,
@@ -46,7 +47,7 @@ func CreateUser(
 		return nil, err
 	}
 
-	existingUser, err := mysqldb.Functions.GetUserByEmail(email, tx)
+	existingUser, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -67,30 +68,79 @@ func CreateUser(
 		return nil, err
 	}
 
-	return user, nil
+	return user, mysqldb.DBConnector.Commit(tx)
 }
 
-func DeleteUser(email string) error {
+func DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	user, err := mysqldb.Functions.GetUserByEmail(email, tx)
+	// Valid user
+	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByIDQuery, ID, tx)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return ErrUserNotFound
+		}
 		return err
 	}
 
-	productIDs, err := mysqldb.Functions.GetUserProductIDs(user.ID, tx)
+	// Has products?
+	userProducts, err := mysqldb.Functions.GetUserProductIDs(user.ID, tx)
 	if err != nil {
 		if err != mysqldb.ErrNoProductsForUser {
 			return err
 		}
 	}
 
-	if productIDs != nil {
-		return ErrProductsStillAssociated
+	if userProducts != nil {
+		// Handle all products
+		for productID, privilege := range userProducts.ProductMap {
+			privileges, err := mysqldb.Functions.GetPrivileges()
+			if err != nil {
+				return err
+			}
+
+			if !privileges.IsOwnerPrivilege(privilege) {
+				continue
+			}
+
+			productID := productID
+			// Check nominated owner
+			nominated, hasNominatedOwner := nominatedOwners[productID]
+			if nominatedOwners == nil || !hasNominatedOwner {
+				if err := projectdb.DeleteProjects(productID); err != nil {
+					return err
+				}
+
+				if err := mysqldb.Functions.DeleteProductUsersByProductID(&productID, tx); err != nil {
+					return err
+				}
+
+				if err := deleteProduct(&productID, tx); err != nil {
+					return err
+				}
+			} else {
+				// Transfer ownership of the product
+				if err := mysqldb.Functions.UpdateUsersProducts(&nominated, &productID, 0, tx); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
-	return nil
+	if err := mysqldb.Functions.DeleteUser(&user.ID, tx); err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteAsset(mysqldb.UserAssets, &user.AssetsID, tx); err != nil {
+		return err
+	}
+
+	if err := mysqldb.Functions.DeleteAsset(mysqldb.UserSettings, &user.SettingsID, tx); err != nil {
+		return err
+	}
+
+	return mysqldb.DBConnector.Commit(tx)
 }

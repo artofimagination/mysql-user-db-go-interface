@@ -6,10 +6,16 @@ import (
 	"strings"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+)
+
+// Defines the possible user query key names
+const (
+	ByEmail = "email"
+	ByID    = "id"
 )
 
 var ErrNoUserWithEmail = errors.New("There is no user associated with this email")
@@ -17,15 +23,20 @@ var ErrNoUserWithEmail = errors.New("There is no user associated with this email
 var ErrSQLDuplicateUserNameEntryString = "Duplicate entry '%s' for key 'users.name'"
 var ErrSQLDuplicateEmailEntryString = "Duplicate entry '%s' for key 'users.email'"
 var ErrDuplicateUserNameEntry = errors.New("User with this name already exists")
+var ErrNoUserDeleted = errors.New("No user was deleted")
 
 var GetUserByEmailQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where email = ?"
+var GetUserByIDQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where id = UUID_TO_BIN(?)"
 
-// GetUserByEmail returns the user defined by the email.
-func (MYSQLFunctions) GetUserByEmail(email string, tx *sql.Tx) (*models.User, error) {
-	email = strings.ReplaceAll(email, " ", "")
+// GetUser returns the user defined by the key name and key value.
+// Key name can be either id or email.
+func (*MYSQLFunctions) GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
+	if queryString == GetUserByEmailQuery {
+		keyValue = strings.ReplaceAll(keyValue.(string), " ", "")
+	}
 
 	var user models.User
-	query, err := tx.Query(GetUserByEmailQuery, email)
+	query, err := tx.Query(queryString, keyValue)
 	switch {
 	case err == sql.ErrNoRows:
 		if err := tx.Commit(); err != nil {
@@ -42,29 +53,6 @@ func (MYSQLFunctions) GetUserByEmail(email string, tx *sql.Tx) (*models.User, er
 	if err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID); err != nil {
 		return nil, err
 	}
-	return &user, tx.Commit()
-}
-
-// GetUserByID returns the user defined by it uuid.
-func GetUserByID(ID uuid.UUID) (*models.User, error) {
-	var user models.User
-	queryString := "select BIN_TO_UUID(id), name, email, password, BIN_TO_UUID(user_settings_id), BIN_TO_UUID(user_assets_id) from users where id = UUID_TO_BIN(?)"
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return nil, err
-	}
-
-	query, err := tx.Query(queryString, ID)
-	if err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
-	defer query.Close()
-
-	query.Next()
-	if err := query.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.SettingsID, &user.AssetsID); err != nil {
-		return nil, RollbackWithErrorStack(tx, err)
-	}
-
 	return &user, tx.Commit()
 }
 
@@ -127,7 +115,7 @@ var InsertUserQuery = "INSERT INTO users (id, name, email, password, user_settin
 // AddUser creates a new user entry in the DB.
 // Whitespaces in the email are automatically deleted
 // Email/Name are unique in DB. Duplicates will return error.
-func (MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
+func (*MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
 	_, err := tx.Exec(InsertUserQuery, user.ID, user.Name, user.Email, user.Password, user.SettingsID, user.AssetsID)
 	errDuplicateName := fmt.Errorf(ErrSQLDuplicateUserNameEntryString, user.Name)
 	errDuplicateEmail := fmt.Errorf(ErrSQLDuplicateEmailEntryString, user.Email)
@@ -152,37 +140,25 @@ func (MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
 	return tx.Commit()
 }
 
-func deleteUserEntry(email string, tx *sql.Tx) error {
-	query := "DELETE FROM users WHERE email=?"
+var DeleteUserQuery = "DELETE FROM users WHERE id=UUID_TO_BIN(?)"
 
-	_, err := tx.Exec(query, email)
+func (*MYSQLFunctions) DeleteUser(ID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteUserQuery, ID)
 	if err != nil {
-		return err
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoUserDeleted
 	}
 
 	return nil
-}
-
-func DeleteUser(email string) error {
-	email = strings.ReplaceAll(email, " ", "")
-
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return err
-	}
-
-	user, err := Functions.GetUserByEmail(email, tx)
-	if err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	if err := deleteUserEntry(email, tx); err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	if err := DeleteAsset(UserAssets, &user.SettingsID, tx); err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
-
-	return tx.Commit()
 }

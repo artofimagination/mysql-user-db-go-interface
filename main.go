@@ -42,8 +42,8 @@ func insertUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	password := passwords[0]
-	models.Interface = models.RepoInterface{}
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
+	models.Interface = &models.RepoInterface{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	user, err := controllers.CreateUser(name, email, []byte(password),
 		func(*uuid.UUID) string {
 			return "testPath"
@@ -66,14 +66,14 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
 
-	result, err := mysqldb.Functions.GetUserByEmail(email, tx)
+	result, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -90,8 +90,20 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
-	err := mysqldb.DeleteUser(email)
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+
+	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+
+	err = mysqldb.Functions.DeleteUser(&user.ID, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	}
@@ -106,14 +118,14 @@ func checkUserPass(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
 
-	_, err = mysqldb.Functions.GetUserByEmail(email, tx)
+	_, err = mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	} else {
@@ -131,7 +143,7 @@ func main() {
 	mysqldb.DBConnection = "root:123secure@tcp(user-db:3306)/user_database?parseTime=true"
 	mysqldb.MigrationDirectory = fmt.Sprintf("%s/src/mysql-user-db-go-interface/db/migrations/mysql", os.Getenv("GOPATH"))
 
-	mysqldb.DBConnector = mysqldb.MYSQLConnector{}
+	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
 	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
 		log.Fatalf("System bootstrap failed. %s", errors.WithStack(err))
 	}

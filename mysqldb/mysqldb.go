@@ -18,6 +18,7 @@ import (
 type DBConnectorCommon interface {
 	BootstrapSystem() error
 	ConnectSystem() (*sql.Tx, error)
+	Commit(tx *sql.Tx) error
 }
 
 // MYSQL Interface implementation
@@ -26,17 +27,25 @@ type MYSQLConnector struct {
 
 // Data handling common function interface. Needed in order to allow mock and custom functionality implementations.
 type FunctionCommonInterface interface {
-	GetUserByEmail(email string, tx *sql.Tx) (*models.User, error)
+	GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error)
 	AddUser(user *models.User, tx *sql.Tx) error
+	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
+
 	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
+	DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error
+
 	GetProductsByUserID(userID uuid.UUID) ([]models.Product, error)
-	GetProductByID(ID uuid.UUID) (*models.Product, error)
+	UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error
+	AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error
+	DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error
+	GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
+
+	GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error)
 	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)
 	AddProduct(product *models.Product, tx *sql.Tx) error
-	AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error
+	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
+
 	GetPrivileges() (models.Privileges, error)
-	GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
-	DeleteProduct(productID *uuid.UUID) error
 }
 
 // MYSQL Interface implementation
@@ -48,7 +57,11 @@ var DBConnector DBConnectorCommon
 var Functions FunctionCommonInterface
 var MigrationDirectory = ""
 
-func (MYSQLConnector) BootstrapSystem() error {
+func (*MYSQLConnector) Commit(tx *sql.Tx) error {
+	return tx.Commit()
+}
+
+func (*MYSQLConnector) BootstrapSystem() error {
 	fmt.Printf("Executing MYSQL migration\n")
 	migrations := &migrate.FileMigrationSource{
 		Dir: MigrationDirectory,
@@ -86,7 +99,7 @@ func RollbackWithErrorStack(tx *sql.Tx, errorStack error) error {
 	return errorStack
 }
 
-func (MYSQLConnector) ConnectSystem() (*sql.Tx, error) {
+func (*MYSQLConnector) ConnectSystem() (*sql.Tx, error) {
 	db, err := sql.Open("mysql", DBConnection)
 	if err != nil {
 		return nil, err
