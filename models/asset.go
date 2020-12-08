@@ -15,9 +15,6 @@ const (
 	ProductDescription = "product_description"
 )
 
-var DefaultImagePath = ""
-var DefaultURL = ""
-
 // Errors called in multiple places (for example in unittests).
 
 var ErrAssetRefNotInitialised = errors.New("Asset references not initialised")
@@ -49,10 +46,10 @@ func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uui
 	return &a, nil
 }
 
-func (r *Asset) GetImagePath(typeString string) string {
+func (r *Asset) GetImagePath(typeString string, defaultPath string) string {
 	path, ok := r.DataMap[typeString].(string)
 	if !ok {
-		return DefaultImagePath
+		return defaultPath
 	}
 
 	return path
@@ -77,10 +74,10 @@ func (r *Asset) SetURL(typeString string, url string) {
 	r.DataMap[typeString] = url
 }
 
-func (r *Asset) GetURL(typeString string) string {
+func (r *Asset) GetURL(typeString string, defaultURL string) string {
 	path, ok := r.DataMap[typeString].(string)
 	if !ok {
-		return DefaultURL
+		return defaultURL
 	}
 	return path
 }

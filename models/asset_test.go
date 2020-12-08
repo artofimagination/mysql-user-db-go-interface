@@ -66,6 +66,8 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 			Expected: make(map[string]interface{}),
 		}
 
+		defaultPath := "default/default.jpg"
+		data.Data.(map[string]interface{})["default_path"] = defaultPath
 		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
 		data.Expected.(map[string]interface{})["error"] = nil
 		data.Data.(map[string]interface{})["asset_type"] = "testType"
@@ -81,11 +83,10 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 			Expected: make(map[string]interface{}),
 		}
 
-		DefaultImagePath = "default/default.jpg"
-
 		data.Data.(map[string]interface{})["asset"] = asset
+		data.Data.(map[string]interface{})["default_path"] = defaultPath
 		data.Data.(map[string]interface{})["asset_type"] = "testType2"
-		data.Expected.(map[string]interface{})["data"] = DefaultImagePath
+		data.Expected.(map[string]interface{})["data"] = defaultPath
 		data.Expected.(map[string]interface{})["error"] = nil
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -100,6 +101,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		data.Data.(map[string]interface{})["asset_type"] = "testType"
 		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
 		data.Data.(map[string]interface{})["asset"] = asset
+		data.Data.(map[string]interface{})["default_url"] = data.Expected.(string)
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -108,11 +110,11 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 			Data:     make(map[string]interface{}),
 			Expected: "https://default.com",
 		}
-		DefaultURL = data.Expected.(string)
 
 		data.Data.(map[string]interface{})["asset_type"] = "testType2"
 		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
 		data.Data.(map[string]interface{})["asset"] = asset
+		data.Data.(map[string]interface{})["default_url"] = data.Expected.(string)
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case NewAssetTest:
@@ -198,10 +200,11 @@ func TestGetImagePath(t *testing.T) {
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
 			expectedData := testCase.Expected.(map[string]interface{})["data"].(string)
+			defaultPath := testCase.Data.(map[string]interface{})["default_path"].(string)
 			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-			output := asset.GetImagePath(assetType)
+			output := asset.GetImagePath(assetType, defaultPath)
 			if output != expectedData {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
@@ -225,9 +228,10 @@ func TestGetURL(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
 			expectedData := testCase.Expected.(string)
 			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
+			defaultURL := testCase.Data.(map[string]interface{})["default_url"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-			output := asset.GetURL(assetType)
+			output := asset.GetURL(assetType, defaultURL)
 			if output != expectedData {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
