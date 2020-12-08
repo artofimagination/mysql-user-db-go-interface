@@ -3,7 +3,6 @@ package models
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/google/uuid"
 )
@@ -39,9 +38,6 @@ func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uui
 	a.ID = newID
 	a.DataMap = references
 	a.DataMap[BaseAssetPath] = generatePath(&a.ID)
-	if err := os.MkdirAll(a.DataMap[BaseAssetPath].(string), os.ModePerm); err != nil {
-		return nil, err
-	}
 
 	return &a, nil
 }
