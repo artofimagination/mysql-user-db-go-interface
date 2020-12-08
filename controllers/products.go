@@ -107,7 +107,7 @@ func CreateProduct(name string, public bool, users models.ProductUsers, generate
 
 func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
 	// Valid user
-	product, err := mysqldb.Functions.GetProductByID(*productID, tx)
+	product, err := mysqldb.Functions.GetProductByID(productID, tx)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
 		return nil, err
 	}
 
-	product, err := mysqldb.Functions.GetProductByID(*productID, tx)
+	product, err := mysqldb.Functions.GetProductByID(productID, tx)
 	if err != nil {
 		return nil, err
 	}

@@ -87,7 +87,7 @@ func DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
 	}
 
 	// Has products?
-	userProducts, err := mysqldb.Functions.GetUserProductIDs(user.ID, tx)
+	userProducts, err := mysqldb.Functions.GetUserProductIDs(&user.ID, tx)
 	if err != nil {
 		if err != mysqldb.ErrNoProductsForUser {
 			return err

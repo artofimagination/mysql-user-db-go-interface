@@ -669,7 +669,7 @@ func TestGetProductByID(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 
-			output, err := Functions.GetProductByID(productID, tx)
+			output, err := Functions.GetProductByID(&productID, tx)
 			if !cmp.Equal(output, expectedData) {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
@@ -755,7 +755,7 @@ func TestGetUserProductIDs(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 
-			output, err := Functions.GetUserProductIDs(userID, tx)
+			output, err := Functions.GetUserProductIDs(&userID, tx)
 			if !cmp.Equal(output, expectedData) {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
@@ -793,7 +793,7 @@ func TestGetProductsByUserID(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 
-			output, err := Functions.GetProductsByUserID(userID)
+			output, err := Functions.GetProductsByUserID(&userID)
 			if !cmp.Equal(output, expectedData) {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return

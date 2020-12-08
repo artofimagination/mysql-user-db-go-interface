@@ -101,7 +101,7 @@ func (i *DBFunctionInterfaceMock) GetProductByName(name string, tx *sql.Tx) (*mo
 	return i.product, i.err
 }
 
-func (i *DBFunctionInterfaceMock) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
+func (i *DBFunctionInterfaceMock) GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
 	return i.userProducts, i.err
 }
 
@@ -124,11 +124,11 @@ func (i *DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, product
 	return i.err
 }
 
-func (i *DBFunctionInterfaceMock) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
+func (i *DBFunctionInterfaceMock) GetProductByID(ID *uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	return i.product, i.err
 }
 
-func (i *DBFunctionInterfaceMock) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
+func (i *DBFunctionInterfaceMock) GetProductsByUserID(userID *uuid.UUID) ([]models.Product, error) {
 	return nil, i.err
 }
 
