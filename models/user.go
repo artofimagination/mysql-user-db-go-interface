@@ -15,8 +15,8 @@ type UserData struct {
 	ID       uuid.UUID
 	Name     string
 	Email    string
-	Settings Asset
-	Assets   Asset
+	Settings *Asset
+	Assets   *Asset
 }
 
 // User defines the user structures. Each user must have an associated settings entry.
@@ -29,7 +29,7 @@ type User struct {
 	AssetsID   uuid.UUID
 }
 
-func (RepoInterface) NewUser(
+func (*RepoInterface) NewUser(
 	name string,
 	email string,
 	password []byte,

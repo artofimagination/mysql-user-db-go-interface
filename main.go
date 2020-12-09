@@ -44,8 +44,6 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	password := passwords[0]
-	models.Interface = models.RepoInterface{}
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 	user, err := dbController.CreateUser(name, email, []byte(password),
 		func(*uuid.UUID) string {
 			return "testPath"
@@ -69,7 +67,6 @@ func queryUser(r *http.Request) (*models.UserData, error) {
 	if err != nil {
 		return nil, err
 	}
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 
 	userData, err := dbController.GetUser(&id)
 	if err != nil {
@@ -147,7 +144,7 @@ func updateUserSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = dbController.UpdateUserSettings(&userData.Settings)
+	err = dbController.UpdateUserSettings(userData.Settings)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
@@ -170,7 +167,7 @@ func updateUserAssets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = dbController.UpdateUserAssets(&userData.Assets)
+	err = dbController.UpdateUserAssets(userData.Assets)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
@@ -220,7 +217,6 @@ func queryProduct(r *http.Request) (*models.ProductData, error) {
 	if err != nil {
 		return nil, err
 	}
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
 
 	productData, err := dbController.GetProduct(&id)
 	if err != nil {
@@ -256,7 +252,7 @@ func updateProductDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = dbController.UpdateProductDetails(&productData.Details)
+	err = dbController.UpdateProductDetails(productData.Details)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
@@ -279,7 +275,7 @@ func updateProductAssets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = dbController.UpdateProductAssets(&productData.Assets)
+	err = dbController.UpdateProductAssets(productData.Assets)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
@@ -325,7 +321,7 @@ func main() {
 	mysqldb.DBConnection = fmt.Sprintf("%s:%s@tcp(user-db:3306)/%s?parseTime=true", os.Getenv("MYSQL_DB_USER"), os.Getenv("MYSQL_DB_PASSWORD"), os.Getenv("MYSQL_DB_NAME"))
 	mysqldb.MigrationDirectory = fmt.Sprintf("%s/src/mysql-user-db-go-interface/db/migrations/mysql", os.Getenv("GOPATH"))
 
-	mysqldb.DBConnector = mysqldb.MYSQLConnector{}
+	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
 	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
 		log.Fatalf("System bootstrap failed. %s", errors.WithStack(err))
 	}

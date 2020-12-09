@@ -87,7 +87,7 @@ func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]u
 	}
 
 	// Has products?
-	userProducts, err := mysqldb.Functions.GetUserProductIDs(user.ID, tx)
+	userProducts, err := mysqldb.Functions.GetUserProductIDs(&user.ID, tx)
 	if err != nil {
 		if err != mysqldb.ErrNoProductsForUser {
 			return err
@@ -170,8 +170,8 @@ func (MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 		ID:       user.ID,
 		Name:     user.Name,
 		Email:    user.Email,
-		Settings: *settings,
-		Assets:   *assets,
+		Settings: settings,
+		Assets:   assets,
 	}
 
 	return &userData, nil

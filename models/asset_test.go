@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	SetImagePathTest = 0
-	GetImagePathTest = 1
-	GetURLTest       = 2
-	NewAssetTest     = 3
+	SetImagePathTest = iota
+	GetImagePathTest
+	GetURLTest
+	NewAssetTest
 )
 
 func createAssetTestData(testID int) (*test.OrderedTests, error) {
@@ -37,7 +37,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	UUIDImpl = UUIDImplMock{
+	UUIDImpl = &UUIDImplMock{
 		uuidMock: referenceID,
 	}
 	baseAssetPath := "test/path"
@@ -46,105 +46,99 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	switch testID {
 	case SetImagePathTest:
 		testCase := "valid"
-
-		data := test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
+		data := make(map[string]interface{})
+		data["asset"] = asset
+		data["asset_type"] = "testType"
+		expected := make(map[string]interface{})
+		expected["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
+		expected["error"] = nil
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-
-		data.Data.(map[string]interface{})["asset"] = asset
-		data.Data.(map[string]interface{})["asset_type"] = "testType"
-		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
-		data.Expected.(map[string]interface{})["error"] = nil
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case GetImagePathTest:
 		testCase := "valid_key_uuid"
-
-		data := test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
+		expected := make(map[string]interface{})
+		expected["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
+		expected["error"] = nil
+		data := make(map[string]interface{})
+		data["asset_type"] = "testType"
+		asset.DataMap[data["asset_type"].(string)] = expected["data"].(string)
+		data["asset"] = asset
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-
-		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
-		data.Expected.(map[string]interface{})["error"] = nil
-		data.Data.(map[string]interface{})["asset_type"] = "testType"
-		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(map[string]interface{})["data"].(string)
-		data.Data.(map[string]interface{})["asset"] = asset
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_asset_type"
-
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
-		}
-
 		DefaultImagePath = "default/default.jpg"
-
-		data.Data.(map[string]interface{})["asset"] = asset
-		data.Data.(map[string]interface{})["asset_type"] = "testType2"
-		data.Expected.(map[string]interface{})["data"] = DefaultImagePath
-		data.Expected.(map[string]interface{})["error"] = nil
-		dataSet.TestDataSet[testCase] = data
+		data = make(map[string]interface{})
+		data["asset"] = asset
+		data["asset_type"] = "testType2"
+		expected = make(map[string]interface{})
+		expected["data"] = DefaultImagePath
+		expected["error"] = nil
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case GetURLTest:
 		testCase := "valid_url"
-
-		data := test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: "https://success.com",
+		expected := "https://success.com"
+		data := make(map[string]interface{})
+		data["asset_type"] = "testType"
+		asset.DataMap[data["asset_type"].(string)] = expected
+		data["asset"] = asset
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-
-		data.Data.(map[string]interface{})["asset_type"] = "testType"
-		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
-		data.Data.(map[string]interface{})["asset"] = asset
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_url"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: "https://default.com",
+		DefaultURL = "https://default.com"
+		data = make(map[string]interface{})
+		data["asset_type"] = "testType2"
+		asset.DataMap[data["asset_type"].(string)] = DefaultURL
+		data["asset"] = asset
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: DefaultURL,
 		}
-		DefaultURL = data.Expected.(string)
-
-		data.Data.(map[string]interface{})["asset_type"] = "testType2"
-		asset.DataMap[data.Data.(map[string]interface{})["asset_type"].(string)] = data.Expected.(string)
-		data.Data.(map[string]interface{})["asset"] = asset
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case NewAssetTest:
 		testCase := "valid"
-		data := test.Data{
-			Data:     asset.DataMap,
-			Expected: make(map[string]interface{}),
-		}
-		UUIDImpl = UUIDImplMock{
+		UUIDImpl = &UUIDImplMock{
 			uuidMock: asset.ID,
 		}
-		data.Expected.(map[string]interface{})["data"] = &asset
-		data.Expected.(map[string]interface{})["error"] = nil
-		dataSet.TestDataSet[testCase] = data
+		expected := make(map[string]interface{})
+		expected["data"] = &asset
+		expected["error"] = nil
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     asset.DataMap,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "nil_reference"
 		var nilRef DataMap
-		data = test.Data{
-			Data:     nilRef,
-			Expected: make(map[string]interface{}),
-		}
-		UUIDImpl = UUIDImplMock{
+		UUIDImpl = &UUIDImplMock{
 			uuidMock: asset.ID,
 		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = ErrAssetRefNotInitialised
-		dataSet.TestDataSet[testCase] = data
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = ErrAssetRefNotInitialised
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     nilRef,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	Interface = RepoInterface{}
+	Interface = &RepoInterface{}
 
 	return &dataSet, nil
 }

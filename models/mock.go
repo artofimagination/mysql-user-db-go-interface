@@ -10,6 +10,6 @@ type UUIDImplMock struct {
 	err      error
 }
 
-func (i UUIDImplMock) NewUUID() (uuid.UUID, error) {
+func (i *UUIDImplMock) NewUUID() (uuid.UUID, error) {
 	return i.uuidMock, i.err
 }
