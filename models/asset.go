@@ -2,7 +2,7 @@ package models
 
 import (
 	"errors"
-	"fmt"
+	"path"
 
 	"github.com/google/uuid"
 )
@@ -45,7 +45,7 @@ func (RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uui
 	return &a, nil
 }
 
-func (r *Asset) GetImagePath(typeString string, defaultPath string) string {
+func (r *Asset) GetFilePath(typeString string, defaultPath string) string {
 	path, ok := r.DataMap[typeString].(string)
 	if !ok {
 		return defaultPath
@@ -54,7 +54,7 @@ func (r *Asset) GetImagePath(typeString string, defaultPath string) string {
 	return path
 }
 
-func (r *Asset) SetImagePath(typeString string) error {
+func (r *Asset) SetFilePath(typeString string, extension string) error {
 	if _, ok := r.DataMap[typeString]; ok {
 		return nil
 	}
@@ -64,16 +64,16 @@ func (r *Asset) SetImagePath(typeString string) error {
 		return err
 	}
 
-	r.DataMap[typeString] = fmt.Sprintf("%s/%s.jpg", r.DataMap[BaseAssetPath], newID.String())
+	r.DataMap[typeString] = path.Join(r.DataMap[BaseAssetPath].(string), newID.String()+extension)
 
 	return nil
 }
 
-func (r *Asset) SetURL(typeString string, url string) {
+func (r *Asset) SetField(typeString string, url string) {
 	r.DataMap[typeString] = url
 }
 
-func (r *Asset) GetURL(typeString string, defaultURL string) string {
+func (r *Asset) GetField(typeString string, defaultURL string) string {
 	path, ok := r.DataMap[typeString].(string)
 	if !ok {
 		return defaultURL

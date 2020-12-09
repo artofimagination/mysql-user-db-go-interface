@@ -34,7 +34,7 @@ func (MYSQLFunctions) GetUser(queryType int, keyValue interface{}, tx *sql.Tx) (
 	queryString := GetUserByIDQuery
 	if queryType == ByEmail {
 		queryString = GetUserByEmailQuery
-		keyValue = strings.ReplaceAll(keyValue.(string), " ", "")
+		keyValue = strings.ReplaceAll(strings.ToLower(keyValue.(string)), " ", "")
 	}
 
 	var user models.User
@@ -111,7 +111,7 @@ func UserExists(username string) (bool, error) {
 }
 
 func EmailExists(email string) (bool, error) {
-	email = strings.ReplaceAll(email, " ", "")
+	email = strings.ReplaceAll(strings.ToLower(email), " ", "")
 
 	var user models.User
 	queryString := "select email from users where email = ?"

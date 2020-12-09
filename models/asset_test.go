@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	SetImagePathTest = 0
-	GetImagePathTest = 1
-	GetURLTest       = 2
-	NewAssetTest     = 3
+	SetFilePathTest = iota
+	GetFilePathTest
+	GetFieldTest
+	NewAssetTest
 )
 
 func createAssetTestData(testID int) (*test.OrderedTests, error) {
@@ -44,7 +44,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	asset.DataMap[BaseAssetPath] = baseAssetPath
 
 	switch testID {
-	case SetImagePathTest:
+	case SetFilePathTest:
 		testCase := "valid"
 
 		data := test.Data{
@@ -54,11 +54,12 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 
 		data.Data.(map[string]interface{})["asset"] = asset
 		data.Data.(map[string]interface{})["asset_type"] = "testType"
+		data.Data.(map[string]interface{})["asset_extension"] = ".jpg"
 		data.Expected.(map[string]interface{})["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
 		data.Expected.(map[string]interface{})["error"] = nil
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
-	case GetImagePathTest:
+	case GetFilePathTest:
 		testCase := "valid_key_uuid"
 
 		data := test.Data{
@@ -90,7 +91,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		data.Expected.(map[string]interface{})["error"] = nil
 		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
-	case GetURLTest:
+	case GetFieldTest:
 		testCase := "valid_url"
 
 		data := test.Data{
@@ -151,9 +152,9 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	return &dataSet, nil
 }
 
-func TestSetImagePath(t *testing.T) {
+func TestSetFilePath(t *testing.T) {
 	// Create test data
-	dataSet, err := createAssetTestData(SetImagePathTest)
+	dataSet, err := createAssetTestData(SetFilePathTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
@@ -170,9 +171,10 @@ func TestSetImagePath(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
+			assetExtension := testCase.Data.(map[string]interface{})["asset_extension"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-			err = asset.SetImagePath(assetType)
+			err = asset.SetFilePath(assetType, assetExtension)
 			if !test.ErrEqual(err, expectedError) {
 				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
 				return
@@ -186,9 +188,9 @@ func TestSetImagePath(t *testing.T) {
 	}
 }
 
-func TestGetImagePath(t *testing.T) {
+func TestGetFilePath(t *testing.T) {
 	// Create test data
-	dataSet, err := createAssetTestData(GetImagePathTest)
+	dataSet, err := createAssetTestData(GetFilePathTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
@@ -204,7 +206,7 @@ func TestGetImagePath(t *testing.T) {
 			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-			output := asset.GetImagePath(assetType, defaultPath)
+			output := asset.GetFilePath(assetType, defaultPath)
 			if output != expectedData {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
@@ -213,9 +215,9 @@ func TestGetImagePath(t *testing.T) {
 	}
 }
 
-func TestGetURL(t *testing.T) {
+func TestGetField(t *testing.T) {
 	// Create test data
-	dataSet, err := createAssetTestData(GetURLTest)
+	dataSet, err := createAssetTestData(GetFieldTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
@@ -231,7 +233,7 @@ func TestGetURL(t *testing.T) {
 			defaultURL := testCase.Data.(map[string]interface{})["default_url"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-			output := asset.GetURL(assetType, defaultURL)
+			output := asset.GetField(assetType, defaultURL)
 			if output != expectedData {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
