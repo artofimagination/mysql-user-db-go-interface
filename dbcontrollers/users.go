@@ -1,4 +1,4 @@
-package controllers
+package dbcontrollers
 
 import (
 	"database/sql"
@@ -12,7 +12,7 @@ import (
 var ErrDuplicateEmailEntry = errors.New("User with this email already exists")
 var ErrUserNotFound = errors.New("The selected user not found")
 
-func CreateUser(
+func (*MYSQLController) CreateUser(
 	name string,
 	email string,
 	passwd []byte,
@@ -71,7 +71,7 @@ func CreateUser(
 	return user, mysqldb.DBConnector.Commit(tx)
 }
 
-func DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
+func (*MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
@@ -145,7 +145,7 @@ func DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
 	return mysqldb.DBConnector.Commit(tx)
 }
 
-func GetUser(userID *uuid.UUID) (*models.UserData, error) {
+func (*MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
@@ -177,15 +177,15 @@ func GetUser(userID *uuid.UUID) (*models.UserData, error) {
 	return &userData, nil
 }
 
-func UpdateUserSettings(settings *models.Asset) error {
+func (*MYSQLController) UpdateUserSettings(settings *models.Asset) error {
 	return mysqldb.UpdateAsset(mysqldb.UserSettings, settings)
 }
 
-func UpdateUserAssets(assets *models.Asset) error {
+func (*MYSQLController) UpdateUserAssets(assets *models.Asset) error {
 	return mysqldb.UpdateAsset(mysqldb.UserAssets, assets)
 }
 
-func Authenticate(email string, passwd []byte, authenticate func(string, []byte, *models.User) error) error {
+func (*MYSQLController) Authenticate(email string, passwd []byte, authenticate func(string, []byte, *models.User) error) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err

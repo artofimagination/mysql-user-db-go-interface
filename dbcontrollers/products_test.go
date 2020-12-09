@@ -1,4 +1,4 @@
-package controllers
+package dbcontrollers
 
 import (
 	"fmt"
@@ -31,6 +31,8 @@ func createProductTestData() (*test.OrderedTests, error) {
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
+
+	dbController = &MYSQLController{}
 
 	productUsers, privileges := createTestUsersData()
 
@@ -246,7 +248,7 @@ func TestCreateProduct(t *testing.T) {
 				productAdded: false,
 			}
 
-			output, err := CreateProduct(
+			output, err := dbController.CreateProduct(
 				input.Name,
 				input.Public,
 				productUsers,

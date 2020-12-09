@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/artofimagination/mysql-user-db-go-interface/controllers"
+	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 
@@ -14,12 +14,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+var dbController *dbcontrollers.MYSQLController
+
 func sayHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hi! I am Server!")
+	fmt.Fprintln(w, "Hi! I am an example server!")
 }
 
-func insertUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Inserting user")
+func addUser(w http.ResponseWriter, r *http.Request) {
+	log.Println("Adding user")
 	names, ok := r.URL.Query()["name"]
 	if !ok || len(names[0]) < 1 {
 		fmt.Fprintln(w, "Url Param 'name' is missing")
@@ -42,9 +44,7 @@ func insertUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	password := passwords[0]
-	models.Interface = &models.RepoInterface{}
-	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
-	user, err := controllers.CreateUser(name, email, []byte(password),
+	user, err := dbController.CreateUser(name, email, []byte(password),
 		func(*uuid.UUID) string {
 			return "testPath"
 		}, func([]byte) ([]byte, error) {
@@ -57,60 +57,54 @@ func insertUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, user)
 }
 
+func queryUser(r *http.Request) (*models.UserData, error) {
+	ids, ok := r.URL.Query()["id"]
+	if !ok || len(ids[0]) < 1 {
+		return nil, errors.New("Url Param 'id' is missing")
+	}
+
+	id, err := uuid.Parse(ids[0])
+	if err != nil {
+		return nil, err
+	}
+
+	userData, err := dbController.GetUser(&id)
+	if err != nil {
+		return nil, err
+	}
+	return userData, nil
+}
+
 func getUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Getting user")
-	emails, ok := r.URL.Query()["email"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'email' is missing")
+	log.Println("Getting user")
+
+	userData, err := queryUser(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
 		return
 	}
 
-	email := emails[0]
-	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
-	tx, err := mysqldb.DBConnector.ConnectSystem()
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-		return
-	}
-
-	result, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-	} else {
-		fmt.Fprintln(w, result)
-	}
+	fmt.Fprintln(w, userData)
 }
 
 func deleteUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Deleting user")
-	emails, ok := r.URL.Query()["email"]
-	if !ok || len(emails[0]) < 1 {
-		fmt.Fprintln(w, "Url Param 'email' is missing")
+	log.Println("Deleting user")
+	userData, err := queryUser(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
 		return
 	}
 
-	email := emails[0]
-	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
-	tx, err := mysqldb.DBConnector.ConnectSystem()
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-		return
-	}
-
-	user, err := mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
-	if err != nil {
-		fmt.Fprintln(w, err.Error())
-		return
-	}
-
-	err = mysqldb.Functions.DeleteUser(&user.ID, tx)
+	nominees := make(map[uuid.UUID]uuid.UUID)
+	err = dbController.DeleteUser(&userData.ID, nominees)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 	}
+	fmt.Fprintln(w, "Delete completed")
 }
 
-func checkUserPass(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Check user pass")
+func authenticateUser(w http.ResponseWriter, r *http.Request) {
+	log.Println("Authenticate user")
 	emails, ok := r.URL.Query()["email"]
 	if !ok || len(emails[0]) < 1 {
 		fmt.Fprintln(w, "Url Param 'email' is missing")
@@ -118,29 +112,213 @@ func checkUserPass(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := emails[0]
-	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+
+	passwords, ok := r.URL.Query()["password"]
+	if !ok || len(emails[0]) < 1 {
+		fmt.Fprintln(w, "Url Param 'password' is missing")
+		return
+	}
+
+	password := []byte(passwords[0])
+
+	err := dbController.Authenticate(email, password, func(string, []byte, *models.User) error { return nil })
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
 		return
 	}
+	fmt.Fprintln(w, "User authenticated")
+}
 
-	_, err = mysqldb.Functions.GetUser(mysqldb.GetUserByEmailQuery, email, tx)
+func updateUserSettings(w http.ResponseWriter, r *http.Request) {
+	log.Println("Update user settings")
+
+	userData, err := queryUser(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+
+	settingsList, ok := r.URL.Query()["settings"]
+	if !ok || len(settingsList[0]) < 1 {
+		fmt.Fprintln(w, "Url Param 'settings' is missing")
+		return
+	}
+
+	err = dbController.UpdateUserSettings(userData.Settings)
 	if err != nil {
 		fmt.Fprintln(w, err.Error())
-	} else {
-		fmt.Fprintln(w, "User pass matched!")
+		return
 	}
+	fmt.Fprintln(w, "User settings updated")
+}
+
+func updateUserAssets(w http.ResponseWriter, r *http.Request) {
+	log.Println("Update user assets")
+
+	userData, err := queryUser(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+
+	assetList, ok := r.URL.Query()["assets"]
+	if !ok || len(assetList[0]) < 1 {
+		fmt.Fprintln(w, "Url Param 'assets' is missing")
+		return
+	}
+
+	err = dbController.UpdateUserAssets(userData.Assets)
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+	fmt.Fprintln(w, "User assets updated")
+}
+
+func addProduct(w http.ResponseWriter, r *http.Request) {
+	log.Println("Adding product")
+	names, ok := r.URL.Query()["name"]
+	if !ok || len(names[0]) < 1 {
+		fmt.Fprintln(w, "Url Param 'name' is missing")
+		return
+	}
+
+	name := names[0]
+	publicQuery, ok := r.URL.Query()["public"]
+	if !ok || len(publicQuery[0]) < 1 {
+		fmt.Fprintln(w, "Url Param 'public' is missing")
+		return
+	}
+
+	public := false
+	if publicQuery[0] == "true" {
+		public = true
+	}
+
+	productUsers := models.ProductUsers{}
+	user, err := dbController.CreateProduct(name, public, productUsers,
+		func(*uuid.UUID) string {
+			return "testPath"
+		})
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+	fmt.Fprintln(w, user)
+}
+
+func queryProduct(r *http.Request) (*models.ProductData, error) {
+	ids, ok := r.URL.Query()["id"]
+	if !ok || len(ids[0]) < 1 {
+		return nil, errors.New("Url Param 'id' is missing")
+	}
+
+	id, err := uuid.Parse(ids[0])
+	if err != nil {
+		return nil, err
+	}
+
+	productData, err := dbController.GetProduct(&id)
+	if err != nil {
+		return nil, err
+	}
+	return productData, nil
+}
+
+func getProduct(w http.ResponseWriter, r *http.Request) {
+	log.Println("Getting product")
+
+	productData, err := queryProduct(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+
+	fmt.Fprintln(w, productData)
+}
+
+func updateProductDetails(w http.ResponseWriter, r *http.Request) {
+	log.Println("Update product details")
+
+	productData, err := queryProduct(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+
+	detailsList, ok := r.URL.Query()["details"]
+	if !ok || len(detailsList[0]) < 1 {
+		fmt.Fprintln(w, "Url Param 'details' is missing")
+		return
+	}
+
+	err = dbController.UpdateProductDetails(productData.Details)
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+	fmt.Fprintln(w, "Product details updated")
+}
+
+func updateProductAssets(w http.ResponseWriter, r *http.Request) {
+	log.Println("Update product assets")
+
+	productData, err := queryProduct(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+
+	assetsQuery, ok := r.URL.Query()["assets"]
+	if !ok || len(assetsQuery[0]) < 1 {
+		fmt.Fprintln(w, "Url Param 'assets' is missing")
+		return
+	}
+
+	err = dbController.UpdateProductAssets(productData.Assets)
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+		return
+	}
+	fmt.Fprintln(w, "Product assets updated")
+}
+
+func deleteProduct(w http.ResponseWriter, r *http.Request) {
+	log.Println("Deleting product")
+	productData, err := queryProduct(r)
+	if err != nil {
+		fmt.Fprintln(w, err)
+		return
+	}
+
+	err = dbController.DeleteProduct(&productData.ID)
+	if err != nil {
+		fmt.Fprintln(w, err.Error())
+	}
+	fmt.Fprintln(w, "Product delete completed")
 }
 
 func main() {
 	http.HandleFunc("/", sayHello)
-	http.HandleFunc("/insert", insertUser)
-	http.HandleFunc("/get", getUser)
-	http.HandleFunc("/delete", deleteUser)
-	http.HandleFunc("/check", checkUserPass)
+	http.HandleFunc("/add-user", addUser)
+	http.HandleFunc("/get-user", getUser)
+	http.HandleFunc("/update-user-settings", updateUserSettings)
+	http.HandleFunc("/update-user-assets", updateUserAssets)
+	http.HandleFunc("/delete-user", deleteUser)
+	http.HandleFunc("/authenticate-user", authenticateUser)
+	http.HandleFunc("/add-product", addProduct)
+	http.HandleFunc("/get-product", getProduct)
+	http.HandleFunc("/update-product-details", updateProductDetails)
+	http.HandleFunc("/update-product-assets", updateProductAssets)
+	http.HandleFunc("/delete-product", deleteProduct)
 
-	mysqldb.DBConnection = "root:123secure@tcp(user-db:3306)/user_database?parseTime=true"
+	controller, err := dbcontrollers.NewDBController()
+	if err != nil {
+		panic(err)
+	}
+	dbController = controller
+
+	mysqldb.DBConnection = fmt.Sprintf("%s:%s@tcp(user-db:3306)/%s?parseTime=true", os.Getenv("MYSQL_DB_USER"), os.Getenv("MYSQL_DB_PASSWORD"), os.Getenv("MYSQL_DB_NAME"))
 	mysqldb.MigrationDirectory = fmt.Sprintf("%s/src/mysql-user-db-go-interface/db/migrations/mysql", os.Getenv("GOPATH"))
 
 	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
