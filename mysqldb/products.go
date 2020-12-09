@@ -98,7 +98,7 @@ func (*MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
 
 var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, public, details, BIN_TO_UUID(product_assets_id) FROM products WHERE id = UUID_TO_BIN(?)"
 
-func (*MYSQLFunctions) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error) {
+func (*MYSQLFunctions) GetProductByID(ID *uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
 
 	query, err := tx.Query(GetProductByIDQuery, ID)
@@ -121,7 +121,7 @@ func (*MYSQLFunctions) GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product
 
 var GetUserProductIDsQuery = "SELECT BIN_TO_UUID(products_id), privilege FROM users_products where users_id = UUID_TO_BIN(?)"
 
-func (*MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
+func (*MYSQLFunctions) GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProducts, error) {
 	rows, err := tx.Query(GetUserProductIDsQuery, userID)
 	switch {
 	case err == sql.ErrNoRows:
@@ -156,7 +156,7 @@ func (*MYSQLFunctions) GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.
 // GetProductsByUserID returns all products belonging to the selected user.
 // The function first gets all rows matching with the user DI from users_products table,
 // then gets all products based on the product ids from the first query result.
-func (*MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) ([]models.Product, error) {
+func (*MYSQLFunctions) GetProductsByUserID(userID *uuid.UUID) ([]models.Product, error) {
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
@@ -176,7 +176,8 @@ func (*MYSQLFunctions) GetProductsByUserID(userID uuid.UUID) ([]models.Product, 
 
 	products := []models.Product{}
 	for _, productID := range ownershipMap.ProductIDArray {
-		product, err := Functions.GetProductByID(productID, tx)
+		productID := productID
+		product, err := Functions.GetProductByID(&productID, tx)
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)
 		}

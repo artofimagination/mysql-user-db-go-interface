@@ -4,6 +4,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type ProductData struct {
+	ID      uuid.UUID
+	Name    string
+	Public  bool
+	Assets  *Asset
+	Details *Asset
+}
+
 type Product struct {
 	ID        uuid.UUID `validation:"required"`
 	Name      string    `validation:"required"`

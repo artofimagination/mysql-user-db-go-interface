@@ -7,7 +7,6 @@ import (
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -37,10 +36,9 @@ func (*MYSQLFunctions) AddAsset(assetType string, asset *models.Asset, tx *sql.T
 	return tx.Commit()
 }
 
-func UpdateAsset(assetType string, asset *models.Asset) error {
-	// Prepare data
-	queryString := "UPDATE ? set data = ? where id = UUID_TO_BIN(?)"
+var UpdateAssetQuery = "UPDATE ? set data = ? where id = UUID_TO_BIN(?)"
 
+func UpdateAsset(assetType string, asset *models.Asset) error {
 	refRaw, err := ConvertToJSONRaw(&asset.DataMap)
 	if err != nil {
 		return err
@@ -52,35 +50,52 @@ func UpdateAsset(assetType string, asset *models.Asset) error {
 		return err
 	}
 
-	query, err := tx.Query(queryString, assetType, refRaw, asset.ID)
+	result, err := tx.Exec(UpdateAssetQuery, assetType, refRaw, asset.ID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
 
-	defer query.Close()
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return fmt.Errorf(ErrAssetMissing, assetType)
+	}
+
 	return tx.Commit()
 }
 
+var GetAssetQuery = "SELECT BIN_TO_UUID(id), data FROM ? WHERE id = UUID_TO_BIN(?)"
+
 func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
 	asset := models.Asset{}
-	queryString := "SELECT BIN_TO_UUID(id), data FROM ? WHERE id = UUID_TO_BIN(?)"
 
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	query := tx.QueryRow(queryString, assetType, *assetID)
-	if err != nil {
+	query := tx.QueryRow(GetAssetQuery, assetType, assetID)
+
+	dataMap := []byte{}
+	err = query.Scan(&asset.ID, &dataMap)
+	switch {
+	case err == sql.ErrNoRows:
+		if errRb := tx.Commit(); errRb != nil {
+			return nil, err
+		}
+		return nil, sql.ErrNoRows
+	case err != nil:
 		return nil, RollbackWithErrorStack(tx, err)
+	default:
 	}
 
-	refs := json.RawMessage{}
-	if err := query.Scan(&asset.ID, &refs); err != nil {
-		return nil, RollbackWithErrorStack(tx, errors.Wrap(errors.WithStack(err), fmt.Sprintf("Asset %s not found", assetID.String())))
-	}
-
-	if err := json.Unmarshal(refs, &asset.DataMap); err != nil {
+	if err := json.Unmarshal(dataMap, &asset.DataMap); err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 

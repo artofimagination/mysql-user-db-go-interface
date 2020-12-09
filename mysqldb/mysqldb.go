@@ -34,13 +34,13 @@ type FunctionCommonInterface interface {
 	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
 	DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error
 
-	GetProductsByUserID(userID uuid.UUID) ([]models.Product, error)
+	GetProductsByUserID(userID *uuid.UUID) ([]models.Product, error)
 	UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error
 	AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error
 	DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error
-	GetUserProductIDs(userID uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
+	GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
 
-	GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error)
+	GetProductByID(ID *uuid.UUID, tx *sql.Tx) (*models.Product, error)
 	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)
 	AddProduct(product *models.Product, tx *sql.Tx) error
 	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
