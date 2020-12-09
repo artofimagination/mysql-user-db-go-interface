@@ -65,6 +65,6 @@ func NewDBController() (*MYSQLController, error) {
 
 	models.Interface = &models.RepoInterface{}
 	models.UUIDImpl = &models.RepoUUIDInterface{}
-	controller := MYSQLController{}
-	return &controller, nil
+	controller := &MYSQLController{}
+	return controller, nil
 }

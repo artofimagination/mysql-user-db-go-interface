@@ -46,7 +46,7 @@ func validateOwnership(users models.ProductUsers) error {
 	return nil
 }
 
-func (MYSQLController) CreateProduct(name string, public bool, users models.ProductUsers, generateAssetPath func(assetID *uuid.UUID) string) (*models.Product, error) {
+func (*MYSQLController) CreateProduct(name string, public bool, users models.ProductUsers, generateAssetPath func(assetID *uuid.UUID) string) (*models.Product, error) {
 	// Need to check whether the product users list is valid.
 	// - is there exactly one owner
 	// - are the privilege id-s valid
@@ -105,7 +105,7 @@ func (MYSQLController) CreateProduct(name string, public bool, users models.Prod
 	return product, nil
 }
 
-func (MYSQLController) DeleteProduct(productID *uuid.UUID) error {
+func (*MYSQLController) DeleteProduct(productID *uuid.UUID) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
@@ -140,7 +140,7 @@ func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
 	return nil
 }
 
-func (MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
+func (*MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
@@ -172,10 +172,10 @@ func (MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, er
 	return &productData, nil
 }
 
-func (MYSQLController) UpdateProductDetails(details *models.Asset) error {
+func (*MYSQLController) UpdateProductDetails(details *models.Asset) error {
 	return mysqldb.UpdateAsset(mysqldb.ProductDetails, details)
 }
 
-func (MYSQLController) UpdateProductAssets(assets *models.Asset) error {
+func (*MYSQLController) UpdateProductAssets(assets *models.Asset) error {
 	return mysqldb.UpdateAsset(mysqldb.ProductAssets, assets)
 }
