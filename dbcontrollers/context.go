@@ -69,11 +69,11 @@ func NewDBController() (*MYSQLController, error) {
 		address,
 		port,
 		dbName)
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
-	mysqldb.DBConnector = mysqldb.MYSQLConnector{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
+	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
 
-	models.Interface = models.RepoInterface{}
-	models.UUIDImpl = models.RepoUUIDInterface{}
-	controller := MYSQLController{}
-	return &controller, nil
+	models.Interface = &models.RepoInterface{}
+	models.UUIDImpl = &models.RepoUUIDInterface{}
+	controller := &MYSQLController{}
+	return controller, nil
 }

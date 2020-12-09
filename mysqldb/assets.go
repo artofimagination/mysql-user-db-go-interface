@@ -21,7 +21,7 @@ var ErrAssetMissing = "This %s is missing"
 
 var AddAssetQuery = "INSERT INTO %s (id, data) VALUES (UUID_TO_BIN(?), ?)"
 
-func (MYSQLFunctions) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
+func (*MYSQLFunctions) AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error {
 	// Prepare data
 	binary, err := json.Marshal(asset.DataMap)
 	if err != nil {
@@ -108,7 +108,7 @@ func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
 
 var DeleteAssetQuery = "DELETE FROM %s WHERE id=UUID_TO_BIN(?)"
 
-func (MYSQLFunctions) DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error {
+func (*MYSQLFunctions) DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error {
 	query := fmt.Sprintf(DeleteAssetQuery, assetType)
 	result, err := tx.Exec(query, *assetID)
 	if err != nil {

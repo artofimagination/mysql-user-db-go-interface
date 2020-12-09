@@ -8,8 +8,8 @@ type ProductData struct {
 	ID      uuid.UUID
 	Name    string
 	Public  bool
-	Assets  Asset
-	Details Asset
+	Assets  *Asset
+	Details *Asset
 }
 
 type UserProduct struct {
@@ -70,7 +70,7 @@ func (l Privileges) IsPartnerPrivilege(privilege int) bool {
 
 // NewProduct creates a new product instance where details describe the configuration of the product
 // and references contain all asset references.
-func (RepoInterface) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {
+func (*RepoInterface) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {
 	var p Product
 
 	newID, err := UUIDImpl.NewUUID()

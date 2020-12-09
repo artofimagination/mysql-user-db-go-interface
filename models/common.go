@@ -28,7 +28,7 @@ type RepoInterface struct {
 }
 
 // NewUUID is a wrapper to allow mocking
-func (RepoUUIDInterface) NewUUID() (uuid.UUID, error) {
+func (*RepoUUIDInterface) NewUUID() (uuid.UUID, error) {
 	var newID uuid.UUID
 	newID, err := uuid.NewUUID()
 	if err != nil {

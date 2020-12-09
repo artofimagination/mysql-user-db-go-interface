@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	NewProduct = 0
+	NewProduct = iota
 )
 
 func createTestData(testID int) (*test.OrderedTests, error) {
@@ -34,7 +34,7 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	UUIDImpl = UUIDImplMock{
+	UUIDImpl = &UUIDImplMock{
 		uuidMock: productID,
 	}
 
@@ -50,38 +50,33 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 	case NewProduct:
 		testCase := "valid_product"
 
-		data := test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
+		data := make(map[string]interface{})
+		data["product"] = product
+		expected := make(map[string]interface{})
+		expected["data"] = &product
+		expected["error"] = nil
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-
-		data.Data.(map[string]interface{})["product"] = product
-		data.Data.(map[string]interface{})["uuid_mock"] = UUIDImplMock{
-			uuidMock: productID,
-		}
-		data.Expected.(map[string]interface{})["data"] = &product
-		data.Expected.(map[string]interface{})["error"] = nil
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failure_case"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
-		}
 
 		err := errors.New("Failed with error")
-		data.Data.(map[string]interface{})["product"] = product
-		data.Data.(map[string]interface{})["uuid_mock"] = UUIDImplMock{
-			err: err,
+		data = make(map[string]interface{})
+		data["product"] = product
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = err
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = err
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	Interface = RepoInterface{}
+	Interface = &RepoInterface{}
 
 	return &dataSet, nil
 }
@@ -108,8 +103,8 @@ func TestNewProduct(t *testing.T) {
 				expectedData = testCase.Expected.(map[string]interface{})["data"].(*Product)
 			}
 
-			UUIDImpl = testCase.Data.(map[string]interface{})["uuid_mock"].(UUIDImplMock)
 			inputData := testCase.Data.(map[string]interface{})["product"].(Product)
+			UUIDImpl.(*UUIDImplMock).err = expectedError
 
 			output, err := Interface.NewProduct(
 				inputData.Name,

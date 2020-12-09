@@ -19,7 +19,7 @@ var ErrMissingProductDetail = errors.New("Details for the selected product not f
 var ErrMissingProductAsset = errors.New("Assets for the selected product not found")
 var ErrEmptyProductIDList = errors.New("Request does not contain any product identifiers")
 
-func validateUsers(users *models.ProductUserIDs) error {
+func validateOwnership(users *models.ProductUserIDs) error {
 	if users == nil || (users != nil && len(users.UserMap) == 0) {
 		return ErrEmptyUsersList
 	}
@@ -50,7 +50,7 @@ func validateUsers(users *models.ProductUserIDs) error {
 	return nil
 }
 
-func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) string) (*models.ProductData, error) {
+func (*MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) string) (*models.ProductData, error) {
 	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
 	if err != nil {
@@ -116,14 +116,14 @@ func (MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID,
 		ID:      product.ID,
 		Name:    product.Name,
 		Public:  product.Public,
-		Details: *productDetails,
-		Assets:  *asset,
+		Details: productDetails,
+		Assets:  asset,
 	}
 
 	return &productData, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) DeleteProduct(productID *uuid.UUID) error {
+func (*MYSQLController) DeleteProduct(productID *uuid.UUID) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (MYSQLController) DeleteProduct(productID *uuid.UUID) error {
 }
 
 func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
-	product, err := mysqldb.Functions.GetProductByID(*productID, tx)
+	product, err := mysqldb.Functions.GetProductByID(productID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ErrProductNotFound
@@ -168,13 +168,13 @@ func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
 	return nil
 }
 
-func (MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
+func (*MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	product, err := mysqldb.Functions.GetProductByID(*productID, tx)
+	product, err := mysqldb.Functions.GetProductByID(productID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
@@ -198,16 +198,16 @@ func (MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, er
 		ID:      product.ID,
 		Name:    product.Name,
 		Public:  product.Public,
-		Details: *details,
-		Assets:  *assets,
+		Details: details,
+		Assets:  assets,
 	}
 
 	return &productData, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) UpdateProductDetails(productData *models.ProductData) error {
+func (*MYSQLController) UpdateProductDetails(productData *models.ProductData) error {
 
-	if err := mysqldb.UpdateAsset(mysqldb.ProductDetails, &productData.Details); err != nil {
+	if err := mysqldb.UpdateAsset(mysqldb.ProductDetails, productData.Details); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProductDetails).Error() == err.Error() {
 			return ErrMissingProductDetail
 		}
@@ -216,8 +216,8 @@ func (MYSQLController) UpdateProductDetails(productData *models.ProductData) err
 	return nil
 }
 
-func (MYSQLController) UpdateProductAssets(productData *models.ProductData) error {
-	if err := mysqldb.UpdateAsset(mysqldb.ProductAssets, &productData.Assets); err != nil {
+func (*MYSQLController) UpdateProductAssets(productData *models.ProductData) error {
+	if err := mysqldb.UpdateAsset(mysqldb.ProductAssets, productData.Assets); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProductAssets).Error() == err.Error() {
 			return ErrMissingProductAsset
 		}
@@ -226,7 +226,7 @@ func (MYSQLController) UpdateProductAssets(productData *models.ProductData) erro
 	return nil
 }
 
-func (MYSQLController) UpdateProductUser(productID *uuid.UUID, userID *uuid.UUID, privilege int) error {
+func (*MYSQLController) UpdateProductUser(productID *uuid.UUID, userID *uuid.UUID, privilege int) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
@@ -235,7 +235,7 @@ func (MYSQLController) UpdateProductUser(productID *uuid.UUID, userID *uuid.UUID
 	return mysqldb.DBConnector.Commit(tx)
 }
 
-func (c MYSQLController) GetProductsByUserID(userID *uuid.UUID) ([]models.UserProduct, error) {
+func (c *MYSQLController) GetProductsByUserID(userID *uuid.UUID) ([]models.UserProduct, error) {
 	products := make([]models.UserProduct, 0)
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
@@ -268,7 +268,7 @@ func (c MYSQLController) GetProductsByUserID(userID *uuid.UUID) ([]models.UserPr
 	return products, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductData, error) {
+func (*MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductData, error) {
 	if len(productIDs) == 0 {
 		return nil, ErrEmptyProductIDList
 	}
@@ -312,8 +312,8 @@ func (MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductData
 			ID:      product.ID,
 			Name:    product.Name,
 			Public:  product.Public,
-			Details: details[index],
-			Assets:  assets[index],
+			Details: &details[index],
+			Assets:  &assets[index],
 		}
 		productDataList = append(productDataList, productData)
 	}
