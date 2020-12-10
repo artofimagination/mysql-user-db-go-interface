@@ -10,8 +10,8 @@ import (
 	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/pkg/errors"
 )
 
@@ -325,7 +325,7 @@ func authenticate(w http.ResponseWriter, r *http.Request) {
 
 	err = dbController.Authenticate(&id, emails[0], passwords[0],
 		func(string, pass string, user *models.User) error {
-			if !cmp.Equal([]byte(pass), user.Password) {
+			if diff := pretty.Diff([]byte(pass), user.Password); len(diff) != 0 {
 				return errors.New("Invalid password")
 			}
 			return nil
@@ -370,7 +370,7 @@ func validateUser(expected *models.UserData) (int, error) {
 		return http.StatusInternalServerError, err
 	}
 
-	if !cmp.Equal(user, expected) {
+	if diff := pretty.Diff(user, expected); len(diff) != 0 {
 		return http.StatusAccepted, errors.New("Failed to update user details")
 	}
 	return http.StatusOK, nil
@@ -632,7 +632,7 @@ func validateProduct(expected *models.ProductData) (int, error) {
 		return http.StatusInternalServerError, err
 	}
 
-	if !cmp.Equal(product, expected) {
+	if diff := pretty.Diff(product, expected); len(diff) != 0 {
 		return http.StatusAccepted, errors.New("Failed to update product details")
 	}
 	return http.StatusOK, nil

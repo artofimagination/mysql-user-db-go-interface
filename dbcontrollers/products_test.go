@@ -8,28 +8,35 @@ import (
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 )
 
 func createTestUsersData() (*models.ProductUserIDs, models.Privileges) {
 	privileges := make(models.Privileges, 2)
-	privileges[0].ID = 0
-	privileges[0].Name = "Owner"
-	privileges[0].Description = "description0"
-	privileges[1].ID = 1
-	privileges[1].Name = "User"
-	privileges[1].Description = "description1"
+	privilege := &models.Privilege{
+		ID:          0,
+		Name:        "Owner",
+		Description: "description0",
+	}
+	privileges[0] = privilege
+	privilege = &models.Privilege{
+		ID:          1,
+		Name:        "User",
+		Description: "description1",
+	}
+	privileges[1] = privilege
 	mysqldb.DBConnector = &DBConnectorMock{}
 
-	users := models.ProductUserIDs{
+	users := &models.ProductUserIDs{
 		UserIDArray: make([]uuid.UUID, 0),
 		UserMap:     make(map[uuid.UUID]int),
 	}
 
-	return &users, privileges
+	return users, privileges
 }
 
 func createProductTestData() (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -118,11 +125,11 @@ func createProductTestData() (*test.OrderedTests, error) {
 	mysqldb.Functions = &DBFunctionInterfaceMock{}
 	mysqldb.DBConnector = &DBConnectorMock{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func createValidationTestData() (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -222,7 +229,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestCreateProduct(t *testing.T) {
@@ -269,19 +276,12 @@ func TestCreateProduct(t *testing.T) {
 					return "testPath"
 				})
 
-			if output != nil {
-				if output.Name != expectedData.Name || output.Public != expectedData.Public {
-					t.Errorf(test.TestResultString, testCaseString, output, expectedData)
-					return
-				}
-			} else {
-				if output != expectedData {
-					t.Errorf(test.TestResultString, testCaseString, output, expectedData)
-					return
-				}
+			if diff := pretty.Diff(expectedData, output); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -317,7 +317,7 @@ func TestValidateUsers(t *testing.T) {
 			}
 
 			err := validateOwnership(input)
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}

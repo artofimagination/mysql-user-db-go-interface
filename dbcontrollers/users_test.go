@@ -7,8 +7,8 @@ import (
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 )
 
 func createUserTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -92,12 +92,18 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 	}
 
 	privileges := make(models.Privileges, 2)
-	privileges[0].ID = 0
-	privileges[0].Name = "Owner"
-	privileges[0].Description = "description0"
-	privileges[1].ID = 1
-	privileges[1].Name = "User"
-	privileges[1].Description = "description1"
+	privilege := &models.Privilege{
+		ID:          0,
+		Name:        "Owner",
+		Description: "description0",
+	}
+	privileges[0] = privilege
+	privilege = &models.Privilege{
+		ID:          1,
+		Name:        "User",
+		Description: "description1",
+	}
+	privileges[1] = privilege
 
 	switch testID {
 	case CreateUserTest:
@@ -219,7 +225,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 	mysqldb.Functions = &DBFunctionInterfaceMock{}
 	mysqldb.DBConnector = &DBConnectorMock{}
 	projectdb = ProjectDBDummy{}
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestCreateUser(t *testing.T) {
@@ -280,7 +286,7 @@ func TestCreateUser(t *testing.T) {
 				}
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -337,22 +343,22 @@ func TestDeleteUser(t *testing.T) {
 			}
 
 			err := dbController.DeleteUser(&userID, nominatedOwners)
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
 
-			if !cmp.Equal(mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted) {
+			if diff := pretty.Diff(mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted)
 				return
 			}
 
-			if !cmp.Equal(mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted) {
+			if diff := pretty.Diff(mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted)
 				return
 			}
 
-			if !cmp.Equal(mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts) {
+			if diff := pretty.Diff(mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts)
 				return
 			}

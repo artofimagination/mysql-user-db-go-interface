@@ -9,8 +9,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/pkg/errors"
 )
 
@@ -22,7 +22,7 @@ const (
 )
 
 func createAssetTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -149,7 +149,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	}
 	Functions = &MYSQLFunctions{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestAddAsset(t *testing.T) {
@@ -179,7 +179,7 @@ func TestAddAsset(t *testing.T) {
 			asset := testCase.Data.(models.Asset)
 
 			err = Functions.AddAsset(UserAssets, &asset, tx)
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -214,7 +214,7 @@ func TestDeleteAsset(t *testing.T) {
 			asset := testCase.Data.(models.Asset)
 
 			err = Functions.DeleteAsset(UserAssets, &asset.ID, tx)
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -244,7 +244,7 @@ func TestUpdateAsset(t *testing.T) {
 			asset := testCase.Data.(models.Asset)
 
 			err = UpdateAsset(UserAssets, &asset)
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -278,12 +278,12 @@ func TestGetAsset(t *testing.T) {
 			asset := testCase.Data.(models.Asset)
 
 			output, err := GetAsset(UserAssets, &asset.ID)
-			if !cmp.Equal(output, expectedData) {
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}

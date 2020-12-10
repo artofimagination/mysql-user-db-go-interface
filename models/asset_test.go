@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 )
 
 func createAssetTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -140,7 +140,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 
 	Interface = &RepoInterface{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestSetImagePath(t *testing.T) {
@@ -165,8 +165,8 @@ func TestSetImagePath(t *testing.T) {
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
 			err = asset.SetImagePath(assetType)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
 
@@ -258,12 +258,12 @@ func TestNewAsset(t *testing.T) {
 				func(*uuid.UUID) string {
 					return "test/path"
 				})
-			if !cmp.Equal(output, expectedData) {
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}

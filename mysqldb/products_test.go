@@ -9,8 +9,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/pkg/errors"
 )
 
@@ -46,7 +46,7 @@ func createTestProductData() (*models.Product, error) {
 		return nil, err
 	}
 
-	product := models.Product{
+	product := &models.Product{
 		ID:        productID,
 		Name:      "Test",
 		Public:    true,
@@ -54,11 +54,11 @@ func createTestProductData() (*models.Product, error) {
 		AssetsID:  assetID,
 	}
 
-	return &product, nil
+	return product, nil
 }
 
 func createTestUserProductsData(quantity int) (*models.UserProductIDs, error) {
-	userProducts := models.UserProductIDs{
+	userProducts := &models.UserProductIDs{
 		ProductMap:     make(map[uuid.UUID]int),
 		ProductIDArray: make([]uuid.UUID, 0),
 	}
@@ -71,11 +71,11 @@ func createTestUserProductsData(quantity int) (*models.UserProductIDs, error) {
 		userProducts.ProductMap[productID] = 1
 		userProducts.ProductIDArray = append(userProducts.ProductIDArray, productID)
 	}
-	return &userProducts, nil
+	return userProducts, nil
 }
 
 func createProductsTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -361,17 +361,17 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 	}
 	Functions = &MYSQLFunctions{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
-type PrivilegeExpecedData struct {
+type PrivilegeExpectedData struct {
 	privilege  *models.Privilege
 	privileges models.Privileges
 	err        error
 }
 
 func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -382,12 +382,18 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 	}
 
 	privileges := make(models.Privileges, 2)
-	privileges[0].ID = 0
-	privileges[0].Name = "test0"
-	privileges[0].Description = "description0"
-	privileges[1].ID = 1
-	privileges[1].Name = "test1"
-	privileges[1].Description = "description1"
+	privilege := &models.Privilege{
+		ID:          0,
+		Name:        "test0",
+		Description: "description0",
+	}
+	privileges[0] = privilege
+	privilege = &models.Privilege{
+		ID:          1,
+		Name:        "test1",
+		Description: "description1",
+	}
+	privileges[1] = privilege
 
 	switch testID {
 	case GetPrivilegesTest:
@@ -424,8 +430,8 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case GetPrivilegeTest:
 		testCase := "valid_name"
-		expected := PrivilegeExpecedData{
-			privilege: &privileges[0],
+		expected := PrivilegeExpectedData{
+			privilege: privileges[0],
 			err:       nil,
 		}
 		data := "Owner"
@@ -444,7 +450,7 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_name"
-		expected = PrivilegeExpecedData{
+		expected = PrivilegeExpectedData{
 			privileges: nil,
 			err:        sql.ErrNoRows,
 		}
@@ -467,7 +473,7 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 	}
 	Functions = &MYSQLFunctions{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestAddProduct(t *testing.T) {
@@ -496,8 +502,8 @@ func TestAddProduct(t *testing.T) {
 			product := testCase.Data.(*models.Product)
 
 			err = Functions.AddProduct(product, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
 		})
@@ -532,8 +538,8 @@ func TestAddProductUsers(t *testing.T) {
 
 			productUsers := testData["product_users"].(*models.ProductUserIDs)
 			err = Functions.AddProductUsers(&productID, productUsers, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
 		})
@@ -568,8 +574,8 @@ func TestUpdateUsersProducts(t *testing.T) {
 			privilege := testCase.Data.(map[string]interface{})["privilege"].(int)
 
 			err = Functions.UpdateUsersProducts(&userID, &productID, privilege, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
 		})
@@ -602,8 +608,8 @@ func TestDeleteProductUsersByProductID(t *testing.T) {
 			productID := testCase.Data.(uuid.UUID)
 
 			err = Functions.DeleteProductUsersByProductID(&productID, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
 		})
@@ -641,12 +647,12 @@ func TestGetProductByID(t *testing.T) {
 			}
 
 			output, err := Functions.GetProductByID(&productID, tx)
-			if !cmp.Equal(output, expectedData) {
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -684,12 +690,12 @@ func TestGetProductByName(t *testing.T) {
 			}
 
 			output, err := Functions.GetProductByName(productName, tx)
-			if !cmp.Equal(output, expectedData) {
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -727,12 +733,12 @@ func TestGetUserProductIDs(t *testing.T) {
 			}
 
 			output, err := Functions.GetUserProductIDs(&userID, tx)
-			if !cmp.Equal(output, expectedData) {
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -766,7 +772,7 @@ func TestDeleteProduct(t *testing.T) {
 		data := testCase.Data.(uuid.UUID)
 
 		err = Functions.DeleteProduct(&data, tx)
-		if !test.ErrEqual(err, expectedError) {
+		if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 			t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 			return
 		}
@@ -797,12 +803,12 @@ func TestGetPrivileges(t *testing.T) {
 		}
 
 		output, err := Functions.GetPrivileges()
-		if !cmp.Equal(output, expectedData) {
+		if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 			t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 			return
 		}
 
-		if !test.ErrEqual(err, expectedError) {
+		if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 			t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 			return
 		}
@@ -822,16 +828,16 @@ func TestGetPrivilege(t *testing.T) {
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
-		expectedData := dataSet.TestDataSet[testCaseString].Expected.(PrivilegeExpecedData)
+		expectedData := dataSet.TestDataSet[testCaseString].Expected.(PrivilegeExpectedData)
 		inputData := dataSet.TestDataSet[testCaseString].Data.(string)
 
 		output, err := Functions.GetPrivilege(inputData)
-		if !cmp.Equal(output, expectedData.privilege) {
+		if diff := pretty.Diff(output, expectedData.privilege); len(diff) != 0 {
 			t.Errorf(test.TestResultString, testCaseString, output, expectedData.privilege)
 			return
 		}
 
-		if !test.ErrEqual(err, expectedData.err) {
+		if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
 			t.Errorf(test.TestResultString, testCaseString, err, expectedData.err)
 			return
 		}

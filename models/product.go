@@ -31,7 +31,7 @@ type Privilege struct {
 	Description string `validation:"required"`
 }
 
-type Privileges []Privilege
+type Privileges []*Privilege
 type UserProductIDs struct {
 	ProductMap     map[uuid.UUID]int
 	ProductIDArray []uuid.UUID

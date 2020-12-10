@@ -9,8 +9,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/pkg/errors"
 )
 
@@ -32,7 +32,7 @@ type UserInputTestData struct {
 }
 
 func createUsersTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -303,7 +303,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 	}
 	Functions = &MYSQLFunctions{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestGetUser(t *testing.T) {
@@ -337,12 +337,12 @@ func TestGetUser(t *testing.T) {
 			}
 
 			output, err := Functions.GetUser(query, keyValue, tx)
-			if !cmp.Equal(output, expectedData) {
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -376,7 +376,7 @@ func TestAddUser(t *testing.T) {
 			}
 
 			err = Functions.AddUser(&user, tx)
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -410,7 +410,7 @@ func TestDeleteUser(t *testing.T) {
 			}
 
 			err = Functions.DeleteUser(&userID, tx)
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -449,12 +449,12 @@ func TestGetProductUserIDs(t *testing.T) {
 			}
 
 			output, err := Functions.GetProductUserIDs(&productID, tx)
-			if !cmp.Equal(output, expectedData) {
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
 				return
 			}
@@ -485,7 +485,7 @@ func TestDeleteProductUser(t *testing.T) {
 			input := dataSet.TestDataSet[testCaseString].Data.(UserInputTestData)
 
 			err = Functions.DeleteProductUser(&input.productID, &input.user.ID, tx)
-			if !test.ErrEqual(err, expected.err) {
+			if diff := pretty.Diff(err, expected.err); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expected.err)
 				return
 			}

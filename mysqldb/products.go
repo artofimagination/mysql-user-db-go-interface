@@ -262,7 +262,7 @@ func (*MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 
 	privileges := make(models.Privileges, 0)
 	for rows.Next() {
-		privilege := models.Privilege{}
+		privilege := &models.Privilege{}
 		err := rows.Scan(&privilege.ID, &privilege.Name, &privilege.Description)
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)
