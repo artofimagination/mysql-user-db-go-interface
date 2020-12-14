@@ -9,8 +9,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/pkg/errors"
 )
 
@@ -18,10 +18,21 @@ const (
 	GetUserTest = iota
 	AddUserTest
 	DeleteUserTest
+	GetProductUserIDsTest
+	DeleteProductUserTest
 )
 
+type UserExpectedTestData struct {
+	err error
+}
+
+type UserInputTestData struct {
+	productID uuid.UUID
+	user      models.User
+}
+
 func createUsersTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -70,14 +81,23 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
+	productUsers, err := createTestProductUsersData()
+	if err != nil {
+		return nil, err
+	}
+
+	productID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
 	switch testID {
 
 	case GetUserTest:
 		testCase := "valid_email"
 		data := make(map[string]interface{})
 		expected := make(map[string]interface{})
-
-		data["query"] = GetUserByEmailQuery
+		data["query_type"] = ByEmail
 		data["key_value"] = user.Email
 		expected["data"] = &user
 		expected["error"] = nil
@@ -85,7 +105,6 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 			AddRow(binaryUserID, user.Name, user.Email, user.Password, binarySettingsID, binaryAssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnRows(rows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     data,
 			Expected: expected,
@@ -95,8 +114,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "failed_query_email"
 		data = make(map[string]interface{})
 		expected = make(map[string]interface{})
-
-		data["query"] = GetUserByEmailQuery
+		data["query_type"] = ByEmail
 		data["key_value"] = user.Email
 		expected["data"] = nil
 		expected["error"] = errors.New("This is a failure test")
@@ -112,14 +130,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "invalid_email"
 		data = make(map[string]interface{})
 		expected = make(map[string]interface{})
-
-		data["query"] = GetUserByEmailQuery
+		data["query_type"] = ByEmail
 		data["key_value"] = user.Email
 		expected["data"] = nil
 		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnError(sql.ErrNoRows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     data,
 			Expected: expected,
@@ -128,17 +144,15 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 
 		testCase = "valid_ID"
 		data = make(map[string]interface{})
-		expected = make(map[string]interface{})
-
-		data["query"] = GetUserByIDQuery
+		data["query_type"] = ByID
 		data["key_value"] = user.ID
+		expected = make(map[string]interface{})
 		expected["data"] = &user
 		expected["error"] = nil
 		rows = sqlmock.NewRows([]string{"id", "name", "email", "password", "user_settings_id", "user_assets_id"}).
 			AddRow(binaryUserID, user.Name, user.Email, user.Password, binarySettingsID, binaryAssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnRows(rows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     data,
 			Expected: expected,
@@ -148,8 +162,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "failed_query_ID"
 		data = make(map[string]interface{})
 		expected = make(map[string]interface{})
-
-		data["query"] = GetUserByIDQuery
+		data["query_type"] = ByID
 		data["key_value"] = user.ID
 		expected["data"] = nil
 		expected["error"] = errors.New("This is a failure test")
@@ -165,25 +178,23 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "invalid_ID"
 		data = make(map[string]interface{})
 		expected = make(map[string]interface{})
-
-		data["query"] = GetUserByIDQuery
+		data["query_type"] = ByID
 		data["key_value"] = user.ID
 		expected["data"] = nil
 		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnError(sql.ErrNoRows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     data,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
 	case AddUserTest:
 		testCase := "valid_user"
-		password := []byte{}
+		password := ""
 		mock.ExpectBegin()
 		mock.ExpectExec(InsertUserQuery).WithArgs(user.ID, user.Name, user.Email, password, user.SettingsID, user.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     user,
 			Expected: nil,
@@ -232,6 +243,55 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 			Expected: ErrNoUserDeleted,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	case GetProductUserIDsTest:
+
+		testCase := "valid_id"
+		expected := make(map[string]interface{})
+		expected["data"] = productUsers
+		expected["error"] = nil
+		rows := sqlmock.NewRows([]string{"products_id", "privilege"})
+		for _, userID := range productUsers.UserIDArray {
+			rows.AddRow(userID, productUsers.UserMap[userID])
+		}
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetProductUserIDsQuery).WithArgs(userID).WillReturnRows(rows)
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     userID,
+			Expected: expected,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "missing_users"
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = sql.ErrNoRows
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetProductUserIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     userID,
+			Expected: expected,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	case DeleteProductUserTest:
+		testCase := "valid_ids"
+		expected := UserExpectedTestData{
+			err: nil,
+		}
+		input := UserInputTestData{
+			user:      user,
+			productID: productID,
+		}
+
+		mock.ExpectBegin()
+		mock.ExpectExec(DeleteProductUserQuery).WithArgs(productID, user.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     input,
+			Expected: expected,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	default:
 		return nil, fmt.Errorf("Unknown test %d", testID)
@@ -243,7 +303,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 	}
 	Functions = &MYSQLFunctions{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestGetUser(t *testing.T) {
@@ -266,7 +326,7 @@ func TestGetUser(t *testing.T) {
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
 			keyValue := testCase.Data.(map[string]interface{})["key_value"]
-			query := testCase.Data.(map[string]interface{})["query"].(string)
+			query := testCase.Data.(map[string]interface{})["query_type"].(int)
 			var expectedData *models.User
 			if testCase.Expected.(map[string]interface{})["data"] != nil {
 				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.User)
@@ -277,13 +337,13 @@ func TestGetUser(t *testing.T) {
 			}
 
 			output, err := Functions.GetUser(query, keyValue, tx)
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -316,8 +376,8 @@ func TestAddUser(t *testing.T) {
 			}
 
 			err = Functions.AddUser(&user, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -350,8 +410,83 @@ func TestDeleteUser(t *testing.T) {
 			}
 
 			err = Functions.DeleteUser(&userID, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+				return
+			}
+		})
+	}
+}
+
+func TestGetProductUserIDs(t *testing.T) {
+	// Create test data
+	dataSet, err := createUsersTestData(GetProductUserIDsTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	defer DBConnector.(*DBConnectorMock).DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			if err != nil {
+				t.Errorf("Failed to setup DB transaction %s", err)
+				return
+			}
+			testCase := dataSet.TestDataSet[testCaseString]
+			productID := testCase.Data.(uuid.UUID)
+			var expectedData *models.ProductUserIDs
+			if testCase.Expected.(map[string]interface{})["data"] != nil {
+				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.ProductUserIDs)
+			}
+			var expectedError error
+			if testCase.Expected.(map[string]interface{})["error"] != nil {
+				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
+			}
+
+			output, err := Functions.GetProductUserIDs(&productID, tx)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+				return
+			}
+
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+				return
+			}
+		})
+	}
+}
+
+func TestDeleteProductUser(t *testing.T) {
+	// Create test data
+	dataSet, err := createUsersTestData(DeleteProductUserTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	defer DBConnector.(*DBConnectorMock).DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			if err != nil {
+				t.Errorf("Failed to setup DB transaction %s", err)
+				return
+			}
+			expected := dataSet.TestDataSet[testCaseString].Expected.(UserExpectedTestData)
+			input := dataSet.TestDataSet[testCaseString].Data.(UserInputTestData)
+
+			err = Functions.DeleteProductUser(&input.productID, &input.user.ID, tx)
+			if diff := pretty.Diff(err, expected.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expected.err)
 				return
 			}
 		})

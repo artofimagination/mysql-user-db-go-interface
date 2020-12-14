@@ -9,8 +9,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/pkg/errors"
 )
 
@@ -21,9 +21,13 @@ const (
 	GetProductByIDTest
 	GetProductByNameTest
 	GetUserProductIDsTest
-	GetProductsByUserIDTest
 	DeleteProductTest
 	UpdateUsersProductsTest
+)
+
+const (
+	GetPrivilegesTest = iota
+	GetPrivilegeTest
 )
 
 func createTestProductData() (*models.Product, error) {
@@ -42,7 +46,7 @@ func createTestProductData() (*models.Product, error) {
 		return nil, err
 	}
 
-	product := models.Product{
+	product := &models.Product{
 		ID:        productID,
 		Name:      "Test",
 		Public:    true,
@@ -50,47 +54,11 @@ func createTestProductData() (*models.Product, error) {
 		AssetsID:  assetID,
 	}
 
-	return &product, nil
+	return product, nil
 }
 
-func addProductsToMock(products []models.Product) (*sqlmock.Rows, error) {
-	rowsProducts := sqlmock.NewRows([]string{"id", "name", "public", "details", "product_assets_id"})
-	for _, product := range products {
-		binaryProductID, err := json.Marshal(product.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		binaryDetailsID, err := json.Marshal(product.DetailsID)
-		if err != nil {
-			return nil, err
-		}
-
-		binaryAssetID, err := json.Marshal(product.AssetsID)
-		if err != nil {
-			return nil, err
-		}
-
-		rowsProducts.AddRow(binaryProductID, product.Name, product.Public, binaryDetailsID, binaryAssetID)
-	}
-	return rowsProducts, nil
-}
-
-func createTestProductList(quantity int) ([]models.Product, error) {
-	// Create test data
-	products := []models.Product{}
-	for ; quantity > 0; quantity-- {
-		product, err := createTestProductData()
-		if err != nil {
-			return nil, err
-		}
-		products = append(products, *product)
-	}
-	return products, nil
-}
-
-func createTestUserProductsData(quantity int) (*models.UserProducts, error) {
-	userProducts := models.UserProducts{
+func createTestUserProductsData(quantity int) (*models.UserProductIDs, error) {
+	userProducts := &models.UserProductIDs{
 		ProductMap:     make(map[uuid.UUID]int),
 		ProductIDArray: make([]uuid.UUID, 0),
 	}
@@ -103,21 +71,11 @@ func createTestUserProductsData(quantity int) (*models.UserProducts, error) {
 		userProducts.ProductMap[productID] = 1
 		userProducts.ProductIDArray = append(userProducts.ProductIDArray, productID)
 	}
-	return &userProducts, nil
-}
-
-func createTestProductUsersData() (models.ProductUsers, error) {
-	userID, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-	owners := make(models.ProductUsers)
-	owners[userID] = 1
-	return owners, nil
+	return userProducts, nil
 }
 
 func createProductsTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -152,13 +110,17 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
+	productUsers, err := createTestProductUsersData()
+	if err != nil {
+		return nil, err
+	}
+
 	switch testID {
 	case AddProductTest:
 
 		testCase := "valid_product"
 		mock.ExpectBegin()
 		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     product,
 			Expected: nil,
@@ -189,18 +151,14 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 
 	case AddProductUsersTest:
 		testCase := "valid_products"
-		productUsers, err := createTestProductUsersData()
-		if err != nil {
-			return nil, err
-		}
 		data := make(map[string]interface{})
 		data["product_id"] = product.ID
 		data["product_users"] = productUsers
 		mock.ExpectBegin()
-		for userID, privilege := range productUsers {
-			mock.ExpectExec(AddProductUsersQuery).WithArgs(product.ID, userID, privilege).WillReturnResult(sqlmock.NewResult(1, 1))
+		for _, userID := range productUsers.UserIDArray {
+			privilege := productUsers.UserMap[userID]
+			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnResult(sqlmock.NewResult(1, 1))
 		}
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     data,
 			Expected: nil,
@@ -213,8 +171,26 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		data["product_id"] = product.ID
 		data["product_users"] = productUsers
 		mock.ExpectBegin()
-		for userID, privilege := range productUsers {
-			mock.ExpectExec(AddProductUsersQuery).WithArgs(product.ID, userID, privilege).WillReturnError(expected)
+		for _, userID := range productUsers.UserIDArray {
+			privilege := productUsers.UserMap[userID]
+			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnError(expected)
+		}
+		mock.ExpectRollback()
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "failed_to_add"
+		data = make(map[string]interface{})
+		expected = ErrNoProductUserAdded
+		data["product_id"] = product.ID
+		data["product_users"] = productUsers
+		mock.ExpectBegin()
+		for _, userID := range productUsers.UserIDArray {
+			privilege := productUsers.UserMap[userID]
+			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnResult(sqlmock.NewResult(1, 0))
 		}
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = test.Data{
@@ -280,7 +256,6 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 			AddRow(binaryProductID, product.Name, product.Public, product.DetailsID, binaryAssetID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByNameQuery).WithArgs(product.Name).WillReturnRows(rows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     product.Name,
 			Expected: expected,
@@ -293,7 +268,6 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByNameQuery).WithArgs(product.Name).WillReturnError(sql.ErrNoRows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     product.Name,
 			Expected: expected,
@@ -323,56 +297,6 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
-		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     userID,
-			Expected: expected,
-		}
-		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
-
-	case GetProductsByUserIDTest:
-		products, err := createTestProductList(2)
-		if err != nil {
-			return nil, err
-		}
-
-		testCase := "valid_id"
-		expected := make(map[string]interface{})
-		expected["data"] = products
-		expected["error"] = nil
-		rowsUserProducts := sqlmock.NewRows([]string{"products_id", "privilege"})
-		// Ranging through map is random, need to collect product ID-s in fixed order in order to
-		// have the correct order of sql mock expectations.
-		for _, productID := range userProducts.ProductIDArray {
-			rowsUserProducts.AddRow(productID, userProducts.ProductMap[productID])
-		}
-
-		products[0].ID = userProducts.ProductIDArray[0]
-		products[1].ID = userProducts.ProductIDArray[1]
-
-		rowsProducts, err := addProductsToMock(products)
-		if err != nil {
-			return nil, err
-		}
-
-		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnRows(rowsUserProducts)
-		for _, productID := range userProducts.ProductIDArray {
-			mock.ExpectQuery(GetProductByIDQuery).WithArgs(productID).WillReturnRows(rowsProducts)
-		}
-		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     userID,
-			Expected: expected,
-		}
-		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
-
-		testCase = "no_products"
-		expected = make(map[string]interface{})
-		expected["data"] = nil
-		expected["error"] = sql.ErrNoRows
-		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
-		mock.ExpectCommit()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     userID,
 			Expected: expected,
@@ -437,11 +361,17 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 	}
 	Functions = &MYSQLFunctions{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
-func createPrivilegesTestData() (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+type PrivilegeExpectedData struct {
+	privilege  *models.Privilege
+	privileges models.Privileges
+	err        error
+}
+
+func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -452,44 +382,90 @@ func createPrivilegesTestData() (*test.OrderedTests, error) {
 	}
 
 	privileges := make(models.Privileges, 2)
-	privileges[0].ID = 0
-	privileges[0].Name = "test0"
-	privileges[0].Description = "description0"
-	privileges[1].ID = 1
-	privileges[1].Name = "test1"
-	privileges[1].Description = "description1"
-
-	testCase := "valid_id"
-	data := test.Data{
-		Data:     nil,
-		Expected: make(map[string]interface{}),
+	privilege := &models.Privilege{
+		ID:          0,
+		Name:        "test0",
+		Description: "description0",
 	}
-	data.Expected.(map[string]interface{})["data"] = privileges
-	data.Expected.(map[string]interface{})["error"] = nil
-	rows := sqlmock.NewRows([]string{"id", "name", "description"})
-	for _, privilege := range privileges {
-		rows.AddRow(privilege.ID, privilege.Name, privilege.Description)
+	privileges[0] = privilege
+	privilege = &models.Privilege{
+		ID:          1,
+		Name:        "test1",
+		Description: "description1",
 	}
+	privileges[1] = privilege
 
-	mock.ExpectBegin()
-	mock.ExpectQuery(GetPrivilegesQuery).WillReturnRows(rows)
-	mock.ExpectCommit()
-	dataSet.TestDataSet[testCase] = data
-	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	switch testID {
+	case GetPrivilegesTest:
+		testCase := "valid_id"
+		data := test.Data{
+			Data:     nil,
+			Expected: make(map[string]interface{}),
+		}
+		data.Expected.(map[string]interface{})["data"] = privileges
+		data.Expected.(map[string]interface{})["error"] = nil
+		rows := sqlmock.NewRows([]string{"id", "name", "description"})
+		for _, privilege := range privileges {
+			rows.AddRow(privilege.ID, privilege.Name, privilege.Description)
+		}
 
-	testCase = "invalid_id"
-	data = test.Data{
-		Data:     nil,
-		Expected: make(map[string]interface{}),
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetPrivilegesQuery).WillReturnRows(rows)
+		mock.ExpectCommit()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "invalid_id"
+		data = test.Data{
+			Data:     nil,
+			Expected: make(map[string]interface{}),
+		}
+		data.Expected.(map[string]interface{})["data"] = nil
+		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetPrivilegesQuery).WillReturnError(sql.ErrNoRows)
+		mock.ExpectCommit()
+		dataSet.TestDataSet[testCase] = data
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+	case GetPrivilegeTest:
+		testCase := "valid_name"
+		expected := PrivilegeExpectedData{
+			privilege: privileges[0],
+			err:       nil,
+		}
+		data := "Owner"
+		rows := sqlmock.NewRows([]string{"id", "name", "description"})
+		for _, privilege := range privileges {
+			rows.AddRow(privilege.ID, privilege.Name, privilege.Description)
+		}
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetPrivilegeQuery).WithArgs(data).WillReturnRows(rows)
+		mock.ExpectCommit()
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "invalid_name"
+		expected = PrivilegeExpectedData{
+			privileges: nil,
+			err:        sql.ErrNoRows,
+		}
+		data = "TestName"
+
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetPrivilegeQuery).WithArgs(data).WillReturnError(expected.err)
+		mock.ExpectCommit()
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
 	}
-	data.Expected.(map[string]interface{})["data"] = nil
-	data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(GetPrivilegesQuery).WillReturnError(sql.ErrNoRows)
-	mock.ExpectCommit()
-	dataSet.TestDataSet[testCase] = data
-	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	DBConnector = &DBConnectorMock{
 		DB:   db,
@@ -497,7 +473,7 @@ func createPrivilegesTestData() (*test.OrderedTests, error) {
 	}
 	Functions = &MYSQLFunctions{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestAddProduct(t *testing.T) {
@@ -526,8 +502,8 @@ func TestAddProduct(t *testing.T) {
 			product := testCase.Data.(*models.Product)
 
 			err = Functions.AddProduct(product, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -560,9 +536,10 @@ func TestAddProductUsers(t *testing.T) {
 			testData := testCase.Data.(map[string]interface{})
 			productID := testData["product_id"].(uuid.UUID)
 
-			err = Functions.AddProductUsers(&productID, testData["product_users"].(models.ProductUsers), tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			productUsers := testData["product_users"].(*models.ProductUserIDs)
+			err = Functions.AddProductUsers(&productID, productUsers, tx)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -597,8 +574,8 @@ func TestUpdateUsersProducts(t *testing.T) {
 			privilege := testCase.Data.(map[string]interface{})["privilege"].(int)
 
 			err = Functions.UpdateUsersProducts(&userID, &productID, privilege, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -631,8 +608,8 @@ func TestDeleteProductUsersByProductID(t *testing.T) {
 			productID := testCase.Data.(uuid.UUID)
 
 			err = Functions.DeleteProductUsersByProductID(&productID, tx)
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -670,13 +647,13 @@ func TestGetProductByID(t *testing.T) {
 			}
 
 			output, err := Functions.GetProductByID(&productID, tx)
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -713,13 +690,13 @@ func TestGetProductByName(t *testing.T) {
 			}
 
 			output, err := Functions.GetProductByName(productName, tx)
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -746,9 +723,9 @@ func TestGetUserProductIDs(t *testing.T) {
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
 			userID := testCase.Data.(uuid.UUID)
-			var expectedData *models.UserProducts
+			var expectedData *models.UserProductIDs
 			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.UserProducts)
+				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.UserProductIDs)
 			}
 			var expectedError error
 			if testCase.Expected.(map[string]interface{})["error"] != nil {
@@ -756,51 +733,13 @@ func TestGetUserProductIDs(t *testing.T) {
 			}
 
 			output, err := Functions.GetUserProductIDs(&userID, tx)
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
-				return
-			}
-		})
-	}
-}
-
-func TestGetProductsByUserID(t *testing.T) {
-	// Create test data
-	dataSet, err := createProductsTestData(GetProductsByUserIDTest)
-	if err != nil {
-		t.Errorf("Failed to generate test data: %s", err)
-		return
-	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
-
-	// Run tests
-	for _, testCaseString := range dataSet.OrderedList {
-		testCaseString := testCaseString
-		t.Run(testCaseString, func(t *testing.T) {
-			testCase := dataSet.TestDataSet[testCaseString]
-			userID := testCase.Data.(uuid.UUID)
-			var expectedData []models.Product
-			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].([]models.Product)
-			}
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
-
-			output, err := Functions.GetProductsByUserID(&userID)
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
-				return
-			}
-
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -833,8 +772,8 @@ func TestDeleteProduct(t *testing.T) {
 		data := testCase.Data.(uuid.UUID)
 
 		err = Functions.DeleteProduct(&data, tx)
-		if !test.ErrEqual(err, expectedError) {
-			t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+		if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+			t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 			return
 		}
 	}
@@ -842,7 +781,7 @@ func TestDeleteProduct(t *testing.T) {
 
 func TestGetPrivileges(t *testing.T) {
 	// Create test data
-	dataSet, err := createPrivilegesTestData()
+	dataSet, err := createPrivilegesTestData(GetPrivilegesTest)
 	if err != nil {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
@@ -864,13 +803,42 @@ func TestGetPrivileges(t *testing.T) {
 		}
 
 		output, err := Functions.GetPrivileges()
-		if !cmp.Equal(output, expectedData) {
-			t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+		if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+			t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 			return
 		}
 
-		if !test.ErrEqual(err, expectedError) {
-			t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+		if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+			t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			return
+		}
+	}
+}
+
+func TestGetPrivilege(t *testing.T) {
+	// Create test data
+	dataSet, err := createPrivilegesTestData(GetPrivilegeTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+
+	defer DBConnector.(*DBConnectorMock).DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		expectedData := dataSet.TestDataSet[testCaseString].Expected.(PrivilegeExpectedData)
+		inputData := dataSet.TestDataSet[testCaseString].Data.(string)
+
+		output, err := Functions.GetPrivilege(inputData)
+		if diff := pretty.Diff(output, expectedData.privilege); len(diff) != 0 {
+			t.Errorf(test.TestResultString, testCaseString, output, expectedData.privilege)
+			return
+		}
+
+		if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+			t.Errorf(test.TestResultString, testCaseString, err, expectedData.err)
 			return
 		}
 	}

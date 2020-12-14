@@ -11,7 +11,7 @@ import (
 )
 
 type DBControllerCommon interface {
-	CreateProduct(name string, public bool, users models.ProductUsers, generateAssetPath func(assetID *uuid.UUID) string) (*models.Product, error)
+	CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) string) (*models.Product, error)
 	DeleteProduct(productID *uuid.UUID) error
 	GetProduct(productID *uuid.UUID) (*models.ProductData, error)
 	UpdateProductDetails(details *models.Asset) error
@@ -32,6 +32,10 @@ type DBControllerCommon interface {
 
 type MYSQLController struct{}
 
+func SetProjectDB(db ProjectDBCommon) {
+	projectdb = db
+}
+
 func NewDBController() (*MYSQLController, error) {
 	address := os.Getenv("MYSQL_DB_ADDRESS")
 	if address == "" {
@@ -49,17 +53,22 @@ func NewDBController() (*MYSQLController, error) {
 	if address == "" {
 		return nil, errors.New("MYSQL DB password not defined")
 	}
+	dbName := os.Getenv("MYSQL_DB_NAME")
+	if address == "" {
+		return nil, errors.New("MYSQL DB name not defined")
+	}
 
 	mysqldb.MigrationDirectory = os.Getenv("MYSQL_DB_PASSWORD")
 	if mysqldb.MigrationDirectory == "" {
 		return nil, errors.New("MYSQL DB migration folder not defined")
 	}
 	mysqldb.DBConnection = fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/user_database?parseTime=true",
+		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		username,
 		pass,
 		address,
-		port)
+		port,
+		dbName)
 	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
 

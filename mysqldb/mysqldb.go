@@ -19,6 +19,7 @@ type DBConnectorCommon interface {
 	BootstrapSystem() error
 	ConnectSystem() (*sql.Tx, error)
 	Commit(tx *sql.Tx) error
+	Rollback(tx *sql.Tx) error
 }
 
 // MYSQL Interface implementation
@@ -27,25 +28,30 @@ type MYSQLConnector struct {
 
 // Data handling common function interface. Needed in order to allow mock and custom functionality implementations.
 type FunctionCommonInterface interface {
-	GetUser(queryString string, keyValue interface{}, tx *sql.Tx) (*models.User, error)
+	GetUser(queryType int, keyValue interface{}, tx *sql.Tx) (*models.User, error)
 	AddUser(user *models.User, tx *sql.Tx) error
 	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
+	GetProductUserIDs(productID *uuid.UUID, tx *sql.Tx) (*models.ProductUserIDs, error)
+	GetUsersByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.User, error)
 
 	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
 	DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error
+	GetAssets(assetType string, IDs []uuid.UUID, tx *sql.Tx) ([]models.Asset, error)
 
-	GetProductsByUserID(userID *uuid.UUID) ([]models.Product, error)
 	UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error
-	AddProductUsers(productID *uuid.UUID, productUsers models.ProductUsers, tx *sql.Tx) error
+	AddProductUsers(productID *uuid.UUID, productUsers *models.ProductUserIDs, tx *sql.Tx) error
 	DeleteProductUsersByProductID(productID *uuid.UUID, tx *sql.Tx) error
-	GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProducts, error)
+	DeleteProductUser(productID *uuid.UUID, userID *uuid.UUID, tx *sql.Tx) error
+	GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProductIDs, error)
 
 	GetProductByID(ID *uuid.UUID, tx *sql.Tx) (*models.Product, error)
 	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)
 	AddProduct(product *models.Product, tx *sql.Tx) error
 	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
+	GetProductsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Product, error)
 
 	GetPrivileges() (models.Privileges, error)
+	GetPrivilege(name string) (*models.Privilege, error)
 }
 
 // MYSQL Interface implementation
@@ -59,6 +65,10 @@ var MigrationDirectory = ""
 
 func (*MYSQLConnector) Commit(tx *sql.Tx) error {
 	return tx.Commit()
+}
+
+func (*MYSQLConnector) Rollback(tx *sql.Tx) error {
+	return tx.Rollback()
 }
 
 func (*MYSQLConnector) BootstrapSystem() error {
@@ -75,7 +85,7 @@ func (*MYSQLConnector) BootstrapSystem() error {
 	fmt.Printf("DB connection open\n")
 
 	n := 0
-	for retryCount := 10; retryCount > 0; retryCount-- {
+	for retryCount := 20; retryCount > 0; retryCount-- {
 		n, err = migrate.Exec(db, "mysql", migrations, migrate.Up)
 		if err == nil {
 			break

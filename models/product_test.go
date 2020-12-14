@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 )
 
 func createTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -78,7 +78,7 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 
 	Interface = &RepoInterface{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestNewProduct(t *testing.T) {
@@ -112,13 +112,13 @@ func TestNewProduct(t *testing.T) {
 				&inputData.DetailsID,
 				&inputData.AssetsID,
 			)
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
