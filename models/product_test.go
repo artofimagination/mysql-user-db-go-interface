@@ -5,16 +5,16 @@ import (
 	"testing"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 )
 
 const (
-	NewProduct = 0
+	NewProduct = iota
 )
 
 func createTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := test.OrderedTests{
+	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
@@ -34,7 +34,7 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	UUIDImpl = UUIDImplMock{
+	UUIDImpl = &UUIDImplMock{
 		uuidMock: productID,
 	}
 
@@ -50,40 +50,35 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 	case NewProduct:
 		testCase := "valid_product"
 
-		data := test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
+		data := make(map[string]interface{})
+		data["product"] = product
+		expected := make(map[string]interface{})
+		expected["data"] = &product
+		expected["error"] = nil
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-
-		data.Data.(map[string]interface{})["product"] = product
-		data.Data.(map[string]interface{})["uuid_mock"] = UUIDImplMock{
-			uuidMock: productID,
-		}
-		data.Expected.(map[string]interface{})["data"] = &product
-		data.Expected.(map[string]interface{})["error"] = nil
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failure_case"
-		data = test.Data{
-			Data:     make(map[string]interface{}),
-			Expected: make(map[string]interface{}),
-		}
 
 		err := errors.New("Failed with error")
-		data.Data.(map[string]interface{})["product"] = product
-		data.Data.(map[string]interface{})["uuid_mock"] = UUIDImplMock{
-			err: err,
+		data = make(map[string]interface{})
+		data["product"] = product
+		expected = make(map[string]interface{})
+		expected["data"] = nil
+		expected["error"] = err
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     data,
+			Expected: expected,
 		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = err
-		dataSet.TestDataSet[testCase] = data
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	Interface = RepoInterface{}
+	Interface = &RepoInterface{}
 
-	return &dataSet, nil
+	return dataSet, nil
 }
 
 func TestNewProduct(t *testing.T) {
@@ -108,8 +103,8 @@ func TestNewProduct(t *testing.T) {
 				expectedData = testCase.Expected.(map[string]interface{})["data"].(*Product)
 			}
 
-			UUIDImpl = testCase.Data.(map[string]interface{})["uuid_mock"].(UUIDImplMock)
 			inputData := testCase.Data.(map[string]interface{})["product"].(Product)
+			UUIDImpl.(*UUIDImplMock).err = expectedError
 
 			output, err := Interface.NewProduct(
 				inputData.Name,
@@ -117,13 +112,13 @@ func TestNewProduct(t *testing.T) {
 				&inputData.DetailsID,
 				&inputData.AssetsID,
 			)
-			if !cmp.Equal(output, expectedData) {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
-			if !test.ErrEqual(err, expectedError) {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})

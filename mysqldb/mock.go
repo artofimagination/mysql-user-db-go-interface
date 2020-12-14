@@ -13,7 +13,7 @@ type DBConnectorMock struct {
 	DB   *sql.DB
 }
 
-func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
+func (i *DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 	tx, err := i.DB.Begin()
 	if err != nil {
 		return nil, err
@@ -21,11 +21,11 @@ func (i DBConnectorMock) ConnectSystem() (*sql.Tx, error) {
 	return tx, nil
 }
 
-func (DBConnectorMock) BootstrapSystem() error {
+func (*DBConnectorMock) BootstrapSystem() error {
 	return nil
 }
 
-func (DBConnectorMock) Commit(tx *sql.Tx) error {
+func (*DBConnectorMock) Commit(tx *sql.Tx) error {
 	return nil
 }
 

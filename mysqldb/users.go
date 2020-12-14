@@ -30,7 +30,7 @@ var GetUserByIDQuery = "select BIN_TO_UUID(id), name, email, password, BIN_TO_UU
 
 // GetUser returns the user defined by the key name and key value.
 // Key name can be either id or email.
-func (MYSQLFunctions) GetUser(queryType int, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
+func (*MYSQLFunctions) GetUser(queryType int, keyValue interface{}, tx *sql.Tx) (*models.User, error) {
 	queryString := GetUserByIDQuery
 	if queryType == ByEmail {
 		queryString = GetUserByEmailQuery
@@ -149,7 +149,7 @@ var InsertUserQuery = "INSERT INTO users (id, name, email, password, user_settin
 // AddUser creates a new user entry in the DB.
 // Whitespaces in the email are automatically deleted
 // Email/Name are unique in DB. Duplicates will return error.
-func (MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
+func (*MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
 	_, err := tx.Exec(InsertUserQuery, user.ID, user.Name, user.Email, string(user.Password), user.SettingsID, user.AssetsID)
 	errDuplicateName := fmt.Errorf(ErrSQLDuplicateUserNameEntryString, user.Name)
 	errDuplicateEmail := fmt.Errorf(ErrSQLDuplicateEmailEntryString, user.Email)
@@ -176,7 +176,7 @@ func (MYSQLFunctions) AddUser(user *models.User, tx *sql.Tx) error {
 
 var DeleteUserQuery = "DELETE FROM users WHERE id=UUID_TO_BIN(?)"
 
-func (MYSQLFunctions) DeleteUser(ID *uuid.UUID, tx *sql.Tx) error {
+func (*MYSQLFunctions) DeleteUser(ID *uuid.UUID, tx *sql.Tx) error {
 	result, err := tx.Exec(DeleteUserQuery, ID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)

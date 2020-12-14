@@ -20,7 +20,7 @@ var ErrMissingUserSettings = errors.New("Settings for the selected user not foun
 var ErrMissingUserAssets = errors.New("Assets for the selected user not found")
 var ErrEmptyUserIDList = errors.New("Request does not contain any user identifiers")
 
-func (MYSQLController) CreateUser(
+func (*MYSQLController) CreateUser(
 	name string,
 	email string,
 	passwd []byte,
@@ -87,14 +87,14 @@ func (MYSQLController) CreateUser(
 		ID:       user.ID,
 		Name:     user.Name,
 		Email:    user.Email,
-		Settings: *userSettings,
-		Assets:   *asset,
+		Settings: userSettings,
+		Assets:   asset,
 	}
 
 	return &userData, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
+func (*MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]uuid.UUID) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
@@ -173,7 +173,7 @@ func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]u
 	return mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
+func (*MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
@@ -204,14 +204,14 @@ func (MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 		ID:       user.ID,
 		Name:     user.Name,
 		Email:    user.Email,
-		Settings: *settings,
-		Assets:   *assets,
+		Settings: settings,
+		Assets:   assets,
 	}
 
 	return &userData, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) GetUserByEmail(email string) (*models.UserData, error) {
+func (*MYSQLController) GetUserByEmail(email string) (*models.UserData, error) {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
@@ -242,14 +242,14 @@ func (MYSQLController) GetUserByEmail(email string) (*models.UserData, error) {
 		ID:       user.ID,
 		Name:     user.Name,
 		Email:    user.Email,
-		Settings: *settings,
-		Assets:   *assets,
+		Settings: settings,
+		Assets:   assets,
 	}
 
 	return &userData, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) GetUsers(userIDs []uuid.UUID) ([]models.UserData, error) {
+func (*MYSQLController) GetUsers(userIDs []uuid.UUID) ([]models.UserData, error) {
 	if len(userIDs) == 0 {
 		return nil, ErrEmptyUserIDList
 	}
@@ -293,8 +293,8 @@ func (MYSQLController) GetUsers(userIDs []uuid.UUID) ([]models.UserData, error) 
 			ID:       user.ID,
 			Name:     user.Name,
 			Email:    user.Email,
-			Settings: settings[index],
-			Assets:   assets[index],
+			Settings: &settings[index],
+			Assets:   &assets[index],
 		}
 		userDataList = append(userDataList, userData)
 	}
@@ -302,8 +302,8 @@ func (MYSQLController) GetUsers(userIDs []uuid.UUID) ([]models.UserData, error) 
 	return userDataList, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) UpdateUserSettings(userData *models.UserData) error {
-	if err := mysqldb.UpdateAsset(mysqldb.UserSettings, &userData.Settings); err != nil {
+func (*MYSQLController) UpdateUserSettings(userData *models.UserData) error {
+	if err := mysqldb.UpdateAsset(mysqldb.UserSettings, userData.Settings); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.UserSettings).Error() == err.Error() {
 			return ErrMissingUserSettings
 		}
@@ -312,8 +312,8 @@ func (MYSQLController) UpdateUserSettings(userData *models.UserData) error {
 	return nil
 }
 
-func (MYSQLController) UpdateUserAssets(userData *models.UserData) error {
-	if err := mysqldb.UpdateAsset(mysqldb.UserAssets, &userData.Assets); err != nil {
+func (*MYSQLController) UpdateUserAssets(userData *models.UserData) error {
+	if err := mysqldb.UpdateAsset(mysqldb.UserAssets, userData.Assets); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.UserAssets).Error() == err.Error() {
 			return ErrMissingUserAssets
 		}
@@ -322,7 +322,7 @@ func (MYSQLController) UpdateUserAssets(userData *models.UserData) error {
 	return nil
 }
 
-func (MYSQLController) Authenticate(
+func (*MYSQLController) Authenticate(
 	userID *uuid.UUID,
 	email string,
 	password string,
@@ -350,7 +350,7 @@ func (MYSQLController) Authenticate(
 	return mysqldb.DBConnector.Commit(tx)
 }
 
-func (c MYSQLController) GetUsersByProductID(productID *uuid.UUID) ([]models.ProductUser, error) {
+func (c *MYSQLController) GetUsersByProductID(productID *uuid.UUID) ([]models.ProductUser, error) {
 	users := make([]models.ProductUser, 0)
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
@@ -383,7 +383,7 @@ func (c MYSQLController) GetUsersByProductID(productID *uuid.UUID) ([]models.Pro
 	return users, mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) AddProductUser(productID *uuid.UUID, userID *uuid.UUID, privilege int) error {
+func (*MYSQLController) AddProductUser(productID *uuid.UUID, userID *uuid.UUID, privilege int) error {
 	productUsers := models.ProductUserIDs{
 		UserIDArray: make([]uuid.UUID, 0),
 		UserMap:     make(map[uuid.UUID]int),
@@ -405,7 +405,7 @@ func (MYSQLController) AddProductUser(productID *uuid.UUID, userID *uuid.UUID, p
 	return mysqldb.DBConnector.Commit(tx)
 }
 
-func (MYSQLController) DeleteProductUser(productID *uuid.UUID, userID *uuid.UUID) error {
+func (*MYSQLController) DeleteProductUser(productID *uuid.UUID, userID *uuid.UUID) error {
 	tx, err := mysqldb.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
