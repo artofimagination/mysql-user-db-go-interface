@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"path"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -64,7 +65,7 @@ func (r *Asset) SetFilePath(typeString string, extension string) error {
 		return err
 	}
 
-	r.DataMap[typeString] = path.Join(r.DataMap[BaseAssetPath].(string), newID.String()+extension)
+	r.DataMap[typeString] = strings.Join([]string{path.Join(r.DataMap[BaseAssetPath].(string), newID.String()), extension}, "")
 
 	return nil
 }
