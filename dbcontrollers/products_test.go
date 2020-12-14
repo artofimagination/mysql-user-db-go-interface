@@ -55,11 +55,6 @@ func createProductTestData() (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	models.Interface = &ModelInterfaceMock{
-		assetID:   assetID,
-		productID: productID,
-	}
-
 	product := models.Product{
 		Name:      "testProduct",
 		Public:    true,
@@ -79,17 +74,18 @@ func createProductTestData() (*test.OrderedTests, error) {
 		DataMap: dataMap,
 	}
 
-	details := &models.Asset{
-		ID:      assetID,
-		DataMap: dataMap,
-	}
-
 	productData := models.ProductData{
 		ID:      product.ID,
 		Name:    product.Name,
 		Public:  product.Public,
-		Details: details,
+		Details: assets,
 		Assets:  assets,
+	}
+
+	models.Interface = &ModelInterfaceMock{
+		assetID:   assetID,
+		productID: productID,
+		asset:     assets,
 	}
 
 	testCase := "no_existing_product"
@@ -277,12 +273,12 @@ func TestCreateProduct(t *testing.T) {
 				})
 
 			if diff := pretty.Diff(expectedData, output); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -318,7 +314,7 @@ func TestValidateUsers(t *testing.T) {
 
 			err := validateOwnership(input)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})

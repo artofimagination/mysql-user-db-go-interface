@@ -13,6 +13,7 @@ type ModelInterfaceMock struct {
 	settingsID uuid.UUID
 	userID     uuid.UUID
 	productID  uuid.UUID
+	asset      *models.Asset
 
 	err error
 }
@@ -29,10 +30,7 @@ func (i *ModelInterfaceMock) NewProduct(name string, public bool, detailsID *uui
 }
 
 func (i *ModelInterfaceMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) string) (*models.Asset, error) {
-	a := &models.Asset{
-		ID: i.assetID,
-	}
-	return a, i.err
+	return i.asset, i.err
 }
 
 func (i *ModelInterfaceMock) NewUser(

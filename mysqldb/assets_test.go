@@ -180,7 +180,7 @@ func TestAddAsset(t *testing.T) {
 
 			err = Functions.AddAsset(UserAssets, &asset, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -215,7 +215,7 @@ func TestDeleteAsset(t *testing.T) {
 
 			err = Functions.DeleteAsset(UserAssets, &asset.ID, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -245,7 +245,7 @@ func TestUpdateAsset(t *testing.T) {
 
 			err = UpdateAsset(UserAssets, &asset)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -279,12 +279,12 @@ func TestGetAsset(t *testing.T) {
 
 			output, err := GetAsset(UserAssets, &asset.ID)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})

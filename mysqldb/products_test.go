@@ -503,7 +503,7 @@ func TestAddProduct(t *testing.T) {
 
 			err = Functions.AddProduct(product, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -539,7 +539,7 @@ func TestAddProductUsers(t *testing.T) {
 			productUsers := testData["product_users"].(*models.ProductUserIDs)
 			err = Functions.AddProductUsers(&productID, productUsers, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -575,7 +575,7 @@ func TestUpdateUsersProducts(t *testing.T) {
 
 			err = Functions.UpdateUsersProducts(&userID, &productID, privilege, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -609,7 +609,7 @@ func TestDeleteProductUsersByProductID(t *testing.T) {
 
 			err = Functions.DeleteProductUsersByProductID(&productID, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -648,12 +648,12 @@ func TestGetProductByID(t *testing.T) {
 
 			output, err := Functions.GetProductByID(&productID, tx)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -691,12 +691,12 @@ func TestGetProductByName(t *testing.T) {
 
 			output, err := Functions.GetProductByName(productName, tx)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -734,12 +734,12 @@ func TestGetUserProductIDs(t *testing.T) {
 
 			output, err := Functions.GetUserProductIDs(&userID, tx)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -773,7 +773,7 @@ func TestDeleteProduct(t *testing.T) {
 
 		err = Functions.DeleteProduct(&data, tx)
 		if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-			t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 			return
 		}
 	}
@@ -804,12 +804,12 @@ func TestGetPrivileges(t *testing.T) {
 
 		output, err := Functions.GetPrivileges()
 		if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-			t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 			return
 		}
 
 		if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-			t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+			t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 			return
 		}
 	}

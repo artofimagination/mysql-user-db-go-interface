@@ -166,11 +166,11 @@ func TestSetImagePath(t *testing.T) {
 
 			err = asset.SetImagePath(assetType)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 
-			if asset.DataMap[assetType] != expectedData {
+			if diff := pretty.Diff(asset.DataMap[assetType], expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, asset.DataMap[assetType], expectedData)
 				return
 			}
@@ -196,8 +196,8 @@ func TestGetImagePath(t *testing.T) {
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
 			output := asset.GetImagePath(assetType)
-			if output != expectedData {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 		})
@@ -222,8 +222,8 @@ func TestGetURL(t *testing.T) {
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
 			output := asset.GetURL(assetType)
-			if output != expectedData {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 		})
@@ -259,12 +259,12 @@ func TestNewAsset(t *testing.T) {
 					return "test/path"
 				})
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData)
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
 			}
 
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})

@@ -13,4 +13,4 @@ type Data struct {
 	Data     interface{}
 }
 
-var TestResultString = "\n%s test failed.\n\nReturned:\n%+v\n\nExpected:\n%+v"
+var TestResultString = "\n%s test failed.\n\nReturned:\n%+v\n\nExpected:\n%+v\nDiff:\n%+v"

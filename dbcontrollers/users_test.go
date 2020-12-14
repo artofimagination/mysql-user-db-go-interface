@@ -39,12 +39,6 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	models.Interface = &ModelInterfaceMock{
-		assetID:    assetID,
-		settingsID: settingsID,
-		userID:     userID,
-	}
-
 	user := models.User{
 		Name:       "testName",
 		Email:      "testEmail",
@@ -79,15 +73,17 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		DataMap: dataMap,
 	}
 
-	settings := &models.Asset{
-		ID:      settingsID,
-		DataMap: dataMap,
+	models.Interface = &ModelInterfaceMock{
+		assetID:    assetID,
+		settingsID: settingsID,
+		userID:     userID,
+		asset:      assets,
 	}
 
 	userData := models.UserData{
-		ID:       product.ID,
-		Name:     product.Name,
-		Settings: settings,
+		ID:       user.ID,
+		Name:     user.Name,
+		Settings: assets,
 		Assets:   assets,
 	}
 
@@ -274,20 +270,13 @@ func TestCreateUser(t *testing.T) {
 					return []byte{}, nil
 				})
 
-			if output != nil {
-				if output.Name != expectedData.Name || output.Email != expectedData.Email {
-					t.Errorf(test.TestResultString, testCaseString, output, expectedData)
-					return
-				}
-			} else {
-				if output != expectedData {
-					t.Errorf(test.TestResultString, testCaseString, output, expectedData)
-					return
-				}
+			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+				return
 			}
 
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 		})
@@ -344,7 +333,7 @@ func TestDeleteUser(t *testing.T) {
 
 			err := dbController.DeleteUser(&userID, nominatedOwners)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError)
+				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
 			}
 

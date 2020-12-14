@@ -88,29 +88,29 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 		}, func(password []byte) ([]byte, error) {
 			return password, nil
 		})
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrDuplicateEmailEntry.Error() ||
-			err.Error() == dbcontrollers.ErrDuplicateNameEntry.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		b, err := json.Marshal(user)
+		if err != nil {
+			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		err = errors.Wrap(errors.WithStack(err), "Failed to create user")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
+
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, string(b))
 		return
 	}
 
-	b, err := json.Marshal(user)
-	if err != nil {
-		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-		w.WriteHeader(http.StatusInternalServerError)
+	if err.Error() == dbcontrollers.ErrDuplicateEmailEntry.Error() ||
+		err.Error() == dbcontrollers.ErrDuplicateNameEntry.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprint(w, string(b))
+	err = errors.Wrap(errors.WithStack(err), "Failed to create user")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func queryUser(r *http.Request) (*models.UserData, error) {
@@ -138,28 +138,28 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userData, err := queryUser(r)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		b, err := json.Marshal(userData)
+		if err != nil {
+			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, string(b))
 		return
 	}
 
-	b, err := json.Marshal(userData)
-	if err != nil {
-		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-		w.WriteHeader(http.StatusInternalServerError)
+	if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, string(b))
+	err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func parseIDList(w http.ResponseWriter, r *http.Request) ([]uuid.UUID, error) {
@@ -195,28 +195,28 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userData, err := dbController.GetUsers(idList)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		b, err := json.Marshal(userData)
+		if err != nil {
+			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		err = errors.Wrap(errors.WithStack(err), "Failed to get users")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, string(b))
 		return
 	}
 
-	b, err := json.Marshal(userData)
-	if err != nil {
-		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-		w.WriteHeader(http.StatusInternalServerError)
+	if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, string(b))
+	err = errors.Wrap(errors.WithStack(err), "Failed to get users")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func deleteUser(w http.ResponseWriter, r *http.Request) {
@@ -265,28 +265,27 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 		nominees[productID] = nomineeID
 	}
 
-	err = dbController.DeleteUser(&id, nominees)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, err.Error())
+	if err = dbController.DeleteUser(&id, nominees); err == nil {
+		_, err = dbController.GetUser(&id)
+		if err != nil && err.Error() != dbcontrollers.ErrUserNotFound.Error() {
+			err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, err)
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "Delete completed")
+		return
+	}
+
+	if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-
-	_, err = dbController.GetUser(&id)
-	if err != nil && err.Error() != dbcontrollers.ErrUserNotFound.Error() {
-		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "Delete completed")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func authenticate(w http.ResponseWriter, r *http.Request) {
@@ -330,20 +329,20 @@ func authenticate(w http.ResponseWriter, r *http.Request) {
 			}
 			return nil
 		})
-	if err != nil {
-		if err.Error() == "Invalid password" || err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, err.Error())
-			return
-		}
-		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
+	if err == nil {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "Authentication successful")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "Authentication successful")
+	if err.Error() == "Invalid password" || err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func parseUserData(data map[string]interface{}) (*models.UserData, error) {
@@ -390,26 +389,26 @@ func updateUserSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = dbController.UpdateUserSettings(userData)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrMissingUserSettings.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		statusCode, err := validateUser(userData)
+		if err != nil {
+			w.WriteHeader(statusCode)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
-		return
-	}
 
-	statusCode, err := validateUser(userData)
-	if err != nil {
 		w.WriteHeader(statusCode)
-		fmt.Fprint(w, err.Error())
+		fmt.Fprint(w, "User settings updated")
 		return
 	}
 
-	w.WriteHeader(statusCode)
-	fmt.Fprint(w, "User settings updated")
+	if err.Error() == dbcontrollers.ErrMissingUserSettings.Error() {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func updateUserAssets(w http.ResponseWriter, r *http.Request) {
@@ -426,26 +425,26 @@ func updateUserAssets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = dbController.UpdateUserAssets(userData)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrMissingUserAssets.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		statusCode, err := validateUser(userData)
+		if err != nil {
+			w.WriteHeader(statusCode)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
-		return
-	}
 
-	statusCode, err := validateUser(userData)
-	if err != nil {
 		w.WriteHeader(statusCode)
-		fmt.Fprint(w, err.Error())
+		fmt.Fprint(w, "User assets updated")
 		return
 	}
 
-	w.WriteHeader(statusCode)
-	fmt.Fprint(w, "User assets updated")
+	if err.Error() == dbcontrollers.ErrMissingUserAssets.Error() {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func addProduct(w http.ResponseWriter, r *http.Request) {
@@ -496,30 +495,30 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 		func(*uuid.UUID) string {
 			return "testPath"
 		})
-	if err != nil {
-		duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
-		if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		b, err := json.Marshal(product)
+		if err != nil {
+			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, err.Error())
 			return
 		}
 
-		err = errors.Wrap(errors.WithStack(err), "Failed to create product")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, string(b))
+		return
+	}
+
+	duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
+	if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
 
-	b, err := json.Marshal(product)
-	if err != nil {
-		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprint(w, string(b))
+	err = errors.Wrap(errors.WithStack(err), "Failed to create product")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func queryProduct(r *http.Request) (*models.ProductData, error) {
@@ -547,28 +546,28 @@ func getProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	productData, err := queryProduct(r)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		b, err := json.Marshal(productData)
+		if err != nil {
+			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, string(b))
 		return
 	}
 
-	b, err := json.Marshal(productData)
-	if err != nil {
-		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-		w.WriteHeader(http.StatusInternalServerError)
+	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, string(b))
+	err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func getProducts(w http.ResponseWriter, r *http.Request) {
@@ -584,28 +583,28 @@ func getProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	productData, err := dbController.GetProducts(idList)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		b, err := json.Marshal(productData)
+		if err != nil {
+			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		err = errors.Wrap(errors.WithStack(err), "Failed to get products")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, string(b))
 		return
 	}
 
-	b, err := json.Marshal(productData)
-	if err != nil {
-		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-		w.WriteHeader(http.StatusInternalServerError)
+	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, string(b))
+	err = errors.Wrap(errors.WithStack(err), "Failed to get products")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func parseProductData(data map[string]interface{}) (*models.ProductData, error) {
@@ -652,26 +651,26 @@ func updateProductDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = dbController.UpdateProductDetails(productData)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrMissingProductDetail.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		statusCode, err := validateProduct(productData)
+		if err != nil {
+			w.WriteHeader(statusCode)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
-		return
-	}
 
-	statusCode, err := validateProduct(productData)
-	if err != nil {
 		w.WriteHeader(statusCode)
-		fmt.Fprint(w, err.Error())
+		fmt.Fprint(w, "Product details updated")
 		return
 	}
 
-	w.WriteHeader(statusCode)
-	fmt.Fprint(w, "Product details updated")
+	if err.Error() == dbcontrollers.ErrMissingProductDetail.Error() {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func updateProductAssets(w http.ResponseWriter, r *http.Request) {
@@ -688,26 +687,26 @@ func updateProductAssets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = dbController.UpdateProductAssets(productData)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrMissingProductAsset.Error() {
-			w.WriteHeader(http.StatusAccepted)
+	if err == nil {
+		statusCode, err := validateProduct(productData)
+		if err != nil {
+			w.WriteHeader(statusCode)
 			fmt.Fprint(w, err.Error())
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, err.Error())
-		return
-	}
 
-	statusCode, err := validateProduct(productData)
-	if err != nil {
 		w.WriteHeader(statusCode)
-		fmt.Fprint(w, err.Error())
+		fmt.Fprint(w, "Product assets updated")
 		return
 	}
 
-	w.WriteHeader(statusCode)
-	fmt.Fprint(w, "Product assets updated")
+	if err.Error() == dbcontrollers.ErrMissingProductAsset.Error() {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func deleteProduct(w http.ResponseWriter, r *http.Request) {
@@ -732,27 +731,27 @@ func deleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = dbController.DeleteProduct(&productID)
-	if err != nil {
-		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, err.Error())
+	if err == nil {
+		_, err = dbController.GetProduct(&productID)
+		if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
+			err = errors.Wrap(errors.WithStack(err), "Failed to get product")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, err)
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "Delete completed")
+		return
+	}
+
+	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-
-	_, err = dbController.GetProduct(&productID)
-	if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
-		err = errors.Wrap(errors.WithStack(err), "Failed to get product")
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintln(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "Delete completed")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func addProductUser(w http.ResponseWriter, r *http.Request) {
@@ -779,22 +778,23 @@ func addProductUser(w http.ResponseWriter, r *http.Request) {
 		}
 
 		privilege := userData["privilege"].(float64)
-		if err := dbController.AddProductUser(&productID, &userID, int(privilege)); err != nil {
-			if err.Error() == dbcontrollers.ErrProductNotFound.Error() ||
-				err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
-				w.WriteHeader(http.StatusAccepted)
-				fmt.Fprint(w, err.Error())
-				return
-			}
-			err = errors.Wrap(errors.WithStack(err), "Failed to add product user")
-			w.WriteHeader(http.StatusInternalServerError)
+
+		if err := dbController.AddProductUser(&productID, &userID, int(privilege)); err == nil {
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprint(w, "Add product user completed")
+			return
+		}
+
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() ||
+			err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
+			w.WriteHeader(http.StatusAccepted)
 			fmt.Fprint(w, err.Error())
 			return
 		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to add product user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
 	}
-
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprint(w, "Add product user completed")
 }
 
 func deleteProductUser(w http.ResponseWriter, r *http.Request) {
@@ -818,20 +818,19 @@ func deleteProductUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := dbController.DeleteProductUser(&productID, &userID); err != nil {
-		if err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
-			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, err.Error())
-			return
-		}
-		err = errors.Wrap(errors.WithStack(err), "Failed to delete product user")
-		w.WriteHeader(http.StatusInternalServerError)
+	if err := dbController.DeleteProductUser(&productID, &userID); err == nil {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "Delete product user completed")
+		return
+	}
+	if err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
+		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, "Delete product user completed")
+	err = errors.Wrap(errors.WithStack(err), "Failed to delete product user")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
 }
 
 func main() {
