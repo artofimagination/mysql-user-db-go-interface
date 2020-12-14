@@ -24,7 +24,7 @@ func (*MYSQLController) CreateUser(
 	name string,
 	email string,
 	passwd []byte,
-	generateAssetPath func(assetID *uuid.UUID) string,
+	generateAssetPath func(assetID *uuid.UUID) (string, error),
 	encryptPassword func(password []byte) ([]byte, error)) (*models.UserData, error) {
 
 	references := make(models.DataMap)
@@ -180,6 +180,44 @@ func (*MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 	}
 
 	user, err := mysqldb.Functions.GetUser(mysqldb.ByID, *userID, tx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+				return nil, err
+			}
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	settings, err := mysqldb.GetAsset(mysqldb.UserSettings, &user.SettingsID)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, err := mysqldb.GetAsset(mysqldb.UserAssets, &user.AssetsID)
+	if err != nil {
+		return nil, err
+	}
+
+	userData := models.UserData{
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		Settings: settings,
+		Assets:   assets,
+	}
+
+	return &userData, mysqldb.DBConnector.Commit(tx)
+}
+
+func (*MYSQLController) GetUserByEmail(email string) (*models.UserData, error) {
+	tx, err := mysqldb.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := mysqldb.Functions.GetUser(mysqldb.ByEmail, email, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			if err := mysqldb.DBConnector.Rollback(tx); err != nil {

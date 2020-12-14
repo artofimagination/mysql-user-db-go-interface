@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 	"github.com/google/uuid"
 	"github.com/kr/pretty"
 	"github.com/pkg/errors"
@@ -83,8 +81,8 @@ func addUser(w http.ResponseWriter, r *http.Request) {
 
 	// Execute function
 	user, err := dbController.CreateUser(name, email, []byte(password),
-		func(*uuid.UUID) string {
-			return "testPath"
+		func(*uuid.UUID) (string, error) {
+			return "testPath", nil
 		}, func(password []byte) ([]byte, error) {
 			return password, nil
 		})
@@ -160,6 +158,44 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 	err = errors.Wrap(errors.WithStack(err), "Failed to get user")
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprint(w, err.Error())
+}
+
+func getUserByEmail(w http.ResponseWriter, r *http.Request) {
+	log.Println("Getting user by email")
+	if err := checkRequestType(GET, w, r); err != nil {
+		return
+	}
+
+	emails, ok := r.URL.Query()["email"]
+	if !ok || len(emails[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, errors.New("Url Param 'email' is missing"))
+		return
+	}
+
+	userData, err := dbController.GetUserByEmail(emails[0])
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.WriteHeader(http.StatusAccepted)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+		err = errors.Wrap(errors.WithStack(err), "Failed to get user")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	b, err := json.Marshal(userData)
+	if err != nil {
+		err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(b))
 }
 
 func parseIDList(w http.ResponseWriter, r *http.Request) ([]uuid.UUID, error) {
@@ -492,8 +528,8 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	product, err := dbController.CreateProduct(name, public, &userID,
-		func(*uuid.UUID) string {
-			return "testPath"
+		func(*uuid.UUID) (string, error) {
+			return "testPath", nil
 		})
 	if err == nil {
 		b, err := json.Marshal(product)
@@ -837,6 +873,7 @@ func main() {
 	http.HandleFunc("/", sayHello)
 	http.HandleFunc("/add-user", addUser)
 	http.HandleFunc("/get-user", getUser)
+	http.HandleFunc("/get-user-by-email", getUserByEmail)
 	http.HandleFunc("/get-users", getUsers)
 	http.HandleFunc("/update-user-settings", updateUserSettings)
 	http.HandleFunc("/update-user-assets", updateUserAssets)
@@ -858,14 +895,6 @@ func main() {
 	project := dbcontrollers.ProjectDBDummy{}
 	dbcontrollers.SetProjectDB(project)
 	dbController = controller
-
-	mysqldb.DBConnection = fmt.Sprintf("%s:%s@tcp(user-db:3306)/%s?parseTime=true", os.Getenv("MYSQL_DB_USER"), os.Getenv("MYSQL_DB_PASSWORD"), os.Getenv("MYSQL_DB_NAME"))
-	mysqldb.MigrationDirectory = fmt.Sprintf("%s/src/mysql-user-db-go-interface/db/migrations/mysql", os.Getenv("GOPATH"))
-
-	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
-	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
-		log.Fatalf("System bootstrap failed. %s", errors.WithStack(err))
-	}
 
 	// Start HTTP server that accepts requests from the offer process to exchange SDP and Candidates
 	panic(http.ListenAndServe(":8080", nil))

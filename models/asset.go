@@ -2,21 +2,15 @@ package models
 
 import (
 	"errors"
-	"fmt"
+	"path"
+	"strings"
 
 	"github.com/google/uuid"
 )
 
 const (
-	BaseAssetPath  = "base_asset_path"
-	UserAvatar     = "user_avatar"
-	UserBackground = "user_background"
-
-	ProductDescription = "product_description"
+	BaseAssetPath = "base_asset_path"
 )
-
-var DefaultImagePath = ""
-var DefaultURL = ""
 
 // Errors called in multiple places (for example in unittests).
 
@@ -30,7 +24,7 @@ type Asset struct {
 // Assets structure contains the identification of all user related documents images.
 type DataMap map[string]interface{}
 
-func (*RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) string) (*Asset, error) {
+func (*RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*Asset, error) {
 	var a Asset
 
 	if references == nil {
@@ -44,21 +38,24 @@ func (*RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uu
 
 	a.ID = newID
 	a.DataMap = references
-	a.DataMap[BaseAssetPath] = generatePath(&a.ID)
+	a.DataMap[BaseAssetPath], err = generatePath(&a.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	return &a, nil
 }
 
-func (r *Asset) GetImagePath(typeString string) string {
+func (r *Asset) GetFilePath(typeString string, defaultPath string) string {
 	path, ok := r.DataMap[typeString].(string)
 	if !ok {
-		return DefaultImagePath
+		return defaultPath
 	}
 
 	return path
 }
 
-func (r *Asset) SetImagePath(typeString string) error {
+func (r *Asset) SetFilePath(typeString string, extension string) error {
 	if _, ok := r.DataMap[typeString]; ok {
 		return nil
 	}
@@ -68,19 +65,19 @@ func (r *Asset) SetImagePath(typeString string) error {
 		return err
 	}
 
-	r.DataMap[typeString] = fmt.Sprintf("%s/%s.jpg", r.DataMap[BaseAssetPath], newID.String())
+	r.DataMap[typeString] = strings.Join([]string{path.Join(r.DataMap[BaseAssetPath].(string), newID.String()), extension}, "")
 
 	return nil
 }
 
-func (r *Asset) SetURL(typeString string, url string) {
+func (r *Asset) SetField(typeString string, url string) {
 	r.DataMap[typeString] = url
 }
 
-func (r *Asset) GetURL(typeString string) string {
+func (r *Asset) GetField(typeString string, defaultURL string) string {
 	path, ok := r.DataMap[typeString].(string)
 	if !ok {
-		return DefaultURL
+		return defaultURL
 	}
 	return path
 }

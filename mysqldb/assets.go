@@ -76,7 +76,7 @@ func UpdateAsset(assetType string, asset *models.Asset) error {
 var GetAssetQuery = "SELECT BIN_TO_UUID(id), data FROM %s WHERE id = UUID_TO_BIN(?)"
 
 func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
-	asset := models.Asset{}
+	asset := &models.Asset{}
 
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
@@ -103,7 +103,7 @@ func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return &asset, tx.Commit()
+	return asset, tx.Commit()
 }
 
 var DeleteAssetQuery = "DELETE FROM %s WHERE id=UUID_TO_BIN(?)"

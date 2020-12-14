@@ -11,7 +11,7 @@ import (
 )
 
 type DBControllerCommon interface {
-	CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) string) (*models.Product, error)
+	CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.Product, error)
 	DeleteProduct(productID *uuid.UUID) error
 	GetProduct(productID *uuid.UUID) (*models.ProductData, error)
 	UpdateProductDetails(details *models.Asset) error
@@ -58,10 +58,11 @@ func NewDBController() (*MYSQLController, error) {
 		return nil, errors.New("MYSQL DB name not defined")
 	}
 
-	mysqldb.MigrationDirectory = os.Getenv("MYSQL_DB_PASSWORD")
+	mysqldb.MigrationDirectory = os.Getenv("MYSQL_DB_MIGRATION_DIR")
 	if mysqldb.MigrationDirectory == "" {
 		return nil, errors.New("MYSQL DB migration folder not defined")
 	}
+
 	mysqldb.DBConnection = fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		username,
@@ -71,6 +72,9 @@ func NewDBController() (*MYSQLController, error) {
 		dbName)
 	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
+	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
+		return nil, err
+	}
 
 	models.Interface = &models.RepoInterface{}
 	models.UUIDImpl = &models.RepoUUIDInterface{}
