@@ -13,13 +13,19 @@ import (
 
 func createTestProjectUsersData() (*models.ProjectUserIDs, models.Privileges) {
 	privileges := make(models.Privileges, 2)
-	privileges[0].ID = 0
-	privileges[0].Name = "Owner"
-	privileges[0].Description = "description0"
-	privileges[1].ID = 1
-	privileges[1].Name = "User"
-	privileges[1].Description = "description1"
-	mysqldb.DBConnector = DBConnectorMock{}
+	privilege := &models.Privilege{
+		ID:          0,
+		Name:        "Owner",
+		Description: "description0",
+	}
+	privileges[0] = privilege
+	privilege = &models.Privilege{
+		ID:          1,
+		Name:        "User",
+		Description: "description1",
+	}
+	privileges[1] = privilege
+	mysqldb.DBConnector = &DBConnectorMock{}
 
 	users := models.ProjectUserIDs{
 		UserIDArray: make([]uuid.UUID, 0),
@@ -35,9 +41,10 @@ type ProjectExpectedData struct {
 }
 
 type ProjectMockData struct {
-	project    *models.Project
-	privileges models.Privileges
-	err        error
+	projectData *models.ProjectData
+	project     *models.Project
+	privileges  models.Privileges
+	err         error
 }
 
 type ProjectInputData struct {
@@ -70,12 +77,7 @@ func createProjectTestData() (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	models.Interface = ModelInterfaceMock{
-		assetID:   assetID,
-		projectID: projectID,
-	}
-
-	project := models.Project{
+	project := &models.Project{
 		ID:        projectID,
 		ProductID: productID,
 		DetailsID: assetID,
@@ -89,7 +91,7 @@ func createProjectTestData() (*test.OrderedTests, error) {
 
 	dataMap := make(models.DataMap)
 	dataMap["name"] = "testProject"
-	dataMap["visibility"] = modelss.Protected
+	dataMap["visibility"] = models.Protected
 	assets := &models.Asset{
 		ID:      assetID,
 		DataMap: dataMap,
@@ -112,8 +114,9 @@ func createProjectTestData() (*test.OrderedTests, error) {
 		userID:      userID,
 	}
 	mock := ProjectMockData{
-		project:    nil,
-		privileges: privileges,
+		projectData: projectData,
+		project:     project,
+		privileges:  privileges,
 	}
 
 	dataSet.TestDataSet[testCase] = test.Data{
@@ -130,8 +133,10 @@ func createProjectTestData() (*test.OrderedTests, error) {
 	}
 
 	mock = ProjectMockData{
-		project:    project,
-		privileges: privileges,
+		projectData: projectData,
+		project:     project,
+		privileges:  privileges,
+		err:         fmt.Errorf(ErrProjectExistsString, assets.DataMap["name"]),
 	}
 
 	dataSet.TestDataSet[testCase] = test.Data{
@@ -141,8 +146,8 @@ func createProjectTestData() (*test.OrderedTests, error) {
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
-	mysqldb.Functions = DBFunctionInterfaceMock{}
-	mysqldb.DBConnector = DBConnectorMock{}
+	mysqldb.Functions = &DBFunctionInterfaceMock{}
+	mysqldb.DBConnector = &DBConnectorMock{}
 	return &dataSet, nil
 }
 
@@ -159,20 +164,27 @@ func TestCreateProject(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			expectedData := testCase.(ProjectExpectedData)
-			inputData := testCase.(ProjectInputData)
-			mockData := testCase.(ProjectMockData)
+			expectedData := testCase.Expected.(ProjectExpectedData)
+			inputData := testCase.Data.(ProjectInputData)
+			mockData := testCase.Mock.(ProjectMockData)
 
-			mysqldb.Functions = DBFunctionInterfaceMock{
+			models.Interface = &ModelInterfaceMock{
+				assetID:   mockData.project.AssetsID,
+				projectID: mockData.project.ID,
+				asset:     mockData.projectData.Assets,
+				project:   mockData.project,
+				err:       mockData.err,
+			}
+			mysqldb.Functions = &DBFunctionInterfaceMock{
 				project:      mockData.project,
 				privileges:   mockData.privileges,
 				projectAdded: false,
 			}
 
 			output, err := dbController.CreateProject(
-				inputData.projectData.Asset.DataMap["name"],
-				inputData.projectData.Asset.DataMap["visibility"],
-				&userID,
+				inputData.projectData.Assets.DataMap["name"].(string),
+				inputData.projectData.Assets.DataMap["visibility"].(int),
+				&inputData.userID,
 				func(*uuid.UUID) (string, error) {
 					return "testPath", nil
 				})

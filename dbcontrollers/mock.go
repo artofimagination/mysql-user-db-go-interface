@@ -65,6 +65,7 @@ type DBFunctionInterfaceMock struct {
 	product              *models.Product
 	project              *models.Project
 	productAdded         bool
+	projectAdded         bool
 	productDeleted       bool
 	usersProductsUpdated bool
 	privileges           models.Privileges
