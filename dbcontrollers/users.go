@@ -15,6 +15,7 @@ var ErrDuplicateNameEntry = errors.New("User with this name already exists")
 var ErrUserNotFound = errors.New("The selected user not found")
 var ErrInvalidEmailOrPasswd = errors.New("Invalid email or password")
 var ErrNoProductsForUser = errors.New("This user has no products")
+var ErrNoProjectsForUser = errors.New("This user has no projects")
 var ErrProductUserNotAssociated = errors.New("Unable to associate the product with the selected user")
 var ErrMissingUserSettings = errors.New("Settings for the selected user not found")
 var ErrMissingUserAssets = errors.New("Assets for the selected user not found")
@@ -136,7 +137,7 @@ func (MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]u
 			// Check nominated owner
 			nominated, hasNominatedOwner := nominatedOwners[productID]
 			if nominatedOwners == nil || !hasNominatedOwner {
-				if err := projectdb.DeleteProjects(productID); err != nil {
+				if err := mysqldb.Functions.DeleteProjectsByProductID(&productID, tx); err != nil {
 					return err
 				}
 

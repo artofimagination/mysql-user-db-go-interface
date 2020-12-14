@@ -50,6 +50,16 @@ type FunctionCommonInterface interface {
 	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
 	GetProductsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Product, error)
 
+	AddProject(project *models.Project, tx *sql.Tx) error
+	AddProjectUsers(projectID *uuid.UUID, projectUsers *models.ProjectUserIDs, tx *sql.Tx) error
+	GetProjectByID(ID uuid.UUID, tx *sql.Tx) (*models.Project, error)
+	DeleteProjectUsersByProjectID(projectID *uuid.UUID, tx *sql.Tx) error
+	DeleteProject(projectID *uuid.UUID, tx *sql.Tx) error
+	DeleteProjectsByProductID(productID *uuid.UUID, tx *sql.Tx) error
+	GetProjectsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Project, error)
+
+	GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProjectIDs, error)
+
 	GetPrivileges() (models.Privileges, error)
 	GetPrivilege(name string) (*models.Privilege, error)
 }

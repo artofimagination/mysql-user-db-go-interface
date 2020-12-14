@@ -1,59 +1,247 @@
 package mysqldb
 
 import (
+	"database/sql"
+	"strings"
+
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
-// UpdateProject updates the selected project.
-func UpdateProject(project models.Project) error {
-	query := "UPDATE projects set user_id = ?, features_id = ?, name = ?, config = ? where id = ?"
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return RollbackWithErrorStack(tx, err)
-	}
+var ErrNoUserWithProject = errors.New("No user is associated to this project")
+var ErrNoProjectUserAdded = errors.New("No project user relation has been added")
+var ErrNoProjectDeleted = errors.New("No project was deleted")
+var ErrNoUsersProjectUpdate = errors.New("No users project was updated")
 
-	_, err = tx.Exec(query, project.UserID, project.FeatureID, project.Name, project.Config, project.ID)
-	if err != nil {
-		return RollbackWithErrorStack(tx, err)
+var AddProjectUsersQuery = "INSERT INTO users_projects (users_id, projects_id, privileges_id) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
+
+func (*MYSQLFunctions) AddProjectUsers(projectID *uuid.UUID, projectUsers *models.ProjectUserIDs, tx *sql.Tx) error {
+	for userID, privilege := range projectUsers.UserMap {
+		result, err := tx.Exec(AddProjectUsersQuery, userID, projectID, privilege)
+		if err != nil {
+			return RollbackWithErrorStack(tx, err)
+		}
+
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return RollbackWithErrorStack(tx, err)
+		}
+
+		if affected == 0 {
+			if errRb := tx.Rollback(); errRb != nil {
+				return err
+			}
+			return ErrNoProjectUserAdded
+		}
 	}
-	return tx.Commit()
+	return nil
 }
 
-// AddProject adds a new project to the database.
-func AddProject(project models.Project) error {
-	query := "INSERT INTO projects (id, user_id, features_id, name, config) VALUES (UUID_TO_BIN(UUID()), UUID_TO_BIN(?), ?, ?, ?)"
-	tx, err := DBConnector.ConnectSystem()
-	if err != nil {
-		return err
-	}
+var DeleteProjectUsersByProjectIDQuery = "DELETE FROM users_projects where projects_id = UUID_TO_BIN(?)"
 
-	_, err = tx.Exec(query, project.UserID, project.FeatureID, project.Name, project.Config)
+func (*MYSQLFunctions) DeleteProjectUsersByProjectID(projectID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProjectUsersByProjectIDQuery, projectID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
-	return tx.Commit()
-}
 
-// GetProjectByName returns the project by name.
-func GetProjectByName(name string) (*models.Project, error) {
-	var project models.Project
-	queryString := "select BIN_TO_UUID(id), name, config from projects where name = ?"
-	tx, err := DBConnector.ConnectSystem()
+	affected, err := result.RowsAffected()
 	if err != nil {
-		return nil, err
+		return RollbackWithErrorStack(tx, err)
 	}
 
-	query, err := tx.Query(queryString, name)
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoUserWithProject
+	}
+
+	return nil
+}
+
+var UpdateUsersProjectsQuery = "UPDATE users_projects set privileges_id = ? where users_id = UUID_TO_BIN(?) AND projects_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) UpdateUsersProjects(userID *uuid.UUID, projectID *uuid.UUID, privilege int, tx *sql.Tx) error {
+	result, err := tx.Exec(UpdateUsersProjectsQuery, privilege, userID, projectID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoUsersProjectUpdate
+	}
+
+	return nil
+}
+
+var AddProjectQuery = "INSERT INTO projects (id, products_id, project_details_id, project_assets_id) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), UUID_TO_BIN(?), UUID_TO_BIN(?))"
+
+func (*MYSQLFunctions) AddProject(project *models.Project, tx *sql.Tx) error {
+	_, err := tx.Exec(AddProjectQuery, project.ID, project.ProductID, project.DetailsID, project.AssetsID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+	return nil
+}
+
+var GetProjectByIDQuery = "SELECT BIN_TO_UUID(id), BIN_TO_UUID(products_id), BIN_TO_UUID(project_details_id), BIN_TO_UUID(project_assets_id) FROM projects WHERE id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) GetProjectByID(ID uuid.UUID, tx *sql.Tx) (*models.Project, error) {
+	project := models.Project{}
+	query := tx.QueryRow(GetProjectByIDQuery, ID)
+	err := query.Scan(&project.ID, &project.ProductID, &project.DetailsID, &project.AssetsID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
+	}
+
+	return &project, nil
+}
+
+var GetProjectsByIDsQuery = "SELECT BIN_TO_UUID(id), BIN_TO_UUID(products_id), BIN_TO_UUID(project_details_id), BIN_TO_UUID(project_assets_id) FROM projects WHERE id IN (UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) GetProjectsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Project, error) {
+	query := GetProjectsByIDsQuery + strings.Repeat(",UUID_TO_BIN(?)", len(IDs)-1) + ")"
+	interfaceList := make([]interface{}, len(IDs))
+	for i := range IDs {
+		interfaceList[i] = IDs[i]
+	}
+	rows, err := tx.Query(query, interfaceList...)
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	defer query.Close()
+	defer rows.Close()
 
-	query.Next()
-	if err := query.Scan(&project.ID, &project.Name, &project.Config); err != nil {
+	projects := make([]models.Project, 0)
+	for rows.Next() {
+		project := models.Project{}
+		err := rows.Scan(&project.ID, &project.DetailsID, &project.AssetsID)
+		if err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		projects = append(projects, project)
+	}
+	err = rows.Err()
+	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
 
-	return &project, tx.Commit()
+	if len(projects) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
+	return projects, nil
+}
+
+var GetUserProjectIDsQuery = "SELECT BIN_TO_UUID(projects_id), privileges_id FROM users_projects where users_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProjectIDs, error) {
+	rows, err := tx.Query(GetUserProjectIDsQuery, userID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
+	}
+
+	defer rows.Close()
+	userProjects := models.UserProjectIDs{
+		ProjectMap:     make(map[uuid.UUID]int),
+		ProjectIDArray: make([]uuid.UUID, 0),
+	}
+	for rows.Next() {
+		projectID := uuid.UUID{}
+		privilege := -1
+		err := rows.Scan(&projectID, &privilege)
+		if err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		userProjects.ProjectMap[projectID] = privilege
+		userProjects.ProjectIDArray = append(userProjects.ProjectIDArray, projectID)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+	return &userProjects, nil
+}
+
+var GetProjectByNameQuery = "SELECT BIN_TO_UUID(id), BIN_TO_UUID(products_id), BIN_TO_UUID(project_details_id), BIN_TO_UUID(project_assets_id) FROM projects WHERE name = ?"
+
+func (*MYSQLFunctions) GetProjectByName(name string, tx *sql.Tx) (*models.Product, error) {
+	product := models.Product{}
+
+	query := tx.QueryRow(GetProductByNameQuery, name)
+
+	err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
+	}
+
+	return &product, nil
+}
+
+var DeleteProjectQuery = "DELETE FROM projects where id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) DeleteProject(projectID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProjectQuery, projectID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoProjectDeleted
+	}
+
+	return nil
+}
+
+var DeleteProjectsByProductIDQuery = "DELETE FROM projects where products_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) DeleteProjectsByProductID(productID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProjectQuery, productID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoProjectDeleted
+	}
+
+	return nil
 }

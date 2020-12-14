@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func createTestUsersData() (*models.ProductUserIDs, models.Privileges) {
+func createTestProductsUsersData() (*models.ProductUserIDs, models.Privileges) {
 	privileges := make(models.Privileges, 2)
 	privileges[0].ID = 0
 	privileges[0].Name = "Owner"
@@ -36,7 +36,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 
 	dbController = &MYSQLController{}
 
-	_, privileges := createTestUsersData()
+	_, privileges := createTestProductsUsersData()
 
 	assetID, err := uuid.NewUUID()
 	if err != nil {
@@ -131,7 +131,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	productUsers, privileges := createTestUsersData()
+	productUsers, privileges := createTestProductsUsersData()
 
 	testCase := "valid_data"
 	data := test.Data{

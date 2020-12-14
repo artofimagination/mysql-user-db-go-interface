@@ -893,8 +893,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	project := dbcontrollers.ProjectDBDummy{}
-	dbcontrollers.SetProjectDB(project)
+
 	dbController = controller
 
 	// Start HTTP server that accepts requests from the offer process to exchange SDP and Candidates

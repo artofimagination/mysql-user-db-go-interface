@@ -15,6 +15,8 @@ const (
 	ProductAssets  = "product_assets"
 	ProductDetails = "product_details"
 	UserSettings   = "user_settings"
+	ProjectDetails = "project_details"
+	ProjectAssets  = "project_assets"
 )
 
 var ErrAssetMissing = "This %s is missing"

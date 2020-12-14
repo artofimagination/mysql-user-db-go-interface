@@ -32,10 +32,6 @@ type DBControllerCommon interface {
 
 type MYSQLController struct{}
 
-func SetProjectDB(db ProjectDBCommon) {
-	projectdb = db
-}
-
 func NewDBController() (*MYSQLController, error) {
 	address := os.Getenv("MYSQL_DB_ADDRESS")
 	if address == "" {
@@ -70,13 +66,13 @@ func NewDBController() (*MYSQLController, error) {
 		address,
 		port,
 		dbName)
-	mysqldb.Functions = mysqldb.MYSQLFunctions{}
+	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
 	mysqldb.DBConnector = mysqldb.MYSQLConnector{}
 	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
 		return nil, err
 	}
 
-	models.Interface = models.RepoInterface{}
+	models.Interface = &models.RepoInterface{}
 	models.UUIDImpl = models.RepoUUIDInterface{}
 	controller := &MYSQLController{}
 	return controller, nil
