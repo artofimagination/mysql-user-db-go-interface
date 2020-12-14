@@ -44,7 +44,7 @@ type FunctionCommonInterface interface {
 	DeleteProductUser(productID *uuid.UUID, userID *uuid.UUID, tx *sql.Tx) error
 	GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProductIDs, error)
 
-	GetProductByID(ID uuid.UUID, tx *sql.Tx) (*models.Product, error)
+	GetProductByID(ID *uuid.UUID, tx *sql.Tx) (*models.Product, error)
 	GetProductByName(name string, tx *sql.Tx) (*models.Product, error)
 	AddProduct(product *models.Product, tx *sql.Tx) error
 	DeleteProduct(productID *uuid.UUID, tx *sql.Tx) error
@@ -73,15 +73,15 @@ var DBConnector DBConnectorCommon
 var Functions FunctionCommonInterface
 var MigrationDirectory = ""
 
-func (MYSQLConnector) Commit(tx *sql.Tx) error {
+func (*MYSQLConnector) Commit(tx *sql.Tx) error {
 	return tx.Commit()
 }
 
-func (MYSQLConnector) Rollback(tx *sql.Tx) error {
+func (*MYSQLConnector) Rollback(tx *sql.Tx) error {
 	return tx.Rollback()
 }
 
-func (MYSQLConnector) BootstrapSystem() error {
+func (*MYSQLConnector) BootstrapSystem() error {
 	fmt.Printf("Executing MYSQL migration\n")
 	migrations := &migrate.FileMigrationSource{
 		Dir: MigrationDirectory,
@@ -119,7 +119,7 @@ func RollbackWithErrorStack(tx *sql.Tx, errorStack error) error {
 	return errorStack
 }
 
-func (MYSQLConnector) ConnectSystem() (*sql.Tx, error) {
+func (*MYSQLConnector) ConnectSystem() (*sql.Tx, error) {
 	db, err := sql.Open("mysql", DBConnection)
 	if err != nil {
 		return nil, err

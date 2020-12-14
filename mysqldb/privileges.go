@@ -8,7 +8,7 @@ import (
 
 var GetPrivilegesQuery = "SELECT id, name, description from privileges"
 
-func (MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
+func (*MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
@@ -30,7 +30,7 @@ func (MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 
 	privileges := make(models.Privileges, 0)
 	for rows.Next() {
-		privilege := models.Privilege{}
+		privilege := &models.Privilege{}
 		err := rows.Scan(&privilege.ID, &privilege.Name, &privilege.Description)
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)
@@ -47,7 +47,7 @@ func (MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 
 var GetPrivilegeQuery = "SELECT id, name, description from privileges where name = ?"
 
-func (MYSQLFunctions) GetPrivilege(name string) (*models.Privilege, error) {
+func (*MYSQLFunctions) GetPrivilege(name string) (*models.Privilege, error) {
 	tx, err := DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
