@@ -45,7 +45,7 @@ type Viewers struct {
 // to view the project data belonging to those ID-s.
 type ProjectDataList []int
 
-func (*RepoInterface) NewProject(detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error) {
+func (*RepoInterface) NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error) {
 	var p Project
 
 	newID, err := UUIDImpl.NewUUID()
@@ -54,6 +54,7 @@ func (*RepoInterface) NewProject(detailsID *uuid.UUID, assetsID *uuid.UUID) (*Pr
 	}
 
 	p.ID = newID
+	p.ProductID = *productID
 	p.DetailsID = *detailsID
 	p.AssetsID = *assetsID
 

@@ -20,7 +20,7 @@ type InterfaceCommon interface {
 		settingsID uuid.UUID,
 		assetsID uuid.UUID) (*User, error)
 	NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error)
-	NewProject(detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error)
+	NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error)
 }
 
 type UUIDInterfaceCommon interface {

@@ -137,7 +137,7 @@ func (*MYSQLController) DeleteUser(ID *uuid.UUID, nominatedOwners map[uuid.UUID]
 			// Check nominated owner
 			nominated, hasNominatedOwner := nominatedOwners[productID]
 			if nominatedOwners == nil || !hasNominatedOwner {
-				if err := mysqldb.Functions.DeleteProjectsByProductID(&productID, tx); err != nil {
+				if err := mysqldb.Functions.DeleteProjectsByProductID(&productID, tx); err != nil && err != mysqldb.ErrNoProjectDeleted {
 					return err
 				}
 

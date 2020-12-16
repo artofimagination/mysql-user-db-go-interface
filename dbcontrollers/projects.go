@@ -16,7 +16,7 @@ var ErrMissingProjectDetail = errors.New("Details for the selected project not f
 var ErrMissingProjectAsset = errors.New("Assets for the selected project not found")
 var ErrEmptyProjectIDList = errors.New("Request does not contain any project identifiers")
 
-func (*MYSQLController) CreateProject(name string, visibility int, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
+func (*MYSQLController) CreateProject(name string, visibility int, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
 	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
 	if err != nil {
@@ -31,7 +31,7 @@ func (*MYSQLController) CreateProject(name string, visibility int, owner *uuid.U
 		return nil, err
 	}
 
-	project, err := models.Interface.NewProject(&projectDetails.ID, &asset.ID)
+	project, err := models.Interface.NewProject(productID, &projectDetails.ID, &asset.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (*MYSQLController) DeleteProject(projectID *uuid.UUID) error {
 }
 
 func deleteProject(projectID *uuid.UUID, tx *sql.Tx) error {
-	project, err := mysqldb.Functions.GetProjectByID(*projectID, tx)
+	project, err := mysqldb.Functions.GetProjectByID(projectID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ErrProjectNotFound
@@ -129,7 +129,7 @@ func (*MYSQLController) GetProject(projectID *uuid.UUID) (*models.ProjectData, e
 		return nil, err
 	}
 
-	project, err := mysqldb.Functions.GetProjectByID(*projectID, tx)
+	project, err := mysqldb.Functions.GetProjectByID(projectID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
@@ -238,7 +238,7 @@ func (*MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectDat
 			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
 				return nil, err
 			}
-			return nil, ErrProductNotFound
+			return nil, ErrProjectNotFound
 		}
 		return nil, err
 	}

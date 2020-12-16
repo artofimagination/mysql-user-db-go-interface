@@ -35,7 +35,7 @@ func (i *ModelInterfaceMock) NewAsset(references models.DataMap, generatePath fu
 	return i.asset, i.err
 }
 
-func (i *ModelInterfaceMock) NewProject(detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Project, error) {
+func (i *ModelInterfaceMock) NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Project, error) {
 	return i.project, i.err
 }
 
@@ -168,8 +168,12 @@ func (i *DBFunctionInterfaceMock) AddProjectUsers(projectID *uuid.UUID, projectU
 	return i.err
 }
 
-func (i *DBFunctionInterfaceMock) GetProjectByID(ID uuid.UUID, tx *sql.Tx) (*models.Project, error) {
+func (i *DBFunctionInterfaceMock) GetProjectByID(ID *uuid.UUID, tx *sql.Tx) (*models.Project, error) {
 	return i.project, i.err
+}
+
+func (i *DBFunctionInterfaceMock) UpdateUsersProjects(userID *uuid.UUID, projectID *uuid.UUID, privilege int, tx *sql.Tx) error {
+	return i.err
 }
 
 func (i *DBFunctionInterfaceMock) DeleteProjectUsersByProjectID(projectID *uuid.UUID, tx *sql.Tx) error {

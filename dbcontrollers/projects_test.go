@@ -185,6 +185,7 @@ func TestCreateProject(t *testing.T) {
 				inputData.projectData.Assets.DataMap["name"].(string),
 				inputData.projectData.Assets.DataMap["visibility"].(int),
 				&inputData.userID,
+				&inputData.projectData.ProductID,
 				func(*uuid.UUID) (string, error) {
 					return "testPath", nil
 				})

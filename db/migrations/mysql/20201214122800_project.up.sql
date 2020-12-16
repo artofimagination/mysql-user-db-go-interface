@@ -1,8 +1,27 @@
 -- +migrate Up
+DROP TABLE projects;
+
+-- +migrate Up
+CREATE TABLE IF NOT EXISTS project_details(
+   id binary(16) PRIMARY KEY,
+   data json NOT NULL,
+   created_at DATETIME NOT NULL DEFAULT NOW(),
+   updated_at DATETIME NOT NULL DEFAULT NOW()
+);
+
+-- +migrate Up
+CREATE TABLE IF NOT EXISTS project_assets(
+   id binary(16) PRIMARY KEY,
+   data json NOT NULL,
+   created_at DATETIME NOT NULL DEFAULT NOW(),
+   updated_at DATETIME NOT NULL DEFAULT NOW()
+);
+
+-- +migrate Up
 CREATE TABLE IF NOT EXISTS projects(
    id binary(16) NOT NULL PRIMARY KEY,
    products_id binary(16) NOT NULL,
-   FOREIGN KEY (products_id) REFERENCES projects(id),
+   FOREIGN KEY (products_id) REFERENCES products(id),
    project_details_id binary(16),
    FOREIGN KEY (project_details_id) REFERENCES project_details(id),
    project_assets_id binary(16),

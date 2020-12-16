@@ -1,5 +1,11 @@
 package test
 
+import (
+	"testing"
+
+	"github.com/kr/pretty"
+)
+
 type OrderedTests struct {
 	TestDataSet DataSet
 	OrderedList OrderedTestList
@@ -15,3 +21,15 @@ type Data struct {
 }
 
 var TestResultString = "\n%s test failed.\n\nReturned:\n%+v\n\nExpected:\n%+v\nDiff:\n%+v"
+
+func CheckResult(outputA interface{}, outputB interface{}, errA interface{}, errB interface{}, testCaseString string, t *testing.T) {
+	if diff := pretty.Diff(outputA, outputB); len(diff) != 0 {
+		t.Errorf(TestResultString, testCaseString, outputA, outputB, diff)
+		return
+	}
+
+	if diff := pretty.Diff(errA, errB); len(diff) != 0 {
+		t.Errorf(TestResultString, testCaseString, errA, errB, diff)
+		return
+	}
+}

@@ -96,8 +96,8 @@ func (*MYSQLFunctions) AddProject(project *models.Project, tx *sql.Tx) error {
 
 var GetProjectByIDQuery = "SELECT BIN_TO_UUID(id), BIN_TO_UUID(products_id), BIN_TO_UUID(project_details_id), BIN_TO_UUID(project_assets_id) FROM projects WHERE id = UUID_TO_BIN(?)"
 
-func (*MYSQLFunctions) GetProjectByID(ID uuid.UUID, tx *sql.Tx) (*models.Project, error) {
-	project := models.Project{}
+func (*MYSQLFunctions) GetProjectByID(ID *uuid.UUID, tx *sql.Tx) (*models.Project, error) {
+	project := &models.Project{}
 	query := tx.QueryRow(GetProjectByIDQuery, ID)
 	err := query.Scan(&project.ID, &project.ProductID, &project.DetailsID, &project.AssetsID)
 	switch {
@@ -108,7 +108,7 @@ func (*MYSQLFunctions) GetProjectByID(ID uuid.UUID, tx *sql.Tx) (*models.Project
 	default:
 	}
 
-	return &project, nil
+	return project, nil
 }
 
 var GetProjectsByIDsQuery = "SELECT BIN_TO_UUID(id), BIN_TO_UUID(products_id), BIN_TO_UUID(project_details_id), BIN_TO_UUID(project_assets_id) FROM projects WHERE id IN (UUID_TO_BIN(?)"
@@ -129,7 +129,7 @@ func (*MYSQLFunctions) GetProjectsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.P
 	projects := make([]models.Project, 0)
 	for rows.Next() {
 		project := models.Project{}
-		err := rows.Scan(&project.ID, &project.DetailsID, &project.AssetsID)
+		err := rows.Scan(&project.ID, &project.ProductID, &project.DetailsID, &project.AssetsID)
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)
 		}
@@ -160,7 +160,7 @@ func (*MYSQLFunctions) GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models
 	}
 
 	defer rows.Close()
-	userProjects := models.UserProjectIDs{
+	userProjects := &models.UserProjectIDs{
 		ProjectMap:     make(map[uuid.UUID]int),
 		ProjectIDArray: make([]uuid.UUID, 0),
 	}
@@ -178,26 +178,7 @@ func (*MYSQLFunctions) GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
-	return &userProjects, nil
-}
-
-var GetProjectByNameQuery = "SELECT BIN_TO_UUID(id), BIN_TO_UUID(products_id), BIN_TO_UUID(project_details_id), BIN_TO_UUID(project_assets_id) FROM projects WHERE name = ?"
-
-func (*MYSQLFunctions) GetProjectByName(name string, tx *sql.Tx) (*models.Product, error) {
-	product := models.Product{}
-
-	query := tx.QueryRow(GetProductByNameQuery, name)
-
-	err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID)
-	switch {
-	case err == sql.ErrNoRows:
-		return nil, sql.ErrNoRows
-	case err != nil:
-		return nil, RollbackWithErrorStack(tx, err)
-	default:
-	}
-
-	return &product, nil
+	return userProjects, nil
 }
 
 var DeleteProjectQuery = "DELETE FROM projects where id = UUID_TO_BIN(?)"
@@ -226,7 +207,7 @@ func (*MYSQLFunctions) DeleteProject(projectID *uuid.UUID, tx *sql.Tx) error {
 var DeleteProjectsByProductIDQuery = "DELETE FROM projects where products_id = UUID_TO_BIN(?)"
 
 func (*MYSQLFunctions) DeleteProjectsByProductID(productID *uuid.UUID, tx *sql.Tx) error {
-	result, err := tx.Exec(DeleteProjectQuery, productID)
+	result, err := tx.Exec(DeleteProjectsByProductIDQuery, productID)
 	if err != nil {
 		return RollbackWithErrorStack(tx, err)
 	}
@@ -237,9 +218,6 @@ func (*MYSQLFunctions) DeleteProjectsByProductID(productID *uuid.UUID, tx *sql.T
 	}
 
 	if affected == 0 {
-		if errRb := tx.Rollback(); errRb != nil {
-			return err
-		}
 		return ErrNoProjectDeleted
 	}
 
