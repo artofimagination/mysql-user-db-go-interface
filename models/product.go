@@ -25,13 +25,6 @@ type Product struct {
 	DetailsID uuid.UUID `validation:"required"`
 }
 
-type Privilege struct {
-	ID          int    `validation:"required"`
-	Name        string `validation:"required"`
-	Description string `validation:"required"`
-}
-
-type Privileges []*Privilege
 type UserProductIDs struct {
 	ProductMap     map[uuid.UUID]int
 	ProductIDArray []uuid.UUID
@@ -39,33 +32,6 @@ type UserProductIDs struct {
 type ProductUserIDs struct {
 	UserMap     map[uuid.UUID]int
 	UserIDArray []uuid.UUID
-}
-
-func (l Privileges) IsValidPrivilege(privilege int) bool {
-	for _, value := range l {
-		if value.ID == privilege {
-			return true
-		}
-	}
-	return false
-}
-
-func (l Privileges) IsOwnerPrivilege(privilege int) bool {
-	for _, value := range l {
-		if value.ID == privilege && value.Name == "Owner" {
-			return true
-		}
-	}
-	return false
-}
-
-func (l Privileges) IsPartnerPrivilege(privilege int) bool {
-	for _, value := range l {
-		if value.ID == privilege && value.Name == "Partner" {
-			return true
-		}
-	}
-	return false
 }
 
 // NewProduct creates a new product instance where details describe the configuration of the product

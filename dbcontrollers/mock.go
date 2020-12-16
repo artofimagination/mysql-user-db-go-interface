@@ -13,6 +13,8 @@ type ModelInterfaceMock struct {
 	settingsID uuid.UUID
 	userID     uuid.UUID
 	productID  uuid.UUID
+	projectID  uuid.UUID
+	project    *models.Project
 	asset      *models.Asset
 
 	err error
@@ -31,6 +33,10 @@ func (i *ModelInterfaceMock) NewProduct(name string, public bool, detailsID *uui
 
 func (i *ModelInterfaceMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*models.Asset, error) {
 	return i.asset, i.err
+}
+
+func (i *ModelInterfaceMock) NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Project, error) {
+	return i.project, i.err
 }
 
 func (i *ModelInterfaceMock) NewUser(
@@ -57,11 +63,14 @@ type DBFunctionInterfaceMock struct {
 	userDeleted          bool
 	userAdded            bool
 	product              *models.Product
+	project              *models.Project
 	productAdded         bool
+	projectAdded         bool
 	productDeleted       bool
 	usersProductsUpdated bool
 	privileges           models.Privileges
 	userProducts         *models.UserProductIDs
+	userProjects         *models.UserProjectIDs
 	productUsers         *models.ProductUserIDs
 	err                  error
 }
@@ -149,6 +158,42 @@ func (i *DBFunctionInterfaceMock) UpdateUsersProducts(userID *uuid.UUID, product
 
 func (i *DBFunctionInterfaceMock) GetProductByID(ID *uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	return i.product, i.err
+}
+
+func (i DBFunctionInterfaceMock) AddProject(project *models.Project, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionInterfaceMock) AddProjectUsers(projectID *uuid.UUID, projectUsers *models.ProjectUserIDs, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionInterfaceMock) GetProjectByID(ID *uuid.UUID, tx *sql.Tx) (*models.Project, error) {
+	return i.project, i.err
+}
+
+func (i *DBFunctionInterfaceMock) UpdateUsersProjects(userID *uuid.UUID, projectID *uuid.UUID, privilege int, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionInterfaceMock) DeleteProjectUsersByProjectID(projectID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionInterfaceMock) DeleteProject(projectID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionInterfaceMock) GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProjectIDs, error) {
+	return i.userProjects, i.err
+}
+
+func (i *DBFunctionInterfaceMock) GetProjectsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Project, error) {
+	return nil, i.err
+}
+
+func (i *DBFunctionInterfaceMock) DeleteProjectsByProductID(productID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
 }
 
 // DBConnectorMock overwrites the mysqldb package implementations for DB connectionwith mock code.

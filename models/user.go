@@ -42,11 +42,12 @@ func (*RepoInterface) NewUser(
 	assetsID uuid.UUID) (*User, error) {
 	var u User
 
-	if settingsID == NullUUID {
+	emptyUUID := uuid.UUID{}
+	if settingsID == emptyUUID {
 		return nil, errors.New(ErrInvalidSettingsID)
 	}
 
-	if assetsID == NullUUID {
+	if assetsID == emptyUUID {
 		return nil, errors.New(ErrProductDetailsNotInitialised)
 	}
 

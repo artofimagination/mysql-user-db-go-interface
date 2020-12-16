@@ -4,7 +4,12 @@ import (
 	"github.com/google/uuid"
 )
 
-var NullUUID = uuid.MustParse("00000000-0000-0000-0000-000000000000")
+// This contants describe the visibility of proucts and projects
+const (
+	Public    = iota // Public is visible for everyone including nont registered visitors
+	Protected        // Content is available for registered users
+	Private          // Content is available for the owner and users the product or project is shared with.
+)
 
 type InterfaceCommon interface {
 	NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*Asset, error)
@@ -15,6 +20,7 @@ type InterfaceCommon interface {
 		settingsID uuid.UUID,
 		assetsID uuid.UUID) (*User, error)
 	NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error)
+	NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error)
 }
 
 type UUIDInterfaceCommon interface {

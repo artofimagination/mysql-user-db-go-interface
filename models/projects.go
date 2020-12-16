@@ -1,22 +1,66 @@
 package models
 
 import (
-	"encoding/json"
-
 	"github.com/google/uuid"
 )
 
-type Data struct {
-	ID       int     `json:"id"`
-	DataType int     `json:"type"`
-	Speed    float32 `json:"speed"`
+type ProjectData struct {
+	ID        uuid.UUID
+	ProductID uuid.UUID
+	Assets    *Asset
+	Details   *Asset
 }
 
-// Project defines the project structure.
+type UserProject struct {
+	ProjectData *ProjectData
+	Privilege   int
+}
+
 type Project struct {
-	ID        uuid.UUID       `json:"id"`
-	Name      string          `json:"name"`
-	UserID    uuid.UUID       `json:"user_id"`
-	FeatureID int             `json:"features_id"`
-	Config    json.RawMessage `json:"config"`
+	ID        uuid.UUID `validation:"required"`
+	ProductID uuid.UUID `validation:"required"`
+	AssetsID  uuid.UUID `validation:"required"`
+	DetailsID uuid.UUID `validation:"required"`
+}
+
+type UserProjectIDs struct {
+	ProjectMap     map[uuid.UUID]int
+	ProjectIDArray []uuid.UUID
+}
+
+type ProjectUserIDs struct {
+	UserMap     map[uuid.UUID]int
+	UserIDArray []uuid.UUID
+}
+
+// Viewers describes a set of project data. Each set has a single viewer ID.
+// Whichever user possese this ID can view the data with this ID. The set of project data has a single owner user.
+// This structure contains the owner and the list of users who can view the data.
+type ViewersList []Viewer
+
+type Viewer struct {
+	IsOwner   bool
+	ViewerID  uuid.UUID
+	ProjectID uuid.UUID
+}
+
+type ViewUsers struct {
+	OwnerID   uuid.UUID
+	UsersList []uuid.UUID
+}
+
+func (*RepoInterface) NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error) {
+	var p Project
+
+	newID, err := UUIDImpl.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	p.ID = newID
+	p.ProductID = *productID
+	p.DetailsID = *detailsID
+	p.AssetsID = *assetsID
+
+	return &p, nil
 }

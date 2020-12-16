@@ -1,6 +1,7 @@
 import pytest
 import json
 from functionalTest import httpConnection
+from common import *
 
 dataColumns = ("data", "expected")
 createTestData = [
@@ -53,27 +54,13 @@ ids=['No existing product', 'Existing product', 'Missing user']
 
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_CreateProduct(httpConnection, data, expected):
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
+
   dataToSend = dict()
-  if "user" in data:
-    try:
-      r = httpConnection.POST("/add-user", data["user"])
-    except:
-      pytest.fail(f"Failed to send POST request")
-      return
-
-    if r.status_code != 201:
-      pytest.fail(f"Failed to add product.\nDetails: {r.text}")
-      return
-
-    response = json.loads(r.text)
-    
-    dataToSend["product"] = data["product"]
-    dataToSend["user"] = response["ID"]
-  elif "user_id" in data:
-    dataToSend["product"] = data["product"]
-    dataToSend["user"] = data["user_id"]
-  else:
-    dataToSend = data
+  dataToSend["product"] = data["product"]
+  dataToSend["user"] = userUUID
 
   try:
     r = httpConnection.POST("/add-product", dataToSend)
@@ -117,9 +104,15 @@ createTestData = [
     }),
 
     # Input data
-    ({
-      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
-    },
+    (
+      {
+      "user": {
+        "name": "testUserOwnerGet1",
+        "email": "testEmailOwnerGet1",
+        "password": "testPassword"
+      },
+      "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
+      },
     # Expected
     "The selected product not found")
 ]
@@ -128,44 +121,13 @@ ids=['Existing product', 'No existing product']
 
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_GetProduct(httpConnection, data, expected):
-  userUUID = ""
-  productUUID = ""
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
 
-  if "user" in data:
-    try:
-      r = httpConnection.POST("/add-user", data["user"])
-    except Exception as e:
-      pytest.fail(f"Failed to send POST request")
-      return
-
-    if r.status_code != 201:
-      pytest.fail(f"Failed to add product.\nDetails: {r.text}")
-      return
-
-    response = json.loads(r.text)
-    userUUID = response["ID"]
-
-  if "product" in data:
-    dataToSend = dict()
-    dataToSend["product"] = data["product"]
-    if userUUID == "":
-      pytest.fail(f"Missing user test data")
-      return
-    dataToSend["user"] = userUUID
-    try:
-      r = httpConnection.POST("/add-product", dataToSend)
-    except Exception as e:
-      pytest.fail(f"Failed to send POST request")
-      return
-
-    if r.status_code != 201:
-      pytest.fail(f"Failed to add product.\nDetails: {r.text}")
-      return
-
-    response = json.loads(r.text)
-    productUUID = response["ID"]
-  else:
-    productUUID = data["id"]
+  productUUID = addProduct(data, userUUID, httpConnection)
+  if productUUID is None:
+    return
   
   try:
     r = httpConnection.GET("/get-product", {"id": productUUID})
@@ -230,7 +192,7 @@ createTestData = [
         "public": True
       },
       {
-        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+        "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
       }],
       "user": {
         "name": "testUserOwnerGetMultipleFail",
@@ -248,7 +210,7 @@ createTestData = [
     # Input data
     ({
       "product": [{
-        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+        "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
       }],
       "user": {
         "name": "testUserOwnerGetMultipleNoProduct",
@@ -264,22 +226,10 @@ ids=['Existing products', 'Missing a product', 'No product']
 
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_GetProducts(httpConnection, data, expected):
-  userUUID = ""
   uuidList = list()
-
-  if "user" in data:
-    try:
-      r = httpConnection.POST("/add-user", data["user"])
-    except Exception as e:
-      pytest.fail(f"Failed to send POST request")
-      return
-
-    if r.status_code != 201:
-      pytest.fail(f"Failed to add product.\nDetails: {r.text}")
-      return
-
-    response = json.loads(r.text)
-    userUUID = response["ID"]
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
     
   if "product" in data:
     for element in data["product"]:
@@ -303,7 +253,7 @@ def test_GetProducts(httpConnection, data, expected):
         response = json.loads(r.text)
         uuidList.append(response["ID"])
       else:
-        uuidList.append(element["id"])
+        uuidList.append(element["product_id"])
   
   try:
     r = httpConnection.GET("/get-products", {"ids": uuidList})
@@ -351,7 +301,12 @@ createTestData = [
     ),
     # Input data
     ({
-      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+      "user": {
+        "name": "testUserOwnerDeleteProduct1",
+        "email": "testEmailOwnerDeleteProduct1",
+        "password": "testPassword"
+      },
+      "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
     },
     # Expected
     "The selected product not found"),]
@@ -360,40 +315,13 @@ ids=['Existing product', 'No existing product']
 
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_DeleteProduct(httpConnection, data, expected):
-  dataToSend = dict()
-  productUUID = ""
-  if "user" in data:
-    try:
-      r = httpConnection.POST("/add-user", data["user"])
-    except:
-      pytest.fail(f"Failed to send POST request")
-      return
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
 
-    if r.status_code != 201:
-      pytest.fail(f"Failed to add user.\nDetails: {r.text}")
-      return
-
-    response = json.loads(r.text)
-    
-    dataToSend["product"] = data["product"]
-    dataToSend["user"] = response["ID"]
-
-  if "product" in data:
-    try:
-      r = httpConnection.POST("/add-product", dataToSend)
-    except Exception as e:
-      pytest.fail(f"Failed to send POST request")
-      return
-
-    if r.status_code != 201:
-      pytest.fail(f"Failed to add product.\nDetails: {r.text}")
-      return
-    
-    response = json.loads(r.text)
-    productUUID = response["ID"]
-
-  if "id" in data:
-    productUUID = data["id"]
+  productUUID = addProduct(data, userUUID, httpConnection)
+  if productUUID is None:
+    return
 
   dataToSend = dict()
   dataToSend["product_id"] = productUUID

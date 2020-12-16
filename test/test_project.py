@@ -1,0 +1,349 @@
+import pytest
+import json
+from functionalTest import httpConnection
+from common import *
+
+dataColumns = ("data", "expected")
+createTestData = [
+    (# Input data
+      {
+      "product": {
+        "name": "testProductAddProject",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerAddProject",
+        "email": "testEmailOwnerAddProject",
+        "password": "testPassword"
+      },
+      "project": {
+        "name": "testProjectAddProject",
+        "visibility": "1"
+      }
+    },
+    # Expected
+    { 
+      "name":"testProjectAddProject",
+      "visibility": 1
+    }),
+    # Input data
+    ({
+      "project": {
+        "name": "testProjectMissingUser",
+        "visibility": "1"
+      },
+      "user_id": "c34a7368-344a-11eb-adc1-0242ac120002",
+      "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    },
+    # Expected
+    "Failed to create product: Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`projects`, CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`products_id`) REFERENCES `products` (`id`))") 
+
+]
+
+ids=['No existing project', 'Missing product']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_CreateProject(httpConnection, data, expected):
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
+
+  productUUID = addProduct(data, userUUID, httpConnection)
+  if productUUID is None:
+    return
+
+  dataToSend = dict()
+  dataToSend["project"] = data["project"]
+  dataToSend["product_id"] = productUUID
+  dataToSend["owner_id"] = userUUID
+
+  try:
+    r = httpConnection.POST("/add-project", dataToSend)
+  except Exception as e:
+    pytest.fail(f"Failed to send POST request")
+    return
+
+  if r.status_code == 201:
+    response = json.loads(r.text)
+    if response["Details"]["DataMap"]["name"] != expected["name"] or \
+      response["Details"]["DataMap"]["visibility"] != expected["visibility"]:
+      pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
+    return
+  
+  if r.text != expected:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
+
+createTestData = [
+    (# Input data
+      {
+      "product": {
+        "name": "testProductGetProject",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerGetProject",
+        "email": "testEmailOwnerGetProject",
+        "password": "testPassword"
+      },
+      "project": { 
+        "name":"testProjectGetProject",
+        "visibility": "1"
+      }
+    },
+    # Expected
+    { 
+      "name":"testProjectGetProject",
+      "visibility": 1
+    }),
+    
+    # Input data
+    ({
+      "product": {
+        "name": "testProductGetProjectMissing",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerGetProjectMissing",
+        "email": "testEmailOwnerGetProjectMissing",
+        "password": "testPassword"
+      },
+      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    },
+    # Expected
+    "The selected project not found")
+]
+
+ids=['Existing project', 'Missing project']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_GetProject(httpConnection, data, expected):
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
+
+  productUUID = addProduct(data, userUUID, httpConnection)
+  if productUUID is None:
+    return
+
+  projectUUID = addProject(data, userUUID, productUUID, httpConnection)
+  if projectUUID is None:
+    return
+
+  dataToSend = dict()
+  dataToSend["id"] = projectUUID
+
+  try:
+    r = httpConnection.GET("/get-project", dataToSend)
+  except Exception as e:
+    pytest.fail(f"Failed to send GET request")
+    return
+
+  if r.status_code == 200:
+    response = json.loads(r.text)
+    if response["Details"]["DataMap"]["name"] != expected["name"] or \
+      response["Details"]["DataMap"]["visibility"] != expected["visibility"]:
+      pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
+    return
+  
+  if r.text != expected:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
+
+createTestData = [
+    (# Input data
+      {
+      "product": {
+        "name": "testProductGetProjectMultiple",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerGetProjectMultiple",
+        "email": "testEmailOwnerGetProjectMultiple",
+        "password": "testPassword"
+      },
+      "project": [{ 
+        "name":"testProjectGetProjectMultiple1",
+        "visibility": "1"
+      },
+      { 
+        "name":"testProjectGetProjectMultiple2",
+        "visibility": "2"
+      }]
+    },
+    # Expected
+    [{ 
+      "name":"testProjectGetProjectMultiple1",
+      "visibility": 1
+    },
+    { 
+      "name":"testProjectGetProjectMultiple2",
+      "visibility": 2
+    }]
+    ),
+    (# Input data
+      {
+      "product": {
+        "name": "testProductGetProjectMultiple2",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerGetProjectMultiple2",
+        "email": "testEmailOwnerGetProjectMultiple2",
+        "password": "testPassword"
+      },
+      "project": [{ 
+        "name":"testProjectGetProjectMultiple2",
+        "visibility": "1"
+      },
+      {
+        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+      }]
+    },
+    # Expected
+    [{ 
+      "name":"testProjectGetProjectMultiple2",
+      "visibility": 1
+    }]
+    ),
+    (# Input data
+      {
+      "product": {
+        "name": "testProductGetProjectMultiple3",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerGetProjectMultiple3",
+        "email": "testEmailOwnerGetProjectMultiple3",
+        "password": "testPassword"
+      },
+      "project": [
+      {
+        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+      }]
+    },
+    # Expected
+    "The selected project not found"
+    )
+]
+
+ids=['Existing projects', 'Missing a project', 'No project']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_GetProjects(httpConnection, data, expected):
+  uuidList = list()
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
+
+  productUUID = addProduct(data, userUUID, httpConnection)
+  if productUUID is None:
+    return
+
+  if "project" in data:
+    for element in data["project"]:
+      if "name" in element:
+        dataToSend = dict()
+        dataToSend["project"] = element
+        if userUUID is None:
+          pytest.fail(f"Missing user test data")
+          return
+        dataToSend["owner_id"] = userUUID
+        if productUUID is None:
+          pytest.fail(f"Missing product test data")
+          return None
+        dataToSend["product_id"] = productUUID
+        try:
+          r = httpConnection.POST("/add-project", dataToSend)
+        except Exception as e:
+          pytest.fail(f"Failed to send POST request")
+          return
+
+        if r.status_code != 201:
+          pytest.fail(f"Failed to run test.\nDetails: {r.text}")
+          return
+
+        response = json.loads(r.text)
+        uuidList.append(response["ID"])
+      else:
+        uuidList.append(element["id"])
+
+  try:
+    r = httpConnection.GET("/get-projects", {"ids": uuidList})
+  except Exception as e:
+    pytest.fail(f"Failed to send GET request")
+    return
+
+  if r.status_code == 200:
+    response = json.loads(r.text)
+    for index, product in enumerate(response):
+      if product["Details"]["DataMap"]["name"] != expected[index]["name"] or \
+        product["Details"]["DataMap"]["visibility"] != expected[index]["visibility"]:
+        pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
+    return
+  
+  if r.text != expected:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
+
+createTestData = [
+    (# Input data
+      {
+      "product": {
+        "name": "testProductDeleteProject",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerDeleteProject",
+        "email": "testEmailOwnerDeleteProject",
+        "password": "testPassword"
+      },
+      "project": { 
+        "name":"testProjectDeleteProject",
+        "visibility": "1"
+      }
+    },
+    # Expected
+    "Delete completed"),
+    
+    # Input data
+    ({
+      "product": {
+        "name": "testProductDeleteProjectMissing",
+        "public": True
+      },
+      "user": {
+        "name": "testUserOwnerDeleteProjectMissing",
+        "email": "testEmailOwnerDeleteProjectMissing",
+        "password": "testPassword"
+      },
+      "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+    },
+    # Expected
+    "The selected project not found")
+]
+
+ids=['Existing project', 'Missing project']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_DeleteProject(httpConnection, data, expected):
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
+
+  productUUID = addProduct(data, userUUID, httpConnection)
+  if productUUID is None:
+    return
+
+  projectUUID = addProject(data, userUUID, productUUID, httpConnection)
+  if projectUUID is None:
+    return
+
+  dataToSend = dict()
+  dataToSend["id"] = projectUUID
+
+  try:
+    r = httpConnection.POST("/delete-project", dataToSend)
+  except Exception as e:
+    pytest.fail(f"Failed to send POST request")
+    return
+  
+  if r.text != expected:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")

@@ -46,3 +46,17 @@ func createTestProductUsersData() (*models.ProductUserIDs, error) {
 	owners.UserIDArray = append(owners.UserIDArray, userID)
 	return &owners, nil
 }
+
+func createTestProjectUsersData() (*models.ProjectUserIDs, error) {
+	userID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+	owners := models.ProjectUserIDs{
+		UserIDArray: make([]uuid.UUID, 0),
+		UserMap:     make(map[uuid.UUID]int),
+	}
+	owners.UserMap[userID] = 1
+	owners.UserIDArray = append(owners.UserIDArray, userID)
+	return &owners, nil
+}
