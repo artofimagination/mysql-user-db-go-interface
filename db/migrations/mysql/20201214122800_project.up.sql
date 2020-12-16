@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS users_projects(
 CREATE TABLE IF NOT EXISTS users_viewers(
    users_id binary(16),
    FOREIGN KEY (users_id) REFERENCES users(id),
-   viewer_id int,
+   viewer_id bigint,
    projects_id binary(16),
    FOREIGN KEY (projects_id) REFERENCES projects(id),
    is_owner bool,

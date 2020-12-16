@@ -36,14 +36,18 @@ type ProjectUserIDs struct {
 // Viewers describes a set of project data. Each set has a single viewer ID.
 // Whichever user possese this ID can view the data with this ID. The set of project data has a single owner user.
 // This structure contains the owner and the list of users who can view the data.
-type Viewers struct {
-	OwnerID  uuid.UUID
-	UserList []int
+type ViewersList []Viewer
+
+type Viewer struct {
+	IsOwner   bool
+	ViewerID  uuid.UUID
+	ProjectID uuid.UUID
 }
 
-// ProjectDataList holds the list of viewers a user owns. The ID-s in the list allow the user
-// to view the project data belonging to those ID-s.
-type ProjectDataList []int
+type ViewUsers struct {
+	OwnerID   uuid.UUID
+	UsersList []uuid.UUID
+}
 
 func (*RepoInterface) NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error) {
 	var p Project
