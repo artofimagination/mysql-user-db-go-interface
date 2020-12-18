@@ -183,7 +183,7 @@ func TestCreateProject(t *testing.T) {
 
 			output, err := dbController.CreateProject(
 				inputData.projectData.Assets.DataMap["name"].(string),
-				inputData.projectData.Assets.DataMap["visibility"].(int),
+				inputData.projectData.Assets.DataMap["visibility"].(string),
 				&inputData.userID,
 				&inputData.projectData.ProductID,
 				func(*uuid.UUID) (string, error) {

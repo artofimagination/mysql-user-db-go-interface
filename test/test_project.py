@@ -18,19 +18,19 @@ createTestData = [
       },
       "project": {
         "name": "testProjectAddProject",
-        "visibility": "1"
+        "visibility": "Public"
       }
     },
     # Expected
     { 
       "name":"testProjectAddProject",
-      "visibility": 1
+      "visibility": "Public"
     }),
     # Input data
     ({
       "project": {
         "name": "testProjectMissingUser",
-        "visibility": "1"
+        "visibility": "Public"
       },
       "user_id": "c34a7368-344a-11eb-adc1-0242ac120002",
       "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
@@ -87,13 +87,13 @@ createTestData = [
       },
       "project": { 
         "name":"testProjectGetProject",
-        "visibility": "1"
+        "visibility": "Public"
       }
     },
     # Expected
     { 
       "name":"testProjectGetProject",
-      "visibility": 1
+      "visibility": "Public"
     }),
     
     # Input data
@@ -162,21 +162,21 @@ createTestData = [
       },
       "project": [{ 
         "name":"testProjectGetProjectMultiple1",
-        "visibility": "1"
+        "visibility": "Public"
       },
       { 
         "name":"testProjectGetProjectMultiple2",
-        "visibility": "2"
+        "visibility": "Protected"
       }]
     },
     # Expected
     [{ 
       "name":"testProjectGetProjectMultiple1",
-      "visibility": 1
+      "visibility": "Public"
     },
     { 
       "name":"testProjectGetProjectMultiple2",
-      "visibility": 2
+      "visibility": "Protected"
     }]
     ),
     (# Input data
@@ -192,7 +192,7 @@ createTestData = [
       },
       "project": [{ 
         "name":"testProjectGetProjectMultiple2",
-        "visibility": "1"
+        "visibility": "Public"
       },
       {
         "id": "c34a7368-344a-11eb-adc1-0242ac120002"
@@ -201,7 +201,7 @@ createTestData = [
     # Expected
     [{ 
       "name":"testProjectGetProjectMultiple2",
-      "visibility": 1
+      "visibility": "Public"
     }]
     ),
     (# Input data
@@ -297,7 +297,7 @@ createTestData = [
       },
       "project": { 
         "name":"testProjectDeleteProject",
-        "visibility": "1"
+        "visibility": "Public"
       }
     },
     # Expected

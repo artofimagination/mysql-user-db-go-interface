@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
@@ -892,17 +891,10 @@ func addProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	visibilityString, ok := projectJSON.(map[string]interface{})["visibility"].(string)
+	visibility, ok := projectJSON.(map[string]interface{})["visibility"].(string)
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, "Missing 'visibility'")
-		return
-	}
-
-	visibility, err := strconv.Atoi(visibilityString)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, err)
 		return
 	}
 
