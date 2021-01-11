@@ -70,8 +70,8 @@ func (r *Asset) SetFilePath(typeString string, extension string) error {
 	return nil
 }
 
-func (r *Asset) SetField(typeString string, url string) {
-	r.DataMap[typeString] = url
+func (r *Asset) SetField(typeString string, field interface{}) {
+	r.DataMap[typeString] = field
 }
 
 func (r *Asset) GetField(typeString string, defaultURL string) string {

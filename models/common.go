@@ -6,9 +6,9 @@ import (
 
 // This contants describe the visibility of proucts and projects
 const (
-	Public    = iota // Public is visible for everyone including nont registered visitors
-	Protected        // Content is available for registered users
-	Private          // Content is available for the owner and users the product or project is shared with.
+	Public    = "Public"    // Public is visible for everyone including nont registered visitors
+	Protected = "Protected" // Content is available for registered users
+	Private   = "Private"   // Content is available for the owner and users the product or project is shared with.
 )
 
 type InterfaceCommon interface {

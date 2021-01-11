@@ -16,7 +16,7 @@ var ErrMissingProjectDetail = errors.New("Details for the selected project not f
 var ErrMissingProjectAsset = errors.New("Assets for the selected project not found")
 var ErrEmptyProjectIDList = errors.New("Request does not contain any project identifiers")
 
-func (*MYSQLController) CreateProject(name string, visibility int, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
+func (*MYSQLController) CreateProject(name string, visibility string, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
 	references := make(models.DataMap)
 	asset, err := models.Interface.NewAsset(references, generateAssetPath)
 	if err != nil {
