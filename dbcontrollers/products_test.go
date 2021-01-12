@@ -10,6 +10,22 @@ import (
 	"github.com/kr/pretty"
 )
 
+type ProductExpectedData struct {
+	productData *models.ProductData
+	err         error
+}
+
+type ProductMockData struct {
+	productData *models.ProductData
+	product     *models.Product
+	privileges  models.Privileges
+}
+
+type ProductInputData struct {
+	productData *models.ProductData
+	userID      uuid.UUID
+}
+
 func createTestProductsUsersData() (*models.ProductUserIDs, models.Privileges) {
 	privileges := make(models.Privileges, 2)
 	privilege := &models.Privilege{
@@ -51,7 +67,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	product := models.Product{
+	product := &models.Product{
 		Name:      "testProduct",
 		Public:    true,
 		ID:        productID,
@@ -70,7 +86,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 		DataMap: dataMap,
 	}
 
-	productData := models.ProductData{
+	productData := &models.ProductData{
 		ID:      product.ID,
 		Name:    product.Name,
 		Public:  product.Public,
@@ -89,36 +105,58 @@ func createProductTestData() (*test.OrderedTests, error) {
 	}
 
 	testCase := "no_existing_product"
-	data := make(map[string]interface{})
-	data["input"] = productData
-	data["db_mock"] = nil
-	data["user_id"] = userID
-	data["privileges"] = privileges
-	expected := make(map[string]interface{})
-	expected["data"] = &productData
-	expected["error"] = nil
+	expected := ProductExpectedData{
+		productData: productData,
+		err:         nil,
+	}
+	input := ProductInputData{
+		productData: productData,
+		userID:      userID,
+	}
+	mock := ProductMockData{
+		productData: nil,
+		privileges:  privileges,
+	}
 	dataSet.TestDataSet[testCase] = test.Data{
-		Data:     data,
+		Data:     input,
+		Mock:     mock,
 		Expected: expected,
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "existing_product"
-	data = make(map[string]interface{})
-	data["input"] = productData
-	data["db_mock"] = &product
-	data["user_id"] = userID
-	data["privileges"] = privileges
-	expected = make(map[string]interface{})
-	expected["data"] = nil
-	expected["error"] = fmt.Errorf(ErrProductExistsString, product.Name)
+	expected = ProductExpectedData{
+		productData: nil,
+		err:         fmt.Errorf(ErrProductExistsString, product.Name),
+	}
+	input = ProductInputData{
+		productData: productData,
+		userID:      userID,
+	}
+	mock = ProductMockData{
+		product:    product,
+		privileges: privileges,
+	}
 	dataSet.TestDataSet[testCase] = test.Data{
-		Data:     data,
+		Data:     input,
+		Mock:     mock,
 		Expected: expected,
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	return dataSet, nil
+}
+
+type ValidationExpectedData struct {
+	err error
+}
+
+type ValidationMockData struct {
+	privileges models.Privileges
+}
+
+type ValidationInputData struct {
+	productUsers *models.ProductUserIDs
 }
 
 func createValidationTestData() (*test.OrderedTests, error) {
@@ -141,37 +179,59 @@ func createValidationTestData() (*test.OrderedTests, error) {
 
 	testCase := "valid_data"
 	productUsers.UserMap[userID] = 0
-	data := make(map[string]interface{})
-	data["input"] = productUsers
-	data["privileges"] = privileges
+	expected := ValidationExpectedData{
+		err: nil,
+	}
+	input := ValidationInputData{
+		productUsers: productUsers,
+	}
+	mock := ValidationMockData{
+		privileges: privileges,
+	}
+	productUsers.UserMap[userID] = 0
 	dataSet.TestDataSet[testCase] = test.Data{
-		Data:     data,
-		Expected: nil,
+		Data:     input,
+		Mock:     mock,
+		Expected: expected,
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "empty_user_list"
+	productUsers.UserMap[userID] = 0
 	productUsers = &models.ProductUserIDs{
 		UserIDArray: make([]uuid.UUID, 0),
 		UserMap:     make(map[uuid.UUID]int),
 	}
-	data = make(map[string]interface{})
-	data["input"] = productUsers
-	data["privileges"] = privileges
+	expected = ValidationExpectedData{
+		err: ErrEmptyUsersList,
+	}
+	input = ValidationInputData{
+		productUsers: productUsers,
+	}
+	mock = ValidationMockData{
+		privileges: privileges,
+	}
 	dataSet.TestDataSet[testCase] = test.Data{
-		Data:     data,
-		Expected: ErrEmptyUsersList,
+		Data:     input,
+		Mock:     mock,
+		Expected: expected,
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	testCase = "nil_user_list"
-	data = make(map[string]interface{})
-	data["input"] = nil
-	data["privileges"] = privileges
-
+	expected = ValidationExpectedData{
+		err: ErrEmptyUsersList,
+	}
+	input = ValidationInputData{
+		productUsers: nil,
+	}
+	mock = ValidationMockData{
+		privileges: privileges,
+	}
 	dataSet.TestDataSet[testCase] = test.Data{
-		Data:     data,
-		Expected: ErrEmptyUsersList,
+		Data:     input,
+		Mock:     mock,
+		Expected: expected,
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -181,13 +241,19 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		UserMap:     make(map[uuid.UUID]int),
 	}
 	productUsers.UserMap[userID] = 1
-	data = make(map[string]interface{})
-	data["input"] = productUsers
-	data["privileges"] = privileges
-
+	expected = ValidationExpectedData{
+		err: ErrInvalidOwnerCount,
+	}
+	input = ValidationInputData{
+		productUsers: productUsers,
+	}
+	mock = ValidationMockData{
+		privileges: privileges,
+	}
 	dataSet.TestDataSet[testCase] = test.Data{
-		Data:     data,
-		Expected: ErrInvalidOwnerCount,
+		Data:     input,
+		Mock:     mock,
+		Expected: expected,
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -203,12 +269,19 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	}
 
 	productUsers.UserMap[userID2] = 0
-	data = make(map[string]interface{})
-	data["input"] = productUsers
-	data["privileges"] = privileges
+	expected = ValidationExpectedData{
+		err: ErrInvalidOwnerCount,
+	}
+	input = ValidationInputData{
+		productUsers: productUsers,
+	}
+	mock = ValidationMockData{
+		privileges: privileges,
+	}
 	dataSet.TestDataSet[testCase] = test.Data{
-		Data:     data,
-		Expected: ErrInvalidOwnerCount,
+		Data:     input,
+		Mock:     mock,
+		Expected: expected,
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -218,12 +291,19 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		UserMap:     make(map[uuid.UUID]int),
 	}
 	productUsers.UserMap[userID] = 2
-	data = make(map[string]interface{})
-	data["input"] = productUsers
-	data["privileges"] = privileges
+	expected = ValidationExpectedData{
+		err: fmt.Errorf(ErrUnknownPrivilegeString, 2, userID.String()),
+	}
+	input = ValidationInputData{
+		productUsers: productUsers,
+	}
+	mock = ValidationMockData{
+		privileges: privileges,
+	}
 	dataSet.TestDataSet[testCase] = test.Data{
-		Data:     data,
-		Expected: fmt.Errorf(ErrUnknownPrivilegeString, 2, userID.String()),
+		Data:     input,
+		Mock:     mock,
+		Expected: expected,
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -243,43 +323,31 @@ func TestCreateProduct(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedData *models.ProductData
-			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.ProductData)
-			}
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
-			input := testCase.Data.(map[string]interface{})["input"].(models.ProductData)
-			userID := testCase.Data.(map[string]interface{})["user_id"].(uuid.UUID)
-			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
-			var DBMock *models.Product
-			if testCase.Data.(map[string]interface{})["db_mock"] != nil {
-				DBMock = testCase.Data.(map[string]interface{})["db_mock"].(*models.Product)
-			}
+			expectedData := testCase.Expected.(ProductExpectedData)
+			inputData := testCase.Data.(ProductInputData)
+			mockData := testCase.Mock.(ProductMockData)
 
 			dbController.DBFunctions = &DBFunctionMock{
-				product:      DBMock,
-				privileges:   privileges,
-				productAdded: false,
+				product:      mockData.product,
+				privileges:   mockData.privileges,
+				projectAdded: false,
 			}
 
 			output, err := dbController.CreateProduct(
-				input.Name,
-				input.Public,
-				&userID,
+				inputData.productData.Name,
+				inputData.productData.Public,
+				&inputData.userID,
 				func(*uuid.UUID) (string, error) {
 					return "testPath", nil
 				})
 
-			if diff := pretty.Diff(expectedData, output); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			if diff := pretty.Diff(expectedData.productData, output); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.productData, diff)
 				return
 			}
 
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -299,23 +367,17 @@ func TestValidateUsers(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedError error
-			if testCase.Expected != nil {
-				expectedError = testCase.Expected.(error)
-			}
-			var input *models.ProductUserIDs
-			if testCase.Data.(map[string]interface{})["input"] != nil {
-				input = testCase.Data.(map[string]interface{})["input"].(*models.ProductUserIDs)
-			}
-			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
+			expectedData := testCase.Expected.(ValidationExpectedData)
+			inputData := testCase.Data.(ValidationInputData)
+			mockData := testCase.Mock.(ValidationMockData)
 
 			dbController.DBFunctions = &DBFunctionMock{
-				privileges: privileges,
+				privileges: mockData.privileges,
 			}
 
-			err := dbController.validateOwnership(input)
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			err := dbController.validateOwnership(inputData.productUsers)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})

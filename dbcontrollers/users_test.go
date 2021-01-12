@@ -15,6 +15,28 @@ const (
 	DeleteUserTest
 )
 
+type UserExpectedData struct {
+	userData             *models.UserData
+	userDeleted          bool
+	productDeleted       bool
+	usersProductsUpdated bool
+	err                  error
+}
+
+type UserMockData struct {
+	user          *models.User
+	product       *models.Product
+	usersProducts *models.UserProductIDs
+	privileges    models.Privileges
+	err           error
+}
+
+type UserInputData struct {
+	userData *models.UserData
+	password []byte
+	nominees map[uuid.UUID]uuid.UUID
+}
+
 func createUserTestData(testID int) (*test.OrderedTests, error) {
 	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
@@ -36,7 +58,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	user := models.User{
+	user := &models.User{
 		Name:       "testName",
 		Email:      "testEmail",
 		Password:   []byte{},
@@ -55,11 +77,11 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	usersProducts := models.UserProductIDs{
+	usersProducts := &models.UserProductIDs{
 		ProductMap: make(map[uuid.UUID]int),
 	}
 
-	product := models.Product{
+	product := &models.Product{
 		ID:     productID,
 		Public: true,
 	}
@@ -70,7 +92,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		DataMap: dataMap,
 	}
 
-	userData := models.UserData{
+	userData := &models.UserData{
 		ID:       user.ID,
 		Name:     user.Name,
 		Settings: assets,
@@ -105,115 +127,145 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 	switch testID {
 	case CreateUserTest:
 		testCase := "no_existing_user"
-		data := make(map[string]interface{})
-		data["input"] = userData
-		data["password"] = user.Password
-		data["db_mock"] = nil
-		expected := make(map[string]interface{})
-		expected["data"] = &userData
-		expected["error"] = nil
+		expected := UserExpectedData{
+			userData: userData,
+			err:      nil,
+		}
+		input := UserInputData{
+			userData: userData,
+			password: user.Password,
+		}
+		mock := UserMockData{
+			user: nil,
+		}
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     mock,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "existing_user"
-		data = make(map[string]interface{})
-		data["input"] = userData
-		data["password"] = user.Password
-		data["db_mock"] = &user
-		expected = make(map[string]interface{})
-		expected["data"] = nil
-		expected["error"] = ErrDuplicateEmailEntry
+		expected = UserExpectedData{
+			userData: nil,
+			err:      ErrDuplicateEmailEntry,
+		}
+		input = UserInputData{
+			userData: userData,
+			password: user.Password,
+		}
+		mock = UserMockData{
+			user: user,
+		}
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     mock,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case DeleteUserTest:
-
 		testCase := "valid_data_has_nominee"
 		usersProducts.ProductMap[productID] = 0
 		nominees := make(map[uuid.UUID]uuid.UUID)
 		nominees[productID] = nomineeID
-		data := make(map[string]interface{})
-		data["user_id"] = user.ID
-		data["nominees"] = nominees
-		data["db_mock_product"] = &product
-		data["db_mock_user"] = &user
-		data["db_mock_users_products"] = usersProducts
-		data["db_mock_privileges"] = privileges
-		expected := make(map[string]interface{})
-		expected["error"] = nil
-		expected["user_deleted"] = true
-		expected["product_deleted"] = false
-		expected["users_products_updated"] = true
+		expected := UserExpectedData{
+			userDeleted:          true,
+			productDeleted:       false,
+			usersProductsUpdated: true,
+			err:                  nil,
+		}
+		input := UserInputData{
+			userData: userData,
+			nominees: nominees,
+		}
+		mock := UserMockData{
+			user:          user,
+			product:       product,
+			usersProducts: usersProducts,
+			privileges:    privileges,
+		}
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     mock,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "valid_data_has_no_nominee"
 		usersProducts.ProductMap[productID] = 0
-		data = make(map[string]interface{})
-		data["user_id"] = user.ID
-		data["nominees"] = nil
-		data["db_mock_product"] = &product
-		data["db_mock_user"] = &user
-		data["db_mock_users_products"] = usersProducts
-		data["db_mock_privileges"] = privileges
-		expected = make(map[string]interface{})
-		expected["error"] = nil
-		expected["user_deleted"] = true
-		expected["product_deleted"] = true
-		expected["users_products_updated"] = false
+		expected = UserExpectedData{
+			userDeleted:          true,
+			productDeleted:       true,
+			usersProductsUpdated: false,
+			err:                  nil,
+		}
+		input = UserInputData{
+			userData: userData,
+			nominees: nil,
+		}
+		mock = UserMockData{
+			user:          user,
+			product:       product,
+			usersProducts: usersProducts,
+			privileges:    privileges,
+		}
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     mock,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_user"
-		data = make(map[string]interface{})
-		data["user_id"] = user.ID
-		data["nominees"] = nil
-		data["db_mock_product"] = &product
-		data["db_mock_user"] = &user
-		data["db_mock_users_products"] = usersProducts
-		data["db_mock_error"] = sql.ErrNoRows
-		data["db_mock_privileges"] = privileges
-		expected = make(map[string]interface{})
-		expected["error"] = ErrUserNotFound
-		expected["user_deleted"] = false
-		expected["product_deleted"] = false
-		expected["users_products_updated"] = false
+		usersProducts.ProductMap[productID] = 0
+		expected = UserExpectedData{
+			userDeleted:          false,
+			productDeleted:       false,
+			usersProductsUpdated: false,
+			err:                  ErrUserNotFound,
+		}
+		input = UserInputData{
+			userData: userData,
+			nominees: nil,
+		}
+		mock = UserMockData{
+			user:          user,
+			product:       product,
+			usersProducts: usersProducts,
+			privileges:    privileges,
+			err:           sql.ErrNoRows,
+		}
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     mock,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "has_no_products"
-		usersProducts = models.UserProductIDs{
+		usersProducts = &models.UserProductIDs{
 			ProductMap: make(map[uuid.UUID]int),
 		}
-		data = make(map[string]interface{})
-		data["user_id"] = user.ID
-		data["nominees"] = nil
-		data["db_mock_product"] = &product
-		data["db_mock_user"] = &user
-		data["db_mock_users_products"] = usersProducts
-		data["db_mock_error"] = nil
-		data["db_mock_privileges"] = privileges
-		expected = make(map[string]interface{})
-		expected["error"] = nil
-		expected["user_deleted"] = true
-		expected["product_deleted"] = false
-		expected["users_products_updated"] = false
+		expected = UserExpectedData{
+			userDeleted:          true,
+			productDeleted:       false,
+			usersProductsUpdated: false,
+			err:                  nil,
+		}
+		input = UserInputData{
+			userData: userData,
+			nominees: nil,
+		}
+		mock = UserMockData{
+			user:          user,
+			product:       product,
+			usersProducts: usersProducts,
+			privileges:    privileges,
+			err:           nil,
+		}
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     mock,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -235,46 +287,33 @@ func TestCreateUser(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedData *models.UserData
-			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.UserData)
-			}
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
-			input := testCase.Data.(map[string]interface{})["input"].(models.UserData)
-			var DBMock *models.User
-			if testCase.Data.(map[string]interface{})["db_mock"] != nil {
-				DBMock = testCase.Data.(map[string]interface{})["db_mock"].(*models.User)
-			}
+			expectedData := testCase.Expected.(UserExpectedData)
+			inputData := testCase.Data.(UserInputData)
+			mockData := testCase.Mock.(UserMockData)
 
-			password := testCase.Data.(map[string]interface{})["password"].([]byte)
-
-			mockCopy := DBMock
 			dbController.DBFunctions = &DBFunctionMock{
-				user:         mockCopy,
+				user:         mockData.user,
 				userAdded:    false,
 				productAdded: false,
 			}
 
 			output, err := dbController.CreateUser(
-				input.Name,
-				input.Email,
-				password,
+				inputData.userData.Name,
+				inputData.userData.Email,
+				inputData.password,
 				func(*uuid.UUID) (string, error) {
 					return "testPath", nil
 				}, func([]byte) ([]byte, error) {
 					return []byte{}, nil
 				})
 
-			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			if diff := pretty.Diff(output, expectedData.userData); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.userData, diff)
 				return
 			}
 
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -294,59 +333,39 @@ func TestDeleteUser(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
-
-			expectedUserDeleted := testCase.Expected.(map[string]interface{})["user_deleted"].(bool)
-			expectedProductDeleted := testCase.Expected.(map[string]interface{})["product_deleted"].(bool)
-			expectedUsersProducts := testCase.Expected.(map[string]interface{})["users_products_updated"].(bool)
-
-			userID := testCase.Data.(map[string]interface{})["user_id"].(uuid.UUID)
-			var nominatedOwners map[uuid.UUID]uuid.UUID
-			if testCase.Data.(map[string]interface{})["nominees"] != nil {
-				nominatedOwners = testCase.Data.(map[string]interface{})["nominees"].(map[uuid.UUID]uuid.UUID)
-			}
-
-			dbMockUser := testCase.Data.(map[string]interface{})["db_mock_user"].(*models.User)
-			dbMockProduct := testCase.Data.(map[string]interface{})["db_mock_product"].(*models.Product)
-			dbMockUsersProducts := testCase.Data.(map[string]interface{})["db_mock_users_products"].(models.UserProductIDs)
-
-			var dbMockError error
-			if testCase.Data.(map[string]interface{})["db_mock_error"] != nil {
-				dbMockError = testCase.Data.(map[string]interface{})["db_mock_error"].(error)
-			}
+			expectedData := testCase.Expected.(UserExpectedData)
+			inputData := testCase.Data.(UserInputData)
+			mockData := testCase.Mock.(UserMockData)
 
 			dbController.DBFunctions = &DBFunctionMock{
-				user:                 dbMockUser,
-				product:              dbMockProduct,
-				userProducts:         &dbMockUsersProducts,
-				err:                  dbMockError,
+				user:                 mockData.user,
+				product:              mockData.product,
+				userProducts:         mockData.usersProducts,
+				err:                  mockData.err,
 				userDeleted:          false,
 				productDeleted:       false,
 				usersProductsUpdated: false,
-				privileges:           testCase.Data.(map[string]interface{})["db_mock_privileges"].(models.Privileges),
+				privileges:           mockData.privileges,
 			}
 
-			err := dbController.DeleteUser(&userID, nominatedOwners)
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			err := dbController.DeleteUser(&inputData.userData.ID, inputData.nominees)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 
-			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedUserDeleted); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedUserDeleted)
+			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedData.userDeleted); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedData.userDeleted)
 				return
 			}
 
-			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedProductDeleted); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedProductDeleted)
+			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedData.productDeleted); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedData.productDeleted)
 				return
 			}
 
-			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedUsersProducts); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedUsersProducts)
+			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedData.usersProductsUpdated); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedData.usersProductsUpdated)
 				return
 			}
 		})
