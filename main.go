@@ -645,7 +645,7 @@ func getProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseProductData(data map[string]interface{}) (*models.ProductData, error) {
-	productData := models.ProductData{}
+	productData := &models.ProductData{}
 	productDataMap, ok := data["product"]
 	if !ok {
 		return nil, errors.New("Missing 'product'")
@@ -659,7 +659,8 @@ func parseProductData(data map[string]interface{}) (*models.ProductData, error) 
 	if err := json.Unmarshal(productDataByte, &productData); err != nil {
 		return nil, errors.New("Invalid 'product'")
 	}
-	return &productData, nil
+
+	return productData, nil
 }
 
 func validateProduct(expected *models.ProductData) (int, error) {

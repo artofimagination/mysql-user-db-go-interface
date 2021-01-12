@@ -402,11 +402,12 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		return nil, fmt.Errorf("Unknown test %d", testID)
 	}
 
-	DBConnector = &DBConnectorMock{
-		DB:   db,
-		Mock: mock,
+	DBFunctions = &MYSQLFunctions{
+		DBConnector: &DBConnectorMock{
+			DB:   db,
+			Mock: mock,
+		},
 	}
-	Functions = &MYSQLFunctions{}
 
 	return dataSet, nil
 }
@@ -418,13 +419,13 @@ func TestAddProject(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -432,7 +433,7 @@ func TestAddProject(t *testing.T) {
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 
-			err = Functions.AddProject(inputData.project, tx)
+			err = DBFunctions.AddProject(inputData.project, tx)
 			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
@@ -445,20 +446,20 @@ func TestAddProjectUsers(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
 			}
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-			err = Functions.AddProjectUsers(&inputData.project.ID, inputData.projectUsers, tx)
+			err = DBFunctions.AddProjectUsers(&inputData.project.ID, inputData.projectUsers, tx)
 			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
@@ -471,20 +472,20 @@ func TestUpdateUsersProjects(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
 			}
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-			err = Functions.UpdateUsersProjects(&inputData.userID, &inputData.project.ID, inputData.privilege, tx)
+			err = DBFunctions.UpdateUsersProjects(&inputData.userID, &inputData.project.ID, inputData.privilege, tx)
 			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
@@ -497,20 +498,20 @@ func TestDeleteProjectUsersByProjectID(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
 			}
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-			err = Functions.DeleteProductUsersByProductID(&inputData.project.ID, tx)
+			err = DBFunctions.DeleteProductUsersByProductID(&inputData.project.ID, tx)
 			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
@@ -523,13 +524,13 @@ func TestGetProjectByID(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -537,7 +538,7 @@ func TestGetProjectByID(t *testing.T) {
 
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-			output, err := Functions.GetProjectByID(&inputData.project.ID, tx)
+			output, err := DBFunctions.GetProjectByID(&inputData.project.ID, tx)
 			test.CheckResult(output, expectedData.project, err, expectedData.err, testCaseString, t)
 		})
 	}
@@ -550,20 +551,20 @@ func TestGetUserProjectIDs(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
 			}
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-			output, err := Functions.GetUserProjectIDs(&inputData.userID, tx)
+			output, err := DBFunctions.GetUserProjectIDs(&inputData.userID, tx)
 			test.CheckResult(output, expectedData.userProjects, err, expectedData.err, testCaseString, t)
 		})
 	}
@@ -576,11 +577,11 @@ func TestDeleteProject(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
-		tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+		tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 		if err != nil {
 			t.Errorf("Failed to setup DB transaction %s", err)
 			return
@@ -589,7 +590,7 @@ func TestDeleteProject(t *testing.T) {
 		testCaseString := testCaseString
 		expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 		inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-		err = Functions.DeleteProject(&inputData.project.ID, tx)
+		err = DBFunctions.DeleteProject(&inputData.project.ID, tx)
 		test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 	}
 }
@@ -601,11 +602,11 @@ func TestDeleteProjectByProductID(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
-		tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+		tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 		if err != nil {
 			t.Errorf("Failed to setup DB transaction %s", err)
 			return
@@ -614,7 +615,7 @@ func TestDeleteProjectByProductID(t *testing.T) {
 		testCaseString := testCaseString
 		expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 		inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-		err = Functions.DeleteProjectsByProductID(&inputData.project.ProductID, tx)
+		err = DBFunctions.DeleteProjectsByProductID(&inputData.project.ProductID, tx)
 		test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 	}
 }

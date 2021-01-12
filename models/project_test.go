@@ -99,7 +99,7 @@ func createProjectTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	Interface = &RepoInterface{}
+	ModelFunctions = &RepoFunctions{}
 
 	return dataSet, nil
 }
@@ -120,12 +120,12 @@ func TestNewProject(t *testing.T) {
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 			mockData := dataSet.TestDataSet[testCaseString].Mock.(ProjectMockData)
 
-			UUIDImpl = &UUIDImplMock{
+			ModelFunctions.UUIDImpl = &UUIDImplMock{
 				uuidMock: mockData.projectID,
 				err:      mockData.err,
 			}
 
-			output, err := Interface.NewProject(
+			output, err := ModelFunctions.NewProject(
 				&inputData.project.ProductID,
 				&inputData.project.DetailsID,
 				&inputData.project.AssetsID,

@@ -37,9 +37,12 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	UUIDImpl = &UUIDImplMock{
-		uuidMock: referenceID,
+	ModelFunctions = &RepoFunctions{
+		UUIDImpl: &UUIDImplMock{
+			uuidMock: referenceID,
+		},
 	}
+
 	baseAssetPath := "test/path"
 	asset.DataMap[BaseAssetPath] = baseAssetPath
 
@@ -116,7 +119,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case NewAssetTest:
 		testCase := "valid"
-		UUIDImpl = &UUIDImplMock{
+		ModelFunctions.UUIDImpl = &UUIDImplMock{
 			uuidMock: asset.ID,
 		}
 		expected := make(map[string]interface{})
@@ -130,7 +133,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 
 		testCase = "nil_reference"
 		var nilRef DataMap
-		UUIDImpl = &UUIDImplMock{
+		ModelFunctions.UUIDImpl = &UUIDImplMock{
 			uuidMock: asset.ID,
 		}
 		expected = make(map[string]interface{})
@@ -142,8 +145,6 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
-
-	Interface = &RepoInterface{}
 
 	return dataSet, nil
 }
@@ -170,7 +171,7 @@ func TestSetFilePath(t *testing.T) {
 			assetExtension := testCase.Data.(map[string]interface{})["asset_extension"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-			err = asset.SetFilePath(assetType, assetExtension)
+			err = ModelFunctions.SetFilePath(&asset, assetType, assetExtension)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
 				return
@@ -202,7 +203,7 @@ func TestGetFilePath(t *testing.T) {
 			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-			output := asset.GetFilePath(assetType, defaultPath)
+			output := ModelFunctions.GetFilePath(&asset, assetType, defaultPath)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
@@ -229,7 +230,7 @@ func TestGetField(t *testing.T) {
 			defaultURL := testCase.Data.(map[string]interface{})["default_url"].(string)
 			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
 
-			output := asset.GetField(assetType, defaultURL)
+			output := ModelFunctions.GetField(&asset, assetType, defaultURL)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
@@ -261,7 +262,7 @@ func TestNewAsset(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 
-			output, err := Interface.NewAsset(
+			output, err := ModelFunctions.NewAsset(
 				references,
 				func(*uuid.UUID) (string, error) {
 					return "test/path", nil

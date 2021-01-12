@@ -36,8 +36,8 @@ func DeleteViewerIDsByUserID(userID *uuid.UUID, tx *sql.Tx) error {
 
 var GetViewerIDsByUserIDQuery = "SELECT BIN_TO_UUID(viewer_id), is_owner, BIN_TO_UUID(projects_id) from users_viewers where users_id = UUID_TO_BIN(?)"
 
-func GetViewerIDsByUserID(userID *uuid.UUID) (models.ViewersList, error) {
-	tx, err := DBConnector.ConnectSystem()
+func (f *MYSQLFunctions) GetViewerIDsByUserID(userID *uuid.UUID) (models.ViewersList, error) {
+	tx, err := f.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +70,8 @@ func GetViewerIDsByUserID(userID *uuid.UUID) (models.ViewersList, error) {
 
 var GetUserIDsByViewerIDQuery = "SELECT BIN_TO_UUID(users_id), is_owner from users_viewers where viewer_id = UUID_TO_BIN(?)"
 
-func GetUserIDsByViewerID(viewerID *uuid.UUID) (*models.ViewUsers, error) {
-	tx, err := DBConnector.ConnectSystem()
+func (f *MYSQLFunctions) GetUserIDsByViewerID(viewerID *uuid.UUID) (*models.ViewUsers, error) {
+	tx, err := f.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}

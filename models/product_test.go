@@ -34,8 +34,10 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	UUIDImpl = &UUIDImplMock{
-		uuidMock: productID,
+	ModelFunctions = &RepoFunctions{
+		UUIDImpl: &UUIDImplMock{
+			uuidMock: productID,
+		},
 	}
 
 	product := Product{
@@ -76,8 +78,6 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	Interface = &RepoInterface{}
-
 	return dataSet, nil
 }
 
@@ -104,9 +104,9 @@ func TestNewProduct(t *testing.T) {
 			}
 
 			inputData := testCase.Data.(map[string]interface{})["product"].(Product)
-			UUIDImpl.(*UUIDImplMock).err = expectedError
+			ModelFunctions.UUIDImpl.(*UUIDImplMock).err = expectedError
 
-			output, err := Interface.NewProduct(
+			output, err := ModelFunctions.NewProduct(
 				inputData.Name,
 				inputData.Public,
 				&inputData.DetailsID,

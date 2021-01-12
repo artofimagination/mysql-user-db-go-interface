@@ -34,7 +34,7 @@ type User struct {
 	AssetsID   uuid.UUID
 }
 
-func (*RepoInterface) NewUser(
+func (f *RepoFunctions) NewUser(
 	name string,
 	email string,
 	password []byte,
@@ -51,7 +51,7 @@ func (*RepoInterface) NewUser(
 		return nil, errors.New(ErrProductDetailsNotInitialised)
 	}
 
-	newID, err := UUIDImpl.NewUUID()
+	newID, err := f.UUIDImpl.NewUUID()
 	if err != nil {
 		return nil, err
 	}

@@ -15,19 +15,21 @@ import (
 )
 
 // Common interface for DB connection. Needed in order to allow mock and custom DB interface implementation.
-type DBConnectorCommon interface {
+type ConnectorCommon interface {
 	BootstrapSystem() error
 	ConnectSystem() (*sql.Tx, error)
 	Commit(tx *sql.Tx) error
 	Rollback(tx *sql.Tx) error
 }
 
-// MYSQL Interface implementation
+// MYSQL database connector implementation
 type MYSQLConnector struct {
+	DBConnection       string
+	MigrationDirectory string
 }
 
 // Data handling common function interface. Needed in order to allow mock and custom functionality implementations.
-type FunctionCommonInterface interface {
+type FunctionsCommon interface {
 	GetUser(queryType int, keyValue interface{}, tx *sql.Tx) (*models.User, error)
 	AddUser(user *models.User, tx *sql.Tx) error
 	DeleteUser(userID *uuid.UUID, tx *sql.Tx) error
@@ -37,6 +39,8 @@ type FunctionCommonInterface interface {
 	AddAsset(assetType string, asset *models.Asset, tx *sql.Tx) error
 	DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql.Tx) error
 	GetAssets(assetType string, IDs []uuid.UUID, tx *sql.Tx) ([]models.Asset, error)
+	GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error)
+	UpdateAsset(assetType string, asset *models.Asset) error
 
 	UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UUID, privilege int, tx *sql.Tx) error
 	AddProductUsers(productID *uuid.UUID, productUsers *models.ProductUserIDs, tx *sql.Tx) error
@@ -65,14 +69,11 @@ type FunctionCommonInterface interface {
 	GetPrivilege(name string) (*models.Privilege, error)
 }
 
-// MYSQL Interface implementation
+// MYSQLFunctions represents the implementation of MYSQL data manipulation functions.
 type MYSQLFunctions struct {
+	DBConnector ConnectorCommon
+	UUIDImpl    models.UUIDCommon
 }
-
-var DBConnection = ""
-var DBConnector DBConnectorCommon
-var Functions FunctionCommonInterface
-var MigrationDirectory = ""
 
 func (*MYSQLConnector) Commit(tx *sql.Tx) error {
 	return tx.Commit()
@@ -82,14 +83,14 @@ func (*MYSQLConnector) Rollback(tx *sql.Tx) error {
 	return tx.Rollback()
 }
 
-func (*MYSQLConnector) BootstrapSystem() error {
+func (c *MYSQLConnector) BootstrapSystem() error {
 	fmt.Printf("Executing MYSQL migration\n")
 	migrations := &migrate.FileMigrationSource{
-		Dir: MigrationDirectory,
+		Dir: c.MigrationDirectory,
 	}
 	fmt.Printf("Getting migration files\n")
 
-	db, err := sql.Open("mysql", DBConnection)
+	db, err := sql.Open("mysql", c.DBConnection)
 	if err != nil {
 		return err
 	}
@@ -120,8 +121,8 @@ func RollbackWithErrorStack(tx *sql.Tx, errorStack error) error {
 	return errorStack
 }
 
-func (*MYSQLConnector) ConnectSystem() (*sql.Tx, error) {
-	db, err := sql.Open("mysql", DBConnection)
+func (c *MYSQLConnector) ConnectSystem() (*sql.Tx, error) {
+	db, err := sql.Open("mysql", c.DBConnection)
 	if err != nil {
 		return nil, err
 	}

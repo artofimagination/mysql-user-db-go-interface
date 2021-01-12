@@ -8,8 +8,8 @@ import (
 
 var GetPrivilegesQuery = "SELECT id, name, description from privileges"
 
-func (*MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
-	tx, err := DBConnector.ConnectSystem()
+func (f *MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
+	tx, err := f.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
@@ -47,8 +47,8 @@ func (*MYSQLFunctions) GetPrivileges() (models.Privileges, error) {
 
 var GetPrivilegeQuery = "SELECT id, name, description from privileges where name = ?"
 
-func (*MYSQLFunctions) GetPrivilege(name string) (*models.Privilege, error) {
-	tx, err := DBConnector.ConnectSystem()
+func (f *MYSQLFunctions) GetPrivilege(name string) (*models.Privilege, error) {
+	tx, err := f.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}

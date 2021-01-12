@@ -143,11 +143,12 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	DBConnector = &DBConnectorMock{
-		DB:   db,
-		Mock: mock,
+	DBFunctions = &MYSQLFunctions{
+		DBConnector: &DBConnectorMock{
+			DB:   db,
+			Mock: mock,
+		},
 	}
-	Functions = &MYSQLFunctions{}
 
 	return dataSet, nil
 }
@@ -160,13 +161,13 @@ func TestAddAsset(t *testing.T) {
 		return
 	}
 
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction: %s", err)
 				return
@@ -178,7 +179,7 @@ func TestAddAsset(t *testing.T) {
 			}
 			asset := testCase.Data.(models.Asset)
 
-			err = Functions.AddAsset(UserAssets, &asset, tx)
+			err = DBFunctions.AddAsset(UserAssets, &asset, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
@@ -195,13 +196,13 @@ func TestDeleteAsset(t *testing.T) {
 		return
 	}
 
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction: %s", err)
 				return
@@ -213,7 +214,7 @@ func TestDeleteAsset(t *testing.T) {
 			}
 			asset := testCase.Data.(models.Asset)
 
-			err = Functions.DeleteAsset(UserAssets, &asset.ID, tx)
+			err = DBFunctions.DeleteAsset(UserAssets, &asset.ID, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
@@ -230,7 +231,7 @@ func TestUpdateAsset(t *testing.T) {
 		return
 	}
 
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
@@ -243,7 +244,7 @@ func TestUpdateAsset(t *testing.T) {
 			}
 			asset := testCase.Data.(models.Asset)
 
-			err = UpdateAsset(UserAssets, &asset)
+			err = DBFunctions.UpdateAsset(UserAssets, &asset)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
@@ -260,7 +261,7 @@ func TestGetAsset(t *testing.T) {
 		return
 	}
 
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
@@ -277,7 +278,7 @@ func TestGetAsset(t *testing.T) {
 			}
 			asset := testCase.Data.(models.Asset)
 
-			output, err := GetAsset(UserAssets, &asset.ID)
+			output, err := DBFunctions.GetAsset(UserAssets, &asset.ID)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return

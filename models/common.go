@@ -11,7 +11,7 @@ const (
 	Private   = "Private"   // Content is available for the owner and users the product or project is shared with.
 )
 
-type InterfaceCommon interface {
+type ModelFunctionsCommon interface {
 	NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*Asset, error)
 	NewUser(
 		name string,
@@ -23,18 +23,19 @@ type InterfaceCommon interface {
 	NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error)
 }
 
-type UUIDInterfaceCommon interface {
+type UUIDCommon interface {
 	NewUUID() (uuid.UUID, error)
 }
 
-type RepoUUIDInterface struct {
+type RepoUUID struct {
 }
 
-type RepoInterface struct {
+type RepoFunctions struct {
+	UUIDImpl UUIDCommon
 }
 
 // NewUUID is a wrapper to allow mocking
-func (*RepoUUIDInterface) NewUUID() (uuid.UUID, error) {
+func (*RepoUUID) NewUUID() (uuid.UUID, error) {
 	var newID uuid.UUID
 	newID, err := uuid.NewUUID()
 	if err != nil {
@@ -42,6 +43,3 @@ func (*RepoUUIDInterface) NewUUID() (uuid.UUID, error) {
 	}
 	return newID, nil
 }
-
-var Interface InterfaceCommon
-var UUIDImpl UUIDInterfaceCommon

@@ -36,10 +36,10 @@ type ProductUserIDs struct {
 
 // NewProduct creates a new product instance where details describe the configuration of the product
 // and references contain all asset references.
-func (*RepoInterface) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {
+func (f *RepoFunctions) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {
 	var p Product
 
-	newID, err := UUIDImpl.NewUUID()
+	newID, err := f.UUIDImpl.NewUUID()
 	if err != nil {
 		return nil, err
 	}
