@@ -49,12 +49,10 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 	switch testID {
 	case GetPrivilegesTest:
 		testCase := "valid_id"
-		data := test.Data{
-			Data:     nil,
-			Expected: make(map[string]interface{}),
+		expected := PrivilegeExpectedData{
+			privileges: privileges,
+			err:        nil,
 		}
-		data.Expected.(map[string]interface{})["data"] = privileges
-		data.Expected.(map[string]interface{})["error"] = nil
 		rows := sqlmock.NewRows([]string{"id", "name", "description"})
 		for _, privilege := range privileges {
 			rows.AddRow(privilege.ID, privilege.Name, privilege.Description)
@@ -63,21 +61,24 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetPrivilegesQuery).WillReturnRows(rows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     nil,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_id"
-		data = test.Data{
-			Data:     nil,
-			Expected: make(map[string]interface{}),
+		expected = PrivilegeExpectedData{
+			err: sql.ErrNoRows,
 		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
 
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetPrivilegesQuery).WillReturnError(sql.ErrNoRows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     nil,
+			Expected: expected,
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case GetPrivilegeTest:
 		testCase := "valid_name"
@@ -141,26 +142,20 @@ func TestGetPrivileges(t *testing.T) {
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
-		testCase := dataSet.TestDataSet[testCaseString]
-		var expectedData models.Privileges
-		if testCase.Expected.(map[string]interface{})["data"] != nil {
-			expectedData = testCase.Expected.(map[string]interface{})["data"].(models.Privileges)
-		}
-		var expectedError error
-		if testCase.Expected.(map[string]interface{})["error"] != nil {
-			expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-		}
+		t.Run(testCaseString, func(t *testing.T) {
+			expectedData := dataSet.TestDataSet[testCaseString].Expected.(PrivilegeExpectedData)
 
-		output, err := DBFunctions.GetPrivileges()
-		if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-			t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
-			return
-		}
+			output, err := DBFunctions.GetPrivileges()
+			if diff := pretty.Diff(output, expectedData.privileges); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.privileges, diff)
+				return
+			}
 
-		if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-			t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
-			return
-		}
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
+				return
+			}
+		})
 	}
 }
 
@@ -177,18 +172,20 @@ func TestGetPrivilege(t *testing.T) {
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
-		expectedData := dataSet.TestDataSet[testCaseString].Expected.(PrivilegeExpectedData)
-		inputData := dataSet.TestDataSet[testCaseString].Data.(string)
+		t.Run(testCaseString, func(t *testing.T) {
+			expectedData := dataSet.TestDataSet[testCaseString].Expected.(PrivilegeExpectedData)
+			inputData := dataSet.TestDataSet[testCaseString].Data.(string)
 
-		output, err := DBFunctions.GetPrivilege(inputData)
-		if diff := pretty.Diff(output, expectedData.privilege); len(diff) != 0 {
-			t.Errorf(test.TestResultString, testCaseString, output, expectedData.privilege)
-			return
-		}
+			output, err := DBFunctions.GetPrivilege(inputData)
+			if diff := pretty.Diff(output, expectedData.privilege); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.privilege)
+				return
+			}
 
-		if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-			t.Errorf(test.TestResultString, testCaseString, err, expectedData.err)
-			return
-		}
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err)
+				return
+			}
+		})
 	}
 }
