@@ -30,7 +30,11 @@ type DBControllerCommon interface {
 	Authenticate(email string, passwd []byte, authenticate func(string, []byte, *models.User) error) error
 }
 
-type MYSQLController struct{}
+type MYSQLController struct {
+	DBFunctions    mysqldb.FunctionsCommon
+	DBConnector    mysqldb.ConnectorCommon
+	ModelFunctions models.ModelFunctionsCommon
+}
 
 func NewDBController() (*MYSQLController, error) {
 	address := os.Getenv("MYSQL_DB_ADDRESS")
@@ -54,26 +58,40 @@ func NewDBController() (*MYSQLController, error) {
 		return nil, errors.New("MYSQL DB name not defined")
 	}
 
-	mysqldb.MigrationDirectory = os.Getenv("MYSQL_DB_MIGRATION_DIR")
-	if mysqldb.MigrationDirectory == "" {
+	migrationDirectory := os.Getenv("MYSQL_DB_MIGRATION_DIR")
+	if migrationDirectory == "" {
 		return nil, errors.New("MYSQL DB migration folder not defined")
 	}
 
-	mysqldb.DBConnection = fmt.Sprintf(
+	dbConnection := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		username,
 		pass,
 		address,
 		port,
 		dbName)
-	mysqldb.Functions = &mysqldb.MYSQLFunctions{}
-	mysqldb.DBConnector = &mysqldb.MYSQLConnector{}
-	if err := mysqldb.DBConnector.BootstrapSystem(); err != nil {
+
+	dbConnector := &mysqldb.MYSQLConnector{
+		DBConnection:       dbConnection,
+		MigrationDirectory: migrationDirectory,
+	}
+
+	uuidImpl := &models.RepoUUID{}
+
+	controller := &MYSQLController{
+		DBFunctions: &mysqldb.MYSQLFunctions{
+			DBConnector: dbConnector,
+			UUIDImpl:    uuidImpl,
+		},
+		DBConnector: dbConnector,
+		ModelFunctions: &models.RepoFunctions{
+			UUIDImpl: uuidImpl,
+		},
+	}
+
+	if err := controller.DBConnector.BootstrapSystem(); err != nil {
 		return nil, err
 	}
 
-	models.Interface = &models.RepoInterface{}
-	models.UUIDImpl = &models.RepoUUIDInterface{}
-	controller := &MYSQLController{}
 	return controller, nil
 }

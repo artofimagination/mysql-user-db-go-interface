@@ -297,11 +297,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		return nil, fmt.Errorf("Unknown test %d", testID)
 	}
 
-	DBConnector = &DBConnectorMock{
-		DB:   db,
-		Mock: mock,
+	DBFunctions = &MYSQLFunctions{
+		DBConnector: &DBConnectorMock{
+			DB:   db,
+			Mock: mock,
+		},
 	}
-	Functions = &MYSQLFunctions{}
 
 	return dataSet, nil
 }
@@ -313,13 +314,13 @@ func TestGetUser(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run test
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -336,7 +337,7 @@ func TestGetUser(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 
-			output, err := Functions.GetUser(query, keyValue, tx)
+			output, err := DBFunctions.GetUser(query, keyValue, tx)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
@@ -357,13 +358,13 @@ func TestAddUser(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -375,7 +376,7 @@ func TestAddUser(t *testing.T) {
 				expectedError = testCase.Expected.(error)
 			}
 
-			err = Functions.AddUser(&user, tx)
+			err = DBFunctions.AddUser(&user, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
@@ -391,13 +392,13 @@ func TestDeleteUser(t *testing.T) {
 		t.Errorf("Failed to generate test data: %s", err)
 		return
 	}
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -409,7 +410,7 @@ func TestDeleteUser(t *testing.T) {
 				expectedError = testCase.Expected.(error)
 			}
 
-			err = Functions.DeleteUser(&userID, tx)
+			err = DBFunctions.DeleteUser(&userID, tx)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return
@@ -426,13 +427,13 @@ func TestGetProductUserIDs(t *testing.T) {
 		return
 	}
 
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -448,7 +449,7 @@ func TestGetProductUserIDs(t *testing.T) {
 				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 			}
 
-			output, err := Functions.GetProductUserIDs(&productID, tx)
+			output, err := DBFunctions.GetProductUserIDs(&productID, tx)
 			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 				return
@@ -470,13 +471,13 @@ func TestDeleteProductUser(t *testing.T) {
 		return
 	}
 
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
-			tx, err := DBConnector.(*DBConnectorMock).DB.Begin()
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
 			if err != nil {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
@@ -484,7 +485,7 @@ func TestDeleteProductUser(t *testing.T) {
 			expected := dataSet.TestDataSet[testCaseString].Expected.(UserExpectedTestData)
 			input := dataSet.TestDataSet[testCaseString].Data.(UserInputTestData)
 
-			err = Functions.DeleteProductUser(&input.productID, &input.user.ID, tx)
+			err = DBFunctions.DeleteProductUser(&input.productID, &input.user.ID, tx)
 			if diff := pretty.Diff(err, expected.err); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expected.err)
 				return

@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var DBFunctions *MYSQLFunctions
+
 type DBConnectorMock struct {
 	Mock sqlmock.Sqlmock
 	DB   *sql.DB

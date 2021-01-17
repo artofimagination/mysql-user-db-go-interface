@@ -49,10 +49,10 @@ type ViewUsers struct {
 	UsersList []uuid.UUID
 }
 
-func (*RepoInterface) NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error) {
+func (f *RepoFunctions) NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error) {
 	var p Project
 
-	newID, err := UUIDImpl.NewUUID()
+	newID, err := f.UUIDImpl.NewUUID()
 	if err != nil {
 		return nil, err
 	}

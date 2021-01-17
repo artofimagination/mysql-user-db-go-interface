@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/google/uuid"
 	"github.com/kr/pretty"
@@ -25,7 +24,6 @@ func createTestProjectUsersData() (*models.ProjectUserIDs, models.Privileges) {
 		Description: "description1",
 	}
 	privileges[1] = privilege
-	mysqldb.DBConnector = &DBConnectorMock{}
 
 	users := models.ProjectUserIDs{
 		UserIDArray: make([]uuid.UUID, 0),
@@ -58,7 +56,10 @@ func createProjectTestData() (*test.OrderedTests, error) {
 		TestDataSet: make(test.DataSet),
 	}
 
-	dbController = &MYSQLController{}
+	dbController = &MYSQLController{
+		DBFunctions: &DBFunctionMock{},
+		DBConnector: &DBConnectorMock{},
+	}
 
 	_, privileges := createTestProjectUsersData()
 
@@ -146,8 +147,6 @@ func createProjectTestData() (*test.OrderedTests, error) {
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
-	mysqldb.Functions = &DBFunctionInterfaceMock{}
-	mysqldb.DBConnector = &DBConnectorMock{}
 	return &dataSet, nil
 }
 
@@ -168,14 +167,14 @@ func TestCreateProject(t *testing.T) {
 			inputData := testCase.Data.(ProjectInputData)
 			mockData := testCase.Mock.(ProjectMockData)
 
-			models.Interface = &ModelInterfaceMock{
+			dbController.ModelFunctions = &ModelMock{
 				assetID:   mockData.project.AssetsID,
 				projectID: mockData.project.ID,
 				asset:     mockData.projectData.Assets,
 				project:   mockData.project,
 				err:       mockData.err,
 			}
-			mysqldb.Functions = &DBFunctionInterfaceMock{
+			dbController.DBFunctions = &DBFunctionMock{
 				project:      mockData.project,
 				privileges:   mockData.privileges,
 				projectAdded: false,

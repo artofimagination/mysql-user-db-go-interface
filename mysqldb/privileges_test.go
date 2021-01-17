@@ -118,11 +118,12 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 
 	}
 
-	DBConnector = &DBConnectorMock{
-		DB:   db,
-		Mock: mock,
+	DBFunctions = &MYSQLFunctions{
+		DBConnector: &DBConnectorMock{
+			DB:   db,
+			Mock: mock,
+		},
 	}
-	Functions = &MYSQLFunctions{}
 
 	return dataSet, nil
 }
@@ -135,7 +136,7 @@ func TestGetPrivileges(t *testing.T) {
 		return
 	}
 
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
@@ -150,7 +151,7 @@ func TestGetPrivileges(t *testing.T) {
 			expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
 		}
 
-		output, err := Functions.GetPrivileges()
+		output, err := DBFunctions.GetPrivileges()
 		if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
 			t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
 			return
@@ -171,7 +172,7 @@ func TestGetPrivilege(t *testing.T) {
 		return
 	}
 
-	defer DBConnector.(*DBConnectorMock).DB.Close()
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
 
 	// Run tests
 	for _, testCaseString := range dataSet.OrderedList {
@@ -179,7 +180,7 @@ func TestGetPrivilege(t *testing.T) {
 		expectedData := dataSet.TestDataSet[testCaseString].Expected.(PrivilegeExpectedData)
 		inputData := dataSet.TestDataSet[testCaseString].Data.(string)
 
-		output, err := Functions.GetPrivilege(inputData)
+		output, err := DBFunctions.GetPrivilege(inputData)
 		if diff := pretty.Diff(output, expectedData.privilege); len(diff) != 0 {
 			t.Errorf(test.TestResultString, testCaseString, output, expectedData.privilege)
 			return

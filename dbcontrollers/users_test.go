@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/google/uuid"
 	"github.com/kr/pretty"
@@ -21,8 +20,6 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
-
-	dbController = &MYSQLController{}
 
 	assetID, err := uuid.NewUUID()
 	if err != nil {
@@ -73,13 +70,6 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		DataMap: dataMap,
 	}
 
-	models.Interface = &ModelInterfaceMock{
-		assetID:    assetID,
-		settingsID: settingsID,
-		userID:     userID,
-		asset:      assets,
-	}
-
 	userData := models.UserData{
 		ID:       user.ID,
 		Name:     user.Name,
@@ -100,6 +90,17 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		Description: "description1",
 	}
 	privileges[1] = privilege
+
+	dbController = &MYSQLController{
+		DBFunctions: &DBFunctionMock{},
+		DBConnector: &DBConnectorMock{},
+		ModelFunctions: &ModelMock{
+			assetID:    assetID,
+			settingsID: settingsID,
+			userID:     userID,
+			asset:      assets,
+		},
+	}
 
 	switch testID {
 	case CreateUserTest:
@@ -218,8 +219,6 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
-	mysqldb.Functions = &DBFunctionInterfaceMock{}
-	mysqldb.DBConnector = &DBConnectorMock{}
 	return dataSet, nil
 }
 
@@ -253,7 +252,7 @@ func TestCreateUser(t *testing.T) {
 			password := testCase.Data.(map[string]interface{})["password"].([]byte)
 
 			mockCopy := DBMock
-			mysqldb.Functions = &DBFunctionInterfaceMock{
+			dbController.DBFunctions = &DBFunctionMock{
 				user:         mockCopy,
 				userAdded:    false,
 				productAdded: false,
@@ -319,7 +318,7 @@ func TestDeleteUser(t *testing.T) {
 				dbMockError = testCase.Data.(map[string]interface{})["db_mock_error"].(error)
 			}
 
-			mysqldb.Functions = &DBFunctionInterfaceMock{
+			dbController.DBFunctions = &DBFunctionMock{
 				user:                 dbMockUser,
 				product:              dbMockProduct,
 				userProducts:         &dbMockUsersProducts,
@@ -336,18 +335,18 @@ func TestDeleteUser(t *testing.T) {
 				return
 			}
 
-			if diff := pretty.Diff(mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).userDeleted, expectedUserDeleted)
+			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedUserDeleted); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedUserDeleted)
 				return
 			}
 
-			if diff := pretty.Diff(mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).productDeleted, expectedProductDeleted)
+			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedProductDeleted); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedProductDeleted)
 				return
 			}
 
-			if diff := pretty.Diff(mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, mysqldb.Functions.(*DBFunctionInterfaceMock).usersProductsUpdated, expectedUsersProducts)
+			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedUsersProducts); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedUsersProducts)
 				return
 			}
 		})

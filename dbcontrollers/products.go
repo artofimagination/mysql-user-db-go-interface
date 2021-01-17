@@ -19,12 +19,12 @@ var ErrMissingProductDetail = errors.New("Details for the selected product not f
 var ErrMissingProductAsset = errors.New("Assets for the selected product not found")
 var ErrEmptyProductIDList = errors.New("Request does not contain any product identifiers")
 
-func validateOwnership(users *models.ProductUserIDs) error {
+func (c *MYSQLController) validateOwnership(users *models.ProductUserIDs) error {
 	if users == nil || (users != nil && len(users.UserMap) == 0) {
 		return ErrEmptyUsersList
 	}
 
-	privileges, err := mysqldb.Functions.GetPrivileges()
+	privileges, err := c.DBFunctions.GetPrivileges()
 	if err != nil {
 		return err
 	}
@@ -50,37 +50,37 @@ func validateOwnership(users *models.ProductUserIDs) error {
 	return nil
 }
 
-func (*MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProductData, error) {
+func (c *MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProductData, error) {
 	references := make(models.DataMap)
-	asset, err := models.Interface.NewAsset(references, generateAssetPath)
+	asset, err := c.ModelFunctions.NewAsset(references, generateAssetPath)
 	if err != nil {
 		return nil, err
 	}
 
 	details := make(models.DataMap)
-	productDetails, err := models.Interface.NewAsset(details, generateAssetPath)
+	productDetails, err := c.ModelFunctions.NewAsset(details, generateAssetPath)
 	if err != nil {
 		return nil, err
 	}
 
-	product, err := models.Interface.NewProduct(name, public, &productDetails.ID, &asset.ID)
+	product, err := c.ModelFunctions.NewProduct(name, public, &productDetails.ID, &asset.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Start a DB transaction and do all inserts within the same transaction to improve consistency.
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	existingProduct, err := mysqldb.Functions.GetProductByName(name, tx)
+	existingProduct, err := c.DBFunctions.GetProductByName(name, tx)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
 
 	if existingProduct != nil {
-		if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+		if err := c.DBConnector.Rollback(tx); err != nil {
 			return nil, err
 		}
 		return nil, fmt.Errorf(ErrProductExistsString, product.Name)
@@ -90,25 +90,25 @@ func (*MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID
 		UserIDArray: make([]uuid.UUID, 0),
 		UserMap:     make(map[uuid.UUID]int),
 	}
-	privilege, err := mysqldb.Functions.GetPrivilege("Owner")
+	privilege, err := c.DBFunctions.GetPrivilege("Owner")
 	if err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.Functions.AddAsset(mysqldb.ProductDetails, productDetails, tx); err != nil {
+	if err := c.DBFunctions.AddAsset(mysqldb.ProductDetails, productDetails, tx); err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.Functions.AddAsset(mysqldb.ProductAssets, asset, tx); err != nil {
+	if err := c.DBFunctions.AddAsset(mysqldb.ProductAssets, asset, tx); err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.Functions.AddProduct(product, tx); err != nil {
+	if err := c.DBFunctions.AddProduct(product, tx); err != nil {
 		return nil, err
 	}
 
 	users.UserMap[*owner] = privilege.ID
-	if err := mysqldb.Functions.AddProductUsers(&product.ID, &users, tx); err != nil {
+	if err := c.DBFunctions.AddProductUsers(&product.ID, &users, tx); err != nil {
 		return nil, err
 	}
 
@@ -120,76 +120,76 @@ func (*MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID
 		Assets:  asset,
 	}
 
-	return &productData, mysqldb.DBConnector.Commit(tx)
+	return &productData, c.DBConnector.Commit(tx)
 }
 
-func (*MYSQLController) DeleteProduct(productID *uuid.UUID) error {
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+func (c *MYSQLController) DeleteProduct(productID *uuid.UUID) error {
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	if err := deleteProduct(productID, tx); err != nil {
+	if err := c.deleteProduct(productID, tx); err != nil {
 		return err
 	}
 
-	return mysqldb.DBConnector.Commit(tx)
+	return c.DBConnector.Commit(tx)
 }
 
-func deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
-	product, err := mysqldb.Functions.GetProductByID(productID, tx)
+func (c *MYSQLController) deleteProduct(productID *uuid.UUID, tx *sql.Tx) error {
+	product, err := c.DBFunctions.GetProductByID(productID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ErrProductNotFound
 		}
 	}
 
-	if err := mysqldb.Functions.DeleteProductUsersByProductID(productID, tx); err != nil {
+	if err := c.DBFunctions.DeleteProductUsersByProductID(productID, tx); err != nil {
 		if err == mysqldb.ErrNoProductDeleted {
 			return ErrProductNotFound
 		}
 	}
 
-	if err := mysqldb.Functions.DeleteProduct(productID, tx); err != nil {
+	if err := c.DBFunctions.DeleteProduct(productID, tx); err != nil {
 		if err == mysqldb.ErrNoProductDeleted {
 			return ErrProductNotFound
 		}
 		return err
 	}
 
-	if err := mysqldb.Functions.DeleteAsset(mysqldb.ProductAssets, &product.AssetsID, tx); err != nil {
+	if err := c.DBFunctions.DeleteAsset(mysqldb.ProductAssets, &product.AssetsID, tx); err != nil {
 		return err
 	}
 
-	if err := mysqldb.Functions.DeleteAsset(mysqldb.ProductDetails, &product.DetailsID, tx); err != nil {
+	if err := c.DBFunctions.DeleteAsset(mysqldb.ProductDetails, &product.DetailsID, tx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (*MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+func (c *MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, error) {
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	product, err := mysqldb.Functions.GetProductByID(productID, tx)
+	product, err := c.DBFunctions.GetProductByID(productID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+			if err := c.DBConnector.Rollback(tx); err != nil {
 				return nil, err
 			}
 			return nil, ErrProductNotFound
 		}
 	}
 
-	details, err := mysqldb.GetAsset(mysqldb.ProductDetails, &product.DetailsID)
+	details, err := c.DBFunctions.GetAsset(mysqldb.ProductDetails, &product.DetailsID)
 	if err != nil {
 		return nil, err
 	}
 
-	assets, err := mysqldb.GetAsset(mysqldb.ProductAssets, &product.AssetsID)
+	assets, err := c.DBFunctions.GetAsset(mysqldb.ProductAssets, &product.AssetsID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,12 +202,11 @@ func (*MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData, e
 		Assets:  assets,
 	}
 
-	return &productData, mysqldb.DBConnector.Commit(tx)
+	return &productData, c.DBConnector.Commit(tx)
 }
 
-func (*MYSQLController) UpdateProductDetails(productData *models.ProductData) error {
-
-	if err := mysqldb.UpdateAsset(mysqldb.ProductDetails, productData.Details); err != nil {
+func (c *MYSQLController) UpdateProductDetails(productData *models.ProductData) error {
+	if err := c.DBFunctions.UpdateAsset(mysqldb.ProductDetails, productData.Details); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProductDetails).Error() == err.Error() {
 			return ErrMissingProductDetail
 		}
@@ -216,8 +215,8 @@ func (*MYSQLController) UpdateProductDetails(productData *models.ProductData) er
 	return nil
 }
 
-func (*MYSQLController) UpdateProductAssets(productData *models.ProductData) error {
-	if err := mysqldb.UpdateAsset(mysqldb.ProductAssets, productData.Assets); err != nil {
+func (c *MYSQLController) UpdateProductAssets(productData *models.ProductData) error {
+	if err := c.DBFunctions.UpdateAsset(mysqldb.ProductAssets, productData.Assets); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProductAssets).Error() == err.Error() {
 			return ErrMissingProductAsset
 		}
@@ -226,23 +225,23 @@ func (*MYSQLController) UpdateProductAssets(productData *models.ProductData) err
 	return nil
 }
 
-func (*MYSQLController) UpdateProductUser(productID *uuid.UUID, userID *uuid.UUID, privilege int) error {
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+func (c *MYSQLController) UpdateProductUser(productID *uuid.UUID, userID *uuid.UUID, privilege int) error {
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	return mysqldb.DBConnector.Commit(tx)
+	return c.DBConnector.Commit(tx)
 }
 
 func (c *MYSQLController) GetProductsByUserID(userID *uuid.UUID) ([]models.UserProduct, error) {
 	products := make([]models.UserProduct, 0)
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	ownershipMap, err := mysqldb.Functions.GetUserProductIDs(userID, tx)
+	ownershipMap, err := c.DBFunctions.GetUserProductIDs(userID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrNoProductsForUser
@@ -265,23 +264,23 @@ func (c *MYSQLController) GetProductsByUserID(userID *uuid.UUID) ([]models.UserP
 		products = append(products, userProduct)
 	}
 
-	return products, mysqldb.DBConnector.Commit(tx)
+	return products, c.DBConnector.Commit(tx)
 }
 
-func (*MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductData, error) {
+func (c *MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductData, error) {
 	if len(productIDs) == 0 {
 		return nil, ErrEmptyProductIDList
 	}
 
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	products, err := mysqldb.Functions.GetProductsByIDs(productIDs, tx)
+	products, err := c.DBFunctions.GetProductsByIDs(productIDs, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+			if err := c.DBConnector.Rollback(tx); err != nil {
 				return nil, err
 			}
 			return nil, ErrProductNotFound
@@ -296,12 +295,12 @@ func (*MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductDat
 		detailsIDs = append(detailsIDs, product.DetailsID)
 	}
 
-	details, err := mysqldb.Functions.GetAssets(mysqldb.ProductDetails, detailsIDs, tx)
+	details, err := c.DBFunctions.GetAssets(mysqldb.ProductDetails, detailsIDs, tx)
 	if err != nil {
 		return nil, err
 	}
 
-	assets, err := mysqldb.Functions.GetAssets(mysqldb.ProductAssets, assetIDs, tx)
+	assets, err := c.DBFunctions.GetAssets(mysqldb.ProductAssets, assetIDs, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -318,5 +317,5 @@ func (*MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductDat
 		productDataList = append(productDataList, productData)
 	}
 
-	return productDataList, mysqldb.DBConnector.Commit(tx)
+	return productDataList, c.DBConnector.Commit(tx)
 }

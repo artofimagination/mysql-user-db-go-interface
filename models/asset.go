@@ -24,14 +24,14 @@ type Asset struct {
 // Assets structure contains the identification of all user related documents images.
 type DataMap map[string]interface{}
 
-func (*RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*Asset, error) {
+func (f *RepoFunctions) NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*Asset, error) {
 	var a Asset
 
 	if references == nil {
 		return nil, ErrAssetRefNotInitialised
 	}
 
-	newID, err := UUIDImpl.NewUUID()
+	newID, err := f.UUIDImpl.NewUUID()
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +46,8 @@ func (*RepoInterface) NewAsset(references DataMap, generatePath func(assetID *uu
 	return &a, nil
 }
 
-func (r *Asset) GetFilePath(typeString string, defaultPath string) string {
-	path, ok := r.DataMap[typeString].(string)
+func (f *RepoFunctions) GetFilePath(asset *Asset, typeString string, defaultPath string) string {
+	path, ok := asset.DataMap[typeString].(string)
 	if !ok {
 		return defaultPath
 	}
@@ -55,37 +55,37 @@ func (r *Asset) GetFilePath(typeString string, defaultPath string) string {
 	return path
 }
 
-func (r *Asset) SetFilePath(typeString string, extension string) error {
-	if _, ok := r.DataMap[typeString]; ok {
+func (f *RepoFunctions) SetFilePath(asset *Asset, typeString string, extension string) error {
+	if _, ok := asset.DataMap[typeString]; ok {
 		return nil
 	}
 
-	newID, err := UUIDImpl.NewUUID()
+	newID, err := f.UUIDImpl.NewUUID()
 	if err != nil {
 		return err
 	}
 
-	r.DataMap[typeString] = strings.Join([]string{path.Join(r.DataMap[BaseAssetPath].(string), newID.String()), extension}, "")
+	asset.DataMap[typeString] = strings.Join([]string{path.Join(asset.DataMap[BaseAssetPath].(string), newID.String()), extension}, "")
 
 	return nil
 }
 
-func (r *Asset) SetField(typeString string, field interface{}) {
-	r.DataMap[typeString] = field
+func (f *RepoFunctions) SetField(asset *Asset, typeString string, field interface{}) {
+	asset.DataMap[typeString] = field
 }
 
-func (r *Asset) GetField(typeString string, defaultURL string) string {
-	path, ok := r.DataMap[typeString].(string)
+func (f *RepoFunctions) GetField(asset *Asset, typeString string, defaultURL string) string {
+	path, ok := asset.DataMap[typeString].(string)
 	if !ok {
 		return defaultURL
 	}
 	return path
 }
 
-func (r *Asset) ClearAsset(typeString string) error {
-	if _, ok := r.DataMap[typeString]; !ok {
+func (f *RepoFunctions) ClearAsset(asset *Asset, typeString string) error {
+	if _, ok := asset.DataMap[typeString]; !ok {
 		return errors.New("Unknown asset reference type")
 	}
-	delete(r.DataMap, typeString)
+	delete(asset.DataMap, typeString)
 	return nil
 }

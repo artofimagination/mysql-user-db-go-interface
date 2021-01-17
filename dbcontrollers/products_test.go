@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
 	"github.com/artofimagination/mysql-user-db-go-interface/test"
 	"github.com/google/uuid"
 	"github.com/kr/pretty"
@@ -25,7 +24,6 @@ func createTestProductsUsersData() (*models.ProductUserIDs, models.Privileges) {
 		Description: "description1",
 	}
 	privileges[1] = privilege
-	mysqldb.DBConnector = &DBConnectorMock{}
 
 	users := &models.ProductUserIDs{
 		UserIDArray: make([]uuid.UUID, 0),
@@ -40,8 +38,6 @@ func createProductTestData() (*test.OrderedTests, error) {
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
 	}
-
-	dbController = &MYSQLController{}
 
 	_, privileges := createTestProductsUsersData()
 
@@ -82,10 +78,14 @@ func createProductTestData() (*test.OrderedTests, error) {
 		Assets:  assets,
 	}
 
-	models.Interface = &ModelInterfaceMock{
-		assetID:   assetID,
-		productID: productID,
-		asset:     assets,
+	dbController = &MYSQLController{
+		DBFunctions: &DBFunctionMock{},
+		DBConnector: &DBConnectorMock{},
+		ModelFunctions: &ModelMock{
+			assetID:   assetID,
+			productID: productID,
+			asset:     assets,
+		},
 	}
 
 	testCase := "no_existing_product"
@@ -118,9 +118,6 @@ func createProductTestData() (*test.OrderedTests, error) {
 	}
 	dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
-	mysqldb.Functions = &DBFunctionInterfaceMock{}
-	mysqldb.DBConnector = &DBConnectorMock{}
-
 	return dataSet, nil
 }
 
@@ -128,6 +125,11 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
 		TestDataSet: make(test.DataSet),
+	}
+
+	dbController = &MYSQLController{
+		DBFunctions: &DBFunctionMock{},
+		DBConnector: &DBConnectorMock{},
 	}
 
 	userID, err := uuid.NewUUID()
@@ -257,9 +259,8 @@ func TestCreateProduct(t *testing.T) {
 				DBMock = testCase.Data.(map[string]interface{})["db_mock"].(*models.Product)
 			}
 
-			mockCopy := DBMock
-			mysqldb.Functions = &DBFunctionInterfaceMock{
-				product:      mockCopy,
+			dbController.DBFunctions = &DBFunctionMock{
+				product:      DBMock,
 				privileges:   privileges,
 				productAdded: false,
 			}
@@ -308,11 +309,11 @@ func TestValidateUsers(t *testing.T) {
 			}
 			privileges := testCase.Data.(map[string]interface{})["privileges"].(models.Privileges)
 
-			mysqldb.Functions = &DBFunctionInterfaceMock{
+			dbController.DBFunctions = &DBFunctionMock{
 				privileges: privileges,
 			}
 
-			err := validateOwnership(input)
+			err := dbController.validateOwnership(input)
 			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
 				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
 				return

@@ -16,9 +16,9 @@ var ErrMissingProjectDetail = errors.New("Details for the selected project not f
 var ErrMissingProjectAsset = errors.New("Assets for the selected project not found")
 var ErrEmptyProjectIDList = errors.New("Request does not contain any project identifiers")
 
-func (*MYSQLController) CreateProject(name string, visibility string, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
+func (c *MYSQLController) CreateProject(name string, visibility string, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
 	references := make(models.DataMap)
-	asset, err := models.Interface.NewAsset(references, generateAssetPath)
+	asset, err := c.ModelFunctions.NewAsset(references, generateAssetPath)
 	if err != nil {
 		return nil, err
 	}
@@ -26,18 +26,18 @@ func (*MYSQLController) CreateProject(name string, visibility string, owner *uui
 	details := make(models.DataMap)
 	details["name"] = name
 	details["visibility"] = visibility
-	projectDetails, err := models.Interface.NewAsset(details, generateAssetPath)
+	projectDetails, err := c.ModelFunctions.NewAsset(details, generateAssetPath)
 	if err != nil {
 		return nil, err
 	}
 
-	project, err := models.Interface.NewProject(productID, &projectDetails.ID, &asset.ID)
+	project, err := c.ModelFunctions.NewProject(productID, &projectDetails.ID, &asset.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Start a DB transaction and do all inserts within the same transaction to improve consistency.
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -46,25 +46,25 @@ func (*MYSQLController) CreateProject(name string, visibility string, owner *uui
 		UserIDArray: make([]uuid.UUID, 0),
 		UserMap:     make(map[uuid.UUID]int),
 	}
-	privilege, err := mysqldb.Functions.GetPrivilege("Owner")
+	privilege, err := c.DBFunctions.GetPrivilege("Owner")
 	if err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.Functions.AddAsset(mysqldb.ProjectDetails, projectDetails, tx); err != nil {
+	if err := c.DBFunctions.AddAsset(mysqldb.ProjectDetails, projectDetails, tx); err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.Functions.AddAsset(mysqldb.ProjectAssets, asset, tx); err != nil {
+	if err := c.DBFunctions.AddAsset(mysqldb.ProjectAssets, asset, tx); err != nil {
 		return nil, err
 	}
 
-	if err := mysqldb.Functions.AddProject(project, tx); err != nil {
+	if err := c.DBFunctions.AddProject(project, tx); err != nil {
 		return nil, err
 	}
 
 	users.UserMap[*owner] = privilege.ID
-	if err := mysqldb.Functions.AddProjectUsers(&project.ID, &users, tx); err != nil {
+	if err := c.DBFunctions.AddProjectUsers(&project.ID, &users, tx); err != nil {
 		return nil, err
 	}
 
@@ -75,76 +75,76 @@ func (*MYSQLController) CreateProject(name string, visibility string, owner *uui
 		Assets:    asset,
 	}
 
-	return &projectData, mysqldb.DBConnector.Commit(tx)
+	return &projectData, c.DBConnector.Commit(tx)
 }
 
-func (*MYSQLController) DeleteProject(projectID *uuid.UUID) error {
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+func (c *MYSQLController) DeleteProject(projectID *uuid.UUID) error {
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	if err := deleteProject(projectID, tx); err != nil {
+	if err := c.deleteProject(projectID, tx); err != nil {
 		return err
 	}
 
-	return mysqldb.DBConnector.Commit(tx)
+	return c.DBConnector.Commit(tx)
 }
 
-func deleteProject(projectID *uuid.UUID, tx *sql.Tx) error {
-	project, err := mysqldb.Functions.GetProjectByID(projectID, tx)
+func (c *MYSQLController) deleteProject(projectID *uuid.UUID, tx *sql.Tx) error {
+	project, err := c.DBFunctions.GetProjectByID(projectID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ErrProjectNotFound
 		}
 	}
 
-	if err := mysqldb.Functions.DeleteProjectUsersByProjectID(projectID, tx); err != nil {
+	if err := c.DBFunctions.DeleteProjectUsersByProjectID(projectID, tx); err != nil {
 		if err == mysqldb.ErrNoProductDeleted {
 			return ErrProjectNotFound
 		}
 	}
 
-	if err := mysqldb.Functions.DeleteProject(projectID, tx); err != nil {
+	if err := c.DBFunctions.DeleteProject(projectID, tx); err != nil {
 		if err == mysqldb.ErrNoProductDeleted {
 			return ErrProjectNotFound
 		}
 		return err
 	}
 
-	if err := mysqldb.Functions.DeleteAsset(mysqldb.ProjectAssets, &project.AssetsID, tx); err != nil {
+	if err := c.DBFunctions.DeleteAsset(mysqldb.ProjectAssets, &project.AssetsID, tx); err != nil {
 		return err
 	}
 
-	if err := mysqldb.Functions.DeleteAsset(mysqldb.ProjectDetails, &project.DetailsID, tx); err != nil {
+	if err := c.DBFunctions.DeleteAsset(mysqldb.ProjectDetails, &project.DetailsID, tx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (*MYSQLController) GetProject(projectID *uuid.UUID) (*models.ProjectData, error) {
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+func (c *MYSQLController) GetProject(projectID *uuid.UUID) (*models.ProjectData, error) {
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	project, err := mysqldb.Functions.GetProjectByID(projectID, tx)
+	project, err := c.DBFunctions.GetProjectByID(projectID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+			if err := c.DBConnector.Rollback(tx); err != nil {
 				return nil, err
 			}
 			return nil, ErrProjectNotFound
 		}
 	}
 
-	details, err := mysqldb.GetAsset(mysqldb.ProjectDetails, &project.DetailsID)
+	details, err := c.DBFunctions.GetAsset(mysqldb.ProjectDetails, &project.DetailsID)
 	if err != nil {
 		return nil, err
 	}
 
-	assets, err := mysqldb.GetAsset(mysqldb.ProjectAssets, &project.AssetsID)
+	assets, err := c.DBFunctions.GetAsset(mysqldb.ProjectAssets, &project.AssetsID)
 	if err != nil {
 		return nil, err
 	}
@@ -156,12 +156,11 @@ func (*MYSQLController) GetProject(projectID *uuid.UUID) (*models.ProjectData, e
 		Assets:    assets,
 	}
 
-	return &projectData, mysqldb.DBConnector.Commit(tx)
+	return &projectData, c.DBConnector.Commit(tx)
 }
 
-func (*MYSQLController) UpdateProjectDetails(projectData *models.ProjectData) error {
-
-	if err := mysqldb.UpdateAsset(mysqldb.ProjectDetails, projectData.Details); err != nil {
+func (c *MYSQLController) UpdateProjectDetails(projectData *models.ProjectData) error {
+	if err := c.DBFunctions.UpdateAsset(mysqldb.ProjectDetails, projectData.Details); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProjectDetails).Error() == err.Error() {
 			return ErrMissingProjectDetail
 		}
@@ -170,8 +169,8 @@ func (*MYSQLController) UpdateProjectDetails(projectData *models.ProjectData) er
 	return nil
 }
 
-func (*MYSQLController) UpdateProjectAssets(projectData *models.ProjectData) error {
-	if err := mysqldb.UpdateAsset(mysqldb.ProjectAssets, projectData.Assets); err != nil {
+func (c *MYSQLController) UpdateProjectAssets(projectData *models.ProjectData) error {
+	if err := c.DBFunctions.UpdateAsset(mysqldb.ProjectAssets, projectData.Assets); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProjectAssets).Error() == err.Error() {
 			return ErrMissingProjectAsset
 		}
@@ -180,23 +179,23 @@ func (*MYSQLController) UpdateProjectAssets(projectData *models.ProjectData) err
 	return nil
 }
 
-func (*MYSQLController) UpdateProjectUser(projectID *uuid.UUID, userID *uuid.UUID, privilege int) error {
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+func (c *MYSQLController) UpdateProjectUser(projectID *uuid.UUID, userID *uuid.UUID, privilege int) error {
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
 
-	return mysqldb.DBConnector.Commit(tx)
+	return c.DBConnector.Commit(tx)
 }
 
 func (c *MYSQLController) GetProjectsByUserID(userID *uuid.UUID) ([]models.UserProject, error) {
 	projects := make([]models.UserProject, 0)
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	ownershipMap, err := mysqldb.Functions.GetUserProjectIDs(userID, tx)
+	ownershipMap, err := c.DBFunctions.GetUserProjectIDs(userID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, ErrNoProjectsForUser
@@ -219,23 +218,23 @@ func (c *MYSQLController) GetProjectsByUserID(userID *uuid.UUID) ([]models.UserP
 		projects = append(projects, userProject)
 	}
 
-	return projects, mysqldb.DBConnector.Commit(tx)
+	return projects, c.DBConnector.Commit(tx)
 }
 
-func (*MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectData, error) {
+func (c *MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectData, error) {
 	if len(projectIDs) == 0 {
 		return nil, ErrEmptyProjectIDList
 	}
 
-	tx, err := mysqldb.DBConnector.ConnectSystem()
+	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
 
-	projects, err := mysqldb.Functions.GetProjectsByIDs(projectIDs, tx)
+	projects, err := c.DBFunctions.GetProjectsByIDs(projectIDs, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			if err := mysqldb.DBConnector.Rollback(tx); err != nil {
+			if err := c.DBConnector.Rollback(tx); err != nil {
 				return nil, err
 			}
 			return nil, ErrProjectNotFound
@@ -250,12 +249,12 @@ func (*MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectDat
 		detailsIDs = append(detailsIDs, product.DetailsID)
 	}
 
-	details, err := mysqldb.Functions.GetAssets(mysqldb.ProjectDetails, detailsIDs, tx)
+	details, err := c.DBFunctions.GetAssets(mysqldb.ProjectDetails, detailsIDs, tx)
 	if err != nil {
 		return nil, err
 	}
 
-	assets, err := mysqldb.Functions.GetAssets(mysqldb.ProjectAssets, assetIDs, tx)
+	assets, err := c.DBFunctions.GetAssets(mysqldb.ProjectAssets, assetIDs, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -271,5 +270,5 @@ func (*MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectDat
 		projectDataList[index] = projectData
 	}
 
-	return projectDataList, mysqldb.DBConnector.Commit(tx)
+	return projectDataList, c.DBConnector.Commit(tx)
 }

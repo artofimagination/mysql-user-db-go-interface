@@ -90,9 +90,9 @@ func (MYSQLFunctions) GetUsersByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.User,
 	return users, nil
 }
 
-func UserExists(username string) (bool, error) {
+func (f *MYSQLFunctions) UserExists(username string) (bool, error) {
 	var user models.User
-	tx, err := DBConnector.ConnectSystem()
+	tx, err := f.DBConnector.ConnectSystem()
 	if err != nil {
 		return false, err
 	}
@@ -110,12 +110,12 @@ func UserExists(username string) (bool, error) {
 	}
 }
 
-func EmailExists(email string) (bool, error) {
+func (f *MYSQLFunctions) EmailExists(email string) (bool, error) {
 	email = strings.ReplaceAll(strings.ToLower(email), " ", "")
 
 	var user models.User
 	queryString := "select email from users where email = ?"
-	tx, err := DBConnector.ConnectSystem()
+	tx, err := f.DBConnector.ConnectSystem()
 	if err != nil {
 		return false, err
 	}

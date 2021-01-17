@@ -42,14 +42,14 @@ func (*MYSQLFunctions) AddAsset(assetType string, asset *models.Asset, tx *sql.T
 
 var UpdateAssetQuery = "UPDATE %s set data = ? where id = UUID_TO_BIN(?)"
 
-func UpdateAsset(assetType string, asset *models.Asset) error {
+func (f *MYSQLFunctions) UpdateAsset(assetType string, asset *models.Asset) error {
 	binary, err := json.Marshal(asset.DataMap)
 	if err != nil {
 		return err
 	}
 
 	// Execute transaction
-	tx, err := DBConnector.ConnectSystem()
+	tx, err := f.DBConnector.ConnectSystem()
 	if err != nil {
 		return err
 	}
@@ -77,10 +77,10 @@ func UpdateAsset(assetType string, asset *models.Asset) error {
 
 var GetAssetQuery = "SELECT BIN_TO_UUID(id), data FROM %s WHERE id = UUID_TO_BIN(?)"
 
-func GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
+func (f *MYSQLFunctions) GetAsset(assetType string, assetID *uuid.UUID) (*models.Asset, error) {
 	asset := &models.Asset{}
 
-	tx, err := DBConnector.ConnectSystem()
+	tx, err := f.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (*MYSQLFunctions) DeleteAsset(assetType string, assetID *uuid.UUID, tx *sql
 
 var GetAssetsQuery = "SELECT BIN_TO_UUID(id), data FROM %s WHERE id IN (UUID_TO_BIN(?)"
 
-func (MYSQLFunctions) GetAssets(assetType string, IDs []uuid.UUID, tx *sql.Tx) ([]models.Asset, error) {
+func (*MYSQLFunctions) GetAssets(assetType string, IDs []uuid.UUID, tx *sql.Tx) ([]models.Asset, error) {
 	query := GetAssetsQuery + strings.Repeat(",UUID_TO_BIN(?)", len(IDs)-1) + ")"
 	interfaceList := make([]interface{}, len(IDs))
 	for i := range IDs {
