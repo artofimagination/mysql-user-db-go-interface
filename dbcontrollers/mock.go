@@ -20,10 +20,9 @@ type ModelMock struct {
 	err error
 }
 
-func (i *ModelMock) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Product, error) {
+func (i *ModelMock) NewProduct(name string, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Product, error) {
 	p := &models.Product{
 		Name:      name,
-		Public:    public,
 		ID:        i.productID,
 		DetailsID: *detailsID,
 		AssetsID:  *assetsID,

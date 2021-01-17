@@ -510,13 +510,6 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	public, ok := productJSON.(map[string]interface{})["public"].(bool)
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'public'")
-		return
-	}
-
 	// Get user ID
 	userIDString, ok := data["user"]
 	if !ok {
@@ -532,7 +525,7 @@ func addProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := dbController.CreateProduct(name, public, &userID,
+	product, err := dbController.CreateProduct(name, &userID,
 		func(*uuid.UUID) (string, error) {
 			return testPath, nil
 		})

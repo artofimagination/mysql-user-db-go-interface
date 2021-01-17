@@ -54,7 +54,6 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		Name:      "TestProduct",
 		AssetsID:  assetsID,
 		DetailsID: detailsID,
-		Public:    true,
 	}
 
 	switch testID {
@@ -112,7 +111,6 @@ func TestNewProduct(t *testing.T) {
 
 			output, err := ModelFunctions.NewProduct(
 				inputData.product.Name,
-				inputData.product.Public,
 				&inputData.product.DetailsID,
 				&inputData.product.AssetsID,
 			)

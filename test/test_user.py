@@ -455,8 +455,7 @@ createTestData = [
     # Input data
     ({
       "product": {
-        "name": "testProductUserDelete",
-        "public": True
+        "name": "testProductUserDelete"
       },
       "user": {
         "name": "testProductUserDelete",
@@ -539,8 +538,7 @@ createTestData = [
         'password': 'testPassword'
       },
       "products_to_delete": [{
-        "name": "testProductDelete",
-        "public": True,
+        "name": "testProductDelete"
       }],
       "nominated_users": [{
           "name": "testUserNominated1",
@@ -566,8 +564,7 @@ createTestData = [
         'password': 'testPassword'
       },
       "products_to_delete": [{
-        "name": "testProductDeleteNoNominee",
-        "public": True,
+        "name": "testProductDeleteNoNominee"
       }]
     },
     # Expected

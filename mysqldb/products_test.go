@@ -57,7 +57,6 @@ func createTestProductData() (*models.Product, error) {
 	product := &models.Product{
 		ID:        productID,
 		Name:      "Test",
-		Public:    true,
 		DetailsID: detailsID,
 		AssetsID:  assetID,
 	}
@@ -128,7 +127,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 
 		testCase := "valid_product"
 		mock.ExpectBegin()
-		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.DetailsID, product.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data: ProductInputData{
 				product: product,
@@ -142,7 +141,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "failed_query"
 		expected := errors.New("This is a failure test")
 		mock.ExpectBegin()
-		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnError(expected)
+		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.DetailsID, product.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data: ProductInputData{
@@ -157,7 +156,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "duplicate_name"
 		expected = fmt.Errorf(ErrSQLDuplicateProductNameEntryString, product.Name)
 		mock.ExpectBegin()
-		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID).WillReturnError(expected)
+		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.DetailsID, product.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data: ProductInputData{
@@ -255,8 +254,8 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 	case getProductByIDTest:
 
 		testCase := "valid_id"
-		rows := sqlmock.NewRows([]string{"id", "name", "public", "details", "product_assets_id"}).
-			AddRow(binaryProductID, product.Name, product.Public, product.DetailsID, product.AssetsID)
+		rows := sqlmock.NewRows([]string{"id", "name", "details", "product_assets_id"}).
+			AddRow(binaryProductID, product.Name, product.DetailsID, product.AssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByIDQuery).WithArgs(product.ID).WillReturnRows(rows)
 		dataSet.TestDataSet[testCase] = test.Data{
@@ -286,8 +285,8 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 
 	case getProductByNameTest:
 		testCase := "valid_name"
-		rows := sqlmock.NewRows([]string{"id", "name", "public", "details", "product_assets_id"}).
-			AddRow(binaryProductID, product.Name, product.Public, product.DetailsID, binaryAssetID)
+		rows := sqlmock.NewRows([]string{"id", "name", "details", "product_assets_id"}).
+			AddRow(binaryProductID, product.Name, product.DetailsID, binaryAssetID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByNameQuery).WithArgs(product.Name).WillReturnRows(rows)
 		dataSet.TestDataSet[testCase] = test.Data{

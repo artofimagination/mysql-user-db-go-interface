@@ -87,11 +87,11 @@ func (*MYSQLFunctions) UpdateUsersProducts(userID *uuid.UUID, productID *uuid.UU
 	return nil
 }
 
-var AddProductQuery = "INSERT INTO products (id, name, public, product_details_id, product_assets_id) VALUES (UUID_TO_BIN(?), ?, ?, UUID_TO_BIN(?), UUID_TO_BIN(?))"
+var AddProductQuery = "INSERT INTO products (id, name, product_details_id, product_assets_id) VALUES (UUID_TO_BIN(?), ?, UUID_TO_BIN(?), UUID_TO_BIN(?))"
 
 func (*MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
 	// Execute transaction
-	_, err := tx.Exec(AddProductQuery, product.ID, product.Name, product.Public, product.DetailsID, product.AssetsID)
+	_, err := tx.Exec(AddProductQuery, product.ID, product.Name, product.DetailsID, product.AssetsID)
 	errDuplicateName := fmt.Errorf(ErrSQLDuplicateProductNameEntryString, product.Name)
 	if err != nil {
 		switch {
@@ -109,12 +109,12 @@ func (*MYSQLFunctions) AddProduct(product *models.Product, tx *sql.Tx) error {
 	return nil
 }
 
-var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE id = UUID_TO_BIN(?)"
+var GetProductByIDQuery = "SELECT BIN_TO_UUID(id), name, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE id = UUID_TO_BIN(?)"
 
 func (*MYSQLFunctions) GetProductByID(ID *uuid.UUID, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
 	query := tx.QueryRow(GetProductByIDQuery, ID)
-	err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID)
+	err := query.Scan(&product.ID, &product.Name, &product.DetailsID, &product.AssetsID)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, sql.ErrNoRows
@@ -126,7 +126,7 @@ func (*MYSQLFunctions) GetProductByID(ID *uuid.UUID, tx *sql.Tx) (*models.Produc
 	return &product, nil
 }
 
-var GetProductsByIDsQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE id IN (UUID_TO_BIN(?)"
+var GetProductsByIDsQuery = "SELECT BIN_TO_UUID(id), name, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE id IN (UUID_TO_BIN(?)"
 
 func (*MYSQLFunctions) GetProductsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Product, error) {
 	query := GetProductsByIDsQuery + strings.Repeat(",UUID_TO_BIN(?)", len(IDs)-1) + ")"
@@ -144,7 +144,7 @@ func (*MYSQLFunctions) GetProductsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.P
 	products := make([]models.Product, 0)
 	for rows.Next() {
 		product := models.Product{}
-		err := rows.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID)
+		err := rows.Scan(&product.ID, &product.Name, &product.DetailsID, &product.AssetsID)
 		if err != nil {
 			return nil, RollbackWithErrorStack(tx, err)
 		}
@@ -196,14 +196,14 @@ func (*MYSQLFunctions) GetUserProductIDs(userID *uuid.UUID, tx *sql.Tx) (*models
 	return &userProducts, nil
 }
 
-var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, public, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE name = ?"
+var GetProductByNameQuery = "SELECT BIN_TO_UUID(id), name, BIN_TO_UUID(product_details_id), BIN_TO_UUID(product_assets_id) FROM products WHERE name = ?"
 
 func (*MYSQLFunctions) GetProductByName(name string, tx *sql.Tx) (*models.Product, error) {
 	product := models.Product{}
 
 	query := tx.QueryRow(GetProductByNameQuery, name)
 
-	err := query.Scan(&product.ID, &product.Name, &product.Public, &product.DetailsID, &product.AssetsID)
+	err := query.Scan(&product.ID, &product.Name, &product.DetailsID, &product.AssetsID)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, sql.ErrNoRows

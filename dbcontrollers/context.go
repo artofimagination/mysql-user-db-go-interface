@@ -11,7 +11,7 @@ import (
 )
 
 type DBControllerCommon interface {
-	CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.Product, error)
+	CreateProduct(name string, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.Product, error)
 	DeleteProduct(productID *uuid.UUID) error
 	GetProduct(productID *uuid.UUID) (*models.ProductData, error)
 	UpdateProductDetails(details *models.Asset) error

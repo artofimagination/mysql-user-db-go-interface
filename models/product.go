@@ -7,7 +7,6 @@ import (
 type ProductData struct {
 	ID      uuid.UUID
 	Name    string
-	Public  bool
 	Assets  *Asset
 	Details *Asset
 }
@@ -20,7 +19,6 @@ type UserProduct struct {
 type Product struct {
 	ID        uuid.UUID `validation:"required"`
 	Name      string    `validation:"required"`
-	Public    bool
 	AssetsID  uuid.UUID `validation:"required"`
 	DetailsID uuid.UUID `validation:"required"`
 }
@@ -36,7 +34,7 @@ type ProductUserIDs struct {
 
 // NewProduct creates a new product instance where details describe the configuration of the product
 // and references contain all asset references.
-func (f *RepoFunctions) NewProduct(name string, public bool, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {
+func (f *RepoFunctions) NewProduct(name string, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error) {
 	var p Product
 
 	newID, err := f.UUIDImpl.NewUUID()
@@ -46,7 +44,6 @@ func (f *RepoFunctions) NewProduct(name string, public bool, detailsID *uuid.UUI
 
 	p.ID = newID
 	p.Name = name
-	p.Public = public
 	p.DetailsID = *detailsID
 	p.AssetsID = *assetsID
 

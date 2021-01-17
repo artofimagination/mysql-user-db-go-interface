@@ -83,7 +83,6 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 
 	product := &models.Product{
 		ID:     productID,
-		Public: true,
 	}
 
 	dataMap := make(models.DataMap)
