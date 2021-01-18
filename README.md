@@ -78,6 +78,6 @@ Once the example main-server is running the user can do the following using the 
 ## UML
 ![UML](docs/UML.jpg)
 ## dbcontrollers use cases
-![Use cases](docs/UseCase.jpg)
+![Use cases](docs/UseCases.jpg)
 
 
