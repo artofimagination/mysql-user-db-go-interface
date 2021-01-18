@@ -62,6 +62,7 @@ It is recommended to call only the dbcontrollers functions using it in third par
 
 ## Running the example code
 To run functional testing using the example code run ```./runFunctionalTest.sh```
+Note: Functional testing requires python 3.8 or newer
 
 Once the example main-server is running the user can do the following using the curl command:
 - add new user: ```http://localhost:8080/insert?name=testName&email=testEmail&password=testPass```
@@ -73,10 +74,10 @@ Once the example main-server is running the user can do the following using the 
 
 # Database
 ## Entity relation
-[Entity relation](docs/DBRelations.jpg)
+![Entity relation](docs/DBRelations.jpg)
 ## UML
-[UML](docs/UML.jpg)
+![UML](docs/UML.jpg)
 ## dbcontrollers use cases
-[Use cases](docs/UseCase.jpg)
+![Use cases](docs/UseCase.jpg)
 
 
