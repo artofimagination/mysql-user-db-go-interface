@@ -5,7 +5,7 @@ NOTE: This implementation is heavily under development, but is in a useful state
 This example implementation provides a fundamental handling of a user database. The users can have products, projects and project associated data viewers.
 All content of each object type (user/product/project) is fully customizable using two json columns.
 
-The database can be used as a **store for webshops, platforms that allow users to create projects or applications that require high volume data collection.
+The database can be used as a **store for webshops, platforms that allow users to create projects or applications that require high volume data collection.**
 
 - Users table
   ```
