@@ -1,6 +1,6 @@
 # Example implementation for user/product/project and high volume data store using MYSQL and Golang
 
-NOTE: This implementation is heavily under development, but is in a useful state. Feel free to try, raise tickets and fix bugs.
+NOTE: This implementation is heavily under development, but is in a usable state. Feel free to try, raise tickets and fix bugs.
 
 This example implementation provides a fundamental handling of a user database. The users can have products, projects and project associated data viewers.
 All content of each object type (user/product/project) is fully customizable using two json columns.
