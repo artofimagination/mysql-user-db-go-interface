@@ -65,12 +65,17 @@ To run functional testing using the example code run ```./runFunctionalTest.sh``
 Note: Functional testing requires python 3.8 or newer
 
 Once the example main-server is running the user can do the following using the curl command:
-- add new user: ```http://localhost:8080/insert?name=testName&email=testEmail&password=testPass```
-- get user with specified email: ```http://localhost:8080/get?email=testEmail```
-- delete user specified by the email: ```http://localhost:8080/delete?email=testEmail```
-- check user password and email: ```http://localhost:8080/check?email=testEmail&password=testPass```
-- get user settings belonging to the user with specified email: ```http://localhost:8080/get-settings?email=testEmail```
-- delete user settings belonging to the user with specified email, this test shall fail since the user has the settigns foreign key: ```http://localhost:8080/delete-settings?email=testEmail```
+User commands
+- add new user (will print the created user UUID): ```curl -i -X POST -H 'Content-Type: application/json' -d '{ "name": "test", "email": "test@test.com","password": "test"}' http://localhost:8080/add-user```
+- get user by id (UUID): ```curl -i -X GET http://localhost:8080/get-user?id=c34a7368-344a-11eb-adc1-0242ac120002```
+- get user by email: ```curl -i -X GET http://localhost:8080/get-user-by-email?email=test@test.com```
+- get multiple users: ```curl -i -X GET http://localhost:8080/get-users?ids=c34a7368-344a-11eb-adc1-0242ac120002,c34a7368-344a-11eb-adc1-0242ac120002```
+- update user settings: ```curl -i -X POST -H 'Content-Type: application/json' -d '{ "user": {"name": "test","email": "test", "password": "test", "Settings": {"DataMap":{ "test_entry":"test_data" }}}}' http://localhost:8080/update-user-assets```
+- update user assets: ```curl -i -X POST -H 'Content-Type: application/json' -d '{ "user": {"name": "test","email": "test", "password": "test", "Settings": {"DataMap":{ "test_entry":"test_data" }}}}' http://localhost:8080/update-user-settings```
+- delete user (and nominate new product owners if defined): ```curl -i -X POST -H 'Content-Type: application/json' -d '{"id": "c34a7368-344a-11eb-adc1-0242ac120002", "nominees":["c34a7368-344a-11eb-adc1-0242ac120002", "c34a7368-344a-11eb-adc1-0242ac120002"]}' http://localhost:8080/delete-user```
+- authenticate: ```http://localhost:8080/authenticate?id=c34a7368-344a-11eb-adc1-0242ac120002&email=test@test.com&password=testPass```
+
+Product commands
 
 # Database
 ## Entity relation
