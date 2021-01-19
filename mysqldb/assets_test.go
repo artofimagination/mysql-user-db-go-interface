@@ -21,6 +21,15 @@ const (
 	GetAssetTest
 )
 
+type AssetExpectedData struct {
+	asset *models.Asset
+	err   error
+}
+
+type AssetInputData struct {
+	asset *models.Asset
+}
+
 func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
@@ -33,7 +42,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	asset := models.Asset{
+	asset := &models.Asset{
 		ID:      assetID,
 		DataMap: references,
 	}
@@ -53,93 +62,139 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	data := test.Data{
-		Data:     asset,
-		Expected: nil,
-	}
-
 	switch testID {
 	case AddAssetTest:
 		testCase := "valid_user_asset"
 		mock.ExpectBegin()
 		query := fmt.Sprintf(AddAssetQuery, UserAssets)
 		mock.ExpectExec(query).WithArgs(asset.ID, binaryDataMap).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data: AssetInputData{
+				asset: asset,
+			},
+			Mock: nil,
+			Expected: AssetExpectedData{
+				err: nil,
+			},
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failed_query"
-		data.Expected = errors.New("This is a failure test")
+		err := errors.New("This is a failure test")
 		mock.ExpectBegin()
 		query = fmt.Sprintf(AddAssetQuery, UserAssets)
-		mock.ExpectExec(query).WithArgs(asset.ID, binaryDataMap).WillReturnError(data.Expected.(error))
+		mock.ExpectExec(query).WithArgs(asset.ID, binaryDataMap).WillReturnError(err)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data: AssetInputData{
+				asset: asset,
+			},
+			Mock: nil,
+			Expected: AssetExpectedData{
+				err: err,
+			},
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case DeleteAssetTest:
 		testCase := "valid_user_asset"
-		data.Expected = nil
 		mock.ExpectBegin()
 		query := fmt.Sprintf(DeleteAssetQuery, UserAssets)
 		mock.ExpectExec(query).WithArgs(asset.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data: AssetInputData{
+				asset: asset,
+			},
+			Mock: nil,
+			Expected: AssetExpectedData{
+				err: nil,
+			},
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failed_query"
-		data.Expected = fmt.Errorf(ErrAssetMissing, UserAssets)
 		mock.ExpectBegin()
 		query = fmt.Sprintf(DeleteAssetQuery, UserAssets)
 		mock.ExpectExec(query).WithArgs(asset.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data: AssetInputData{
+				asset: asset,
+			},
+			Mock: nil,
+			Expected: AssetExpectedData{
+				err: fmt.Errorf(ErrAssetMissing, UserAssets),
+			},
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case UpdateAssetTest:
 		testCase := "valid_asset"
 
-		data.Expected = nil
 		mock.ExpectBegin()
 		query := fmt.Sprintf(UpdateAssetQuery, UserAssets)
 		mock.ExpectExec(query).WithArgs(binaryDataMap, &asset.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data: AssetInputData{
+				asset: asset,
+			},
+			Mock: nil,
+			Expected: AssetExpectedData{
+				err: nil,
+			},
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "missing_asset"
-		data.Expected = fmt.Errorf(ErrAssetMissing, UserAssets)
 		mock.ExpectBegin()
 		query = fmt.Sprintf(UpdateAssetQuery, UserAssets)
 		mock.ExpectExec(query).WithArgs(binaryDataMap, &asset.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data: AssetInputData{
+				asset: asset,
+			},
+			Mock: nil,
+			Expected: AssetExpectedData{
+				err: fmt.Errorf(ErrAssetMissing, UserAssets),
+			},
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case GetAssetTest:
 		testCase := "valid_asset"
-		data := test.Data{
-			Data:     asset,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = &asset
-		data.Expected.(map[string]interface{})["error"] = nil
+
 		rows := sqlmock.NewRows([]string{"id", "data"}).AddRow(binaryID, binaryDataMap)
 		mock.ExpectBegin()
 		query := fmt.Sprintf(GetAssetQuery, UserAssets)
 		mock.ExpectQuery(query).WithArgs(&asset.ID).WillReturnRows(rows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data: AssetInputData{
+				asset: asset,
+			},
+			Mock: nil,
+			Expected: AssetExpectedData{
+				asset: asset,
+				err:   nil,
+			},
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "missing_asset"
-		data = test.Data{
-			Data:     asset,
-			Expected: make(map[string]interface{}),
-		}
-		data.Expected.(map[string]interface{})["data"] = nil
-		data.Expected.(map[string]interface{})["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		query = fmt.Sprintf(GetAssetQuery, UserAssets)
 		mock.ExpectQuery(query).WithArgs(&asset.ID).WillReturnError(sql.ErrNoRows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = data
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data: AssetInputData{
+				asset: asset,
+			},
+			Mock: nil,
+			Expected: AssetExpectedData{
+				asset: nil,
+				err:   sql.ErrNoRows,
+			},
+		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	}
 
@@ -173,15 +228,12 @@ func TestAddAsset(t *testing.T) {
 				return
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedError error
-			if testCase.Expected != nil {
-				expectedError = testCase.Expected.(error)
-			}
-			asset := testCase.Data.(models.Asset)
+			expectedData := testCase.Expected.(AssetExpectedData)
+			inputData := testCase.Data.(AssetInputData)
 
-			err = DBFunctions.AddAsset(UserAssets, &asset, tx)
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			err = DBFunctions.AddAsset(UserAssets, inputData.asset, tx)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -208,15 +260,12 @@ func TestDeleteAsset(t *testing.T) {
 				return
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedError error
-			if testCase.Expected != nil {
-				expectedError = testCase.Expected.(error)
-			}
-			asset := testCase.Data.(models.Asset)
+			expectedData := testCase.Expected.(AssetExpectedData)
+			inputData := testCase.Data.(AssetInputData)
 
-			err = DBFunctions.DeleteAsset(UserAssets, &asset.ID, tx)
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			err = DBFunctions.DeleteAsset(UserAssets, &inputData.asset.ID, tx)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -238,15 +287,12 @@ func TestUpdateAsset(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedError error
-			if testCase.Expected != nil {
-				expectedError = testCase.Expected.(error)
-			}
-			asset := testCase.Data.(models.Asset)
+			expectedData := testCase.Expected.(AssetExpectedData)
+			inputData := testCase.Data.(AssetInputData)
 
-			err = DBFunctions.UpdateAsset(UserAssets, &asset)
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			err = DBFunctions.UpdateAsset(UserAssets, inputData.asset)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -268,24 +314,17 @@ func TestGetAsset(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
-			var expectedData *models.Asset
-			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.Asset)
-			}
-			asset := testCase.Data.(models.Asset)
+			expectedData := testCase.Expected.(AssetExpectedData)
+			inputData := testCase.Data.(AssetInputData)
 
-			output, err := DBFunctions.GetAsset(UserAssets, &asset.ID)
-			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			output, err := DBFunctions.GetAsset(UserAssets, &inputData.asset.ID)
+			if diff := pretty.Diff(output, expectedData.asset); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.asset, diff)
 				return
 			}
 
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})

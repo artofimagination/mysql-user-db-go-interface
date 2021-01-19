@@ -13,6 +13,15 @@ const (
 	NewProduct = iota
 )
 
+type ProductExpectedData struct {
+	product *Product
+	err     error
+}
+
+type ProductInputData struct {
+	product *Product
+}
+
 func createTestData(testID int) (*test.OrderedTests, error) {
 	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
@@ -40,7 +49,7 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		},
 	}
 
-	product := Product{
+	product := &Product{
 		ID:        productID,
 		Name:      "TestProduct",
 		AssetsID:  assetsID,
@@ -51,28 +60,31 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 	switch testID {
 	case NewProduct:
 		testCase := "valid_product"
-
-		data := make(map[string]interface{})
-		data["product"] = product
-		expected := make(map[string]interface{})
-		expected["data"] = &product
-		expected["error"] = nil
+		expected := ProductExpectedData{
+			product: product,
+			err:     nil,
+		}
+		input := ProductInputData{
+			product: product,
+		}
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     nil,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failure_case"
-
-		err := errors.New("Failed with error")
-		data = make(map[string]interface{})
-		data["product"] = product
-		expected = make(map[string]interface{})
-		expected["data"] = nil
-		expected["error"] = err
+		expected = ProductExpectedData{
+			product: nil,
+			err:     errors.New("Failed with error"),
+		}
+		input = ProductInputData{
+			product: product,
+		}
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     nil,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -94,31 +106,23 @@ func TestNewProduct(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
-			var expectedData *Product
-			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*Product)
-			}
-
-			inputData := testCase.Data.(map[string]interface{})["product"].(Product)
-			ModelFunctions.UUIDImpl.(*UUIDImplMock).err = expectedError
+			expectedData := testCase.Expected.(ProductExpectedData)
+			inputData := testCase.Data.(ProductInputData)
+			ModelFunctions.UUIDImpl.(*UUIDImplMock).err = expectedData.err
 
 			output, err := ModelFunctions.NewProduct(
-				inputData.Name,
-				inputData.Public,
-				&inputData.DetailsID,
-				&inputData.AssetsID,
+				inputData.product.Name,
+				inputData.product.Public,
+				&inputData.product.DetailsID,
+				&inputData.product.AssetsID,
 			)
-			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			if diff := pretty.Diff(output, expectedData.product); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.product, diff)
 				return
 			}
 
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})

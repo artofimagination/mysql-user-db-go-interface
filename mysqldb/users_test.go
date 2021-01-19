@@ -22,13 +22,17 @@ const (
 	DeleteProductUserTest
 )
 
-type UserExpectedTestData struct {
-	err error
+type UserExpectedData struct {
+	user         *models.User
+	productUsers *models.ProductUserIDs
+	err          error
 }
 
-type UserInputTestData struct {
-	productID uuid.UUID
-	user      models.User
+type UserInputData struct {
+	productID *uuid.UUID
+	user      *models.User
+	queryType int
+	keyValue  interface{}
 }
 
 func createUsersTestData(testID int) (*test.OrderedTests, error) {
@@ -52,7 +56,7 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	user := models.User{
+	user := &models.User{
 		ID:         userID,
 		Name:       "testName",
 		Email:      "test@test.com",
@@ -95,98 +99,100 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 
 	case GetUserTest:
 		testCase := "valid_email"
-		data := make(map[string]interface{})
-		expected := make(map[string]interface{})
-		data["query_type"] = ByEmail
-		data["key_value"] = user.Email
-		expected["data"] = &user
-		expected["error"] = nil
 		rows := sqlmock.NewRows([]string{"id", "name", "email", "password", "user_settings_id", "user_assets_id"}).
 			AddRow(binaryUserID, user.Name, user.Email, user.Password, binarySettingsID, binaryAssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnRows(rows)
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
-			Expected: expected,
+			Data: UserInputData{
+				queryType: ByEmail,
+				keyValue:  user.Email,
+			},
+			Expected: UserExpectedData{
+				user: user,
+				err:  nil,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failed_query_email"
-		data = make(map[string]interface{})
-		expected = make(map[string]interface{})
-		data["query_type"] = ByEmail
-		data["key_value"] = user.Email
-		expected["data"] = nil
-		expected["error"] = errors.New("This is a failure test")
+		err := errors.New("This is a failure test")
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnError(expected["error"].(error))
+		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnError(err)
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
-			Expected: expected,
+			Data: UserInputData{
+				queryType: ByEmail,
+				keyValue:  user.Email,
+			},
+			Expected: UserExpectedData{
+				user: nil,
+				err:  err,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_email"
-		data = make(map[string]interface{})
-		expected = make(map[string]interface{})
-		data["query_type"] = ByEmail
-		data["key_value"] = user.Email
-		expected["data"] = nil
-		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserByEmailQuery).WithArgs(user.Email).WillReturnError(sql.ErrNoRows)
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
-			Expected: expected,
+			Data: UserInputData{
+				queryType: ByEmail,
+				keyValue:  user.Email,
+			},
+			Expected: UserExpectedData{
+				user: nil,
+				err:  sql.ErrNoRows,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "valid_ID"
-		data = make(map[string]interface{})
-		data["query_type"] = ByID
-		data["key_value"] = user.ID
-		expected = make(map[string]interface{})
-		expected["data"] = &user
-		expected["error"] = nil
 		rows = sqlmock.NewRows([]string{"id", "name", "email", "password", "user_settings_id", "user_assets_id"}).
 			AddRow(binaryUserID, user.Name, user.Email, user.Password, binarySettingsID, binaryAssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnRows(rows)
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
-			Expected: expected,
+			Data: UserInputData{
+				queryType: ByID,
+				keyValue:  user.ID,
+			},
+			Expected: UserExpectedData{
+				user: user,
+				err:  nil,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "failed_query_ID"
-		data = make(map[string]interface{})
-		expected = make(map[string]interface{})
-		data["query_type"] = ByID
-		data["key_value"] = user.ID
-		expected["data"] = nil
-		expected["error"] = errors.New("This is a failure test")
+		err = errors.New("This is a failure test")
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnError(expected["error"].(error))
+		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnError(err)
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
-			Expected: expected,
+			Data: UserInputData{
+				queryType: ByID,
+				keyValue:  user.ID,
+			},
+			Expected: UserExpectedData{
+				user: nil,
+				err:  err,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_ID"
-		data = make(map[string]interface{})
-		expected = make(map[string]interface{})
-		data["query_type"] = ByID
-		data["key_value"] = user.ID
-		expected["data"] = nil
-		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserByIDQuery).WithArgs(user.ID).WillReturnError(sql.ErrNoRows)
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
-			Expected: expected,
+			Data: UserInputData{
+				queryType: ByID,
+				keyValue:  user.ID,
+			},
+			Expected: UserExpectedData{
+				user: nil,
+				err:  sql.ErrNoRows,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -196,8 +202,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(InsertUserQuery).WithArgs(user.ID, user.Name, user.Email, password, user.SettingsID, user.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     user,
-			Expected: nil,
+			Data: UserInputData{
+				user: user,
+			},
+			Expected: UserExpectedData{
+				err: nil,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -207,8 +217,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectExec(InsertUserQuery).WithArgs(user.ID, user.Name, user.Email, password, user.SettingsID, user.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     user,
-			Expected: expected,
+			Data: UserInputData{
+				user: user,
+			},
+			Expected: UserExpectedData{
+				err: expected,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -218,8 +232,12 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectExec(InsertUserQuery).WithArgs(user.ID, user.Name, user.Email, password, user.SettingsID, user.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     user,
-			Expected: expected,
+			Data: UserInputData{
+				user: user,
+			},
+			Expected: UserExpectedData{
+				err: expected,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
@@ -228,60 +246,70 @@ func createUsersTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteUserQuery).WithArgs(user.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     user.ID,
-			Expected: nil,
+			Data: UserInputData{
+				user: user,
+			},
+			Expected: UserExpectedData{
+				err: nil,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_user"
-
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteUserQuery).WithArgs(user.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     user.ID,
-			Expected: ErrNoUserDeleted,
+			Data: UserInputData{
+				user: user,
+			},
+			Expected: UserExpectedData{
+				err: ErrNoUserDeleted,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
-	case GetProductUserIDsTest:
 
+	case GetProductUserIDsTest:
 		testCase := "valid_id"
-		expected := make(map[string]interface{})
-		expected["data"] = productUsers
-		expected["error"] = nil
 		rows := sqlmock.NewRows([]string{"products_id", "privilege"})
 		for _, userID := range productUsers.UserIDArray {
 			rows.AddRow(userID, productUsers.UserMap[userID])
 		}
-
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetProductUserIDsQuery).WithArgs(userID).WillReturnRows(rows)
+		mock.ExpectQuery(GetProductUserIDsQuery).WithArgs(productID).WillReturnRows(rows)
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     userID,
-			Expected: expected,
+			Data: UserInputData{
+				productID: &productID,
+			},
+			Expected: UserExpectedData{
+				productUsers: productUsers,
+				err:          nil,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "missing_users"
-		expected = make(map[string]interface{})
-		expected["data"] = nil
-		expected["error"] = sql.ErrNoRows
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetProductUserIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
+		mock.ExpectQuery(GetProductUserIDsQuery).WithArgs(productID).WillReturnError(sql.ErrNoRows)
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     userID,
-			Expected: expected,
+			Data: UserInputData{
+				productID: &productID,
+			},
+			Expected: UserExpectedData{
+				productUsers: nil,
+				err:          sql.ErrNoRows,
+			},
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 	case DeleteProductUserTest:
 		testCase := "valid_ids"
-		expected := UserExpectedTestData{
+		expected := UserExpectedData{
 			err: nil,
 		}
-		input := UserInputTestData{
+		input := UserInputData{
 			user:      user,
-			productID: productID,
+			productID: &productID,
 		}
 
 		mock.ExpectBegin()
@@ -326,25 +354,17 @@ func TestGetUser(t *testing.T) {
 				return
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
-			keyValue := testCase.Data.(map[string]interface{})["key_value"]
-			query := testCase.Data.(map[string]interface{})["query_type"].(int)
-			var expectedData *models.User
-			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.User)
-			}
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
+			expectedData := testCase.Expected.(UserExpectedData)
+			inputData := testCase.Data.(UserInputData)
 
-			output, err := DBFunctions.GetUser(query, keyValue, tx)
-			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			output, err := DBFunctions.GetUser(inputData.queryType, inputData.keyValue, tx)
+			if diff := pretty.Diff(output, expectedData.user); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.user, diff)
 				return
 			}
 
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -370,15 +390,12 @@ func TestAddUser(t *testing.T) {
 				return
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
-			user := testCase.Data.(models.User)
-			var expectedError error
-			if testCase.Expected != nil {
-				expectedError = testCase.Expected.(error)
-			}
+			expectedData := testCase.Expected.(UserExpectedData)
+			inputData := testCase.Data.(UserInputData)
 
-			err = DBFunctions.AddUser(&user, tx)
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			err = DBFunctions.AddUser(inputData.user, tx)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -404,15 +421,12 @@ func TestDeleteUser(t *testing.T) {
 				return
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
-			userID := testCase.Data.(uuid.UUID)
-			var expectedError error
-			if testCase.Expected != nil {
-				expectedError = testCase.Expected.(error)
-			}
+			expectedData := testCase.Expected.(UserExpectedData)
+			inputData := testCase.Data.(UserInputData)
 
-			err = DBFunctions.DeleteUser(&userID, tx)
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			err = DBFunctions.DeleteUser(&inputData.user.ID, tx)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -439,24 +453,17 @@ func TestGetProductUserIDs(t *testing.T) {
 				return
 			}
 			testCase := dataSet.TestDataSet[testCaseString]
-			productID := testCase.Data.(uuid.UUID)
-			var expectedData *models.ProductUserIDs
-			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*models.ProductUserIDs)
-			}
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
+			expectedData := testCase.Expected.(UserExpectedData)
+			inputData := testCase.Data.(UserInputData)
 
-			output, err := DBFunctions.GetProductUserIDs(&productID, tx)
-			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			output, err := DBFunctions.GetProductUserIDs(inputData.productID, tx)
+			if diff := pretty.Diff(output, expectedData.productUsers); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.productUsers, diff)
 				return
 			}
 
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -482,12 +489,12 @@ func TestDeleteProductUser(t *testing.T) {
 				t.Errorf("Failed to setup DB transaction %s", err)
 				return
 			}
-			expected := dataSet.TestDataSet[testCaseString].Expected.(UserExpectedTestData)
-			input := dataSet.TestDataSet[testCaseString].Data.(UserInputTestData)
+			expectedData := dataSet.TestDataSet[testCaseString].Expected.(UserExpectedData)
+			inputData := dataSet.TestDataSet[testCaseString].Data.(UserInputData)
 
-			err = DBFunctions.DeleteProductUser(&input.productID, &input.user.ID, tx)
-			if diff := pretty.Diff(err, expected.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expected.err)
+			err = DBFunctions.DeleteProductUser(inputData.productID, &inputData.user.ID, tx)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err)
 				return
 			}
 		})

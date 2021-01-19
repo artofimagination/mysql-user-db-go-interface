@@ -16,6 +16,19 @@ const (
 	NewAssetTest
 )
 
+type AssetExpectedData struct {
+	asset *Asset
+	data  string
+	err   error
+}
+
+type AssetInputData struct {
+	asset          Asset
+	assetType      string
+	assetExtension string
+	defaultData    string
+}
+
 func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	dataSet := &test.OrderedTests{
 		OrderedList: make(test.OrderedTestList, 0),
@@ -27,7 +40,7 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		return nil, err
 	}
 
-	asset := Asset{
+	asset := &Asset{
 		ID:      assetID,
 		DataMap: make(DataMap),
 	}
@@ -49,72 +62,100 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 	switch testID {
 	case SetFilePathTest:
 		testCase := "valid"
-		data := make(map[string]interface{})
-		data["asset"] = asset
-		data["asset_type"] = "testType"
-		data["asset_extension"] = ".jpg"
-		expected := make(map[string]interface{})
-		expected["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
-		expected["error"] = nil
+		expected := AssetExpectedData{
+			data: fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String()),
+			err:  nil,
+		}
+		input := AssetInputData{
+			asset:          *asset,
+			assetType:      "testType",
+			assetExtension: ".jpg",
+		}
+
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     nil,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case GetFilePathTest:
 		testCase := "valid_key_uuid"
 		defaultPath := "default/default.jpg"
-		expected := make(map[string]interface{})
-		expected["data"] = fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
-		expected["error"] = nil
-		data := make(map[string]interface{})
-		data["asset_type"] = "testType"
-		data["default_path"] = defaultPath
-		asset.DataMap[data["asset_type"].(string)] = expected["data"].(string)
-		data["asset"] = asset
+		assetType := "testType"
+		returnPath := fmt.Sprintf("%s/%s.jpg", baseAssetPath, referenceID.String())
+		asset.DataMap[assetType] = returnPath
+		expected := AssetExpectedData{
+			data: returnPath,
+			err:  nil,
+		}
+		input := AssetInputData{
+			asset:       *asset,
+			assetType:   assetType,
+			defaultData: defaultPath,
+		}
+
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     nil,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_asset_type"
-		data = make(map[string]interface{})
-		data["asset"] = asset
-		data["default_path"] = defaultPath
-		data["asset_type"] = "testType2"
-		expected = make(map[string]interface{})
-		expected["data"] = defaultPath
-		expected["error"] = nil
+		expected = AssetExpectedData{
+			data: defaultPath,
+			err:  nil,
+		}
+		input = AssetInputData{
+			asset:       *asset,
+			assetType:   "testType2",
+			defaultData: defaultPath,
+		}
+
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     nil,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case GetFieldTest:
 		testCase := "valid_url"
-		expected := "https://success.com"
-		data := make(map[string]interface{})
-		data["asset_type"] = "testType"
-		asset.DataMap[data["asset_type"].(string)] = expected
-		data["asset"] = asset
-		data["default_url"] = expected
+		url := "https://success.com"
+		assetType := "testType"
+		asset.DataMap[assetType] = url
+		expected := AssetExpectedData{
+			data: url,
+		}
+		input := AssetInputData{
+			asset:       *asset,
+			assetType:   assetType,
+			defaultData: url,
+		}
+
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
+			Data:     input,
+			Mock:     nil,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "invalid_url"
 		defaultURL := "https://default.com"
-		data = make(map[string]interface{})
-		data["asset_type"] = "testType2"
-		asset.DataMap[data["asset_type"].(string)] = defaultURL
-		data["asset"] = asset
-		data["default_url"] = defaultURL
+		assetType = "testType2"
+		asset.DataMap[assetType] = defaultURL
+		expected = AssetExpectedData{
+			data: defaultURL,
+		}
+		input = AssetInputData{
+			asset:       *asset,
+			assetType:   assetType,
+			defaultData: defaultURL,
+		}
+
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     data,
-			Expected: defaultURL,
+			Data:     input,
+			Mock:     nil,
+			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 	case NewAssetTest:
@@ -122,25 +163,41 @@ func createAssetTestData(testID int) (*test.OrderedTests, error) {
 		ModelFunctions.UUIDImpl = &UUIDImplMock{
 			uuidMock: asset.ID,
 		}
-		expected := make(map[string]interface{})
-		expected["data"] = &asset
-		expected["error"] = nil
+		expected := AssetExpectedData{
+			asset: &Asset{
+				ID:      assetID,
+				DataMap: make(DataMap),
+			},
+			err: nil,
+		}
+		expected.asset.DataMap[BaseAssetPath] = baseAssetPath
+		input := AssetInputData{
+			asset: *asset,
+		}
+
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     asset.DataMap,
+			Data:     input,
+			Mock:     nil,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
 
 		testCase = "nil_reference"
-		var nilRef DataMap
 		ModelFunctions.UUIDImpl = &UUIDImplMock{
 			uuidMock: asset.ID,
 		}
-		expected = make(map[string]interface{})
-		expected["data"] = nil
-		expected["error"] = ErrAssetRefNotInitialised
+		expected = AssetExpectedData{
+			asset: nil,
+			err:   ErrAssetRefNotInitialised,
+		}
+		asset.DataMap = nil
+		input = AssetInputData{
+			asset: *asset,
+		}
+
 		dataSet.TestDataSet[testCase] = test.Data{
-			Data:     nilRef,
+			Data:     input,
+			Mock:     nil,
 			Expected: expected,
 		}
 		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
@@ -162,23 +219,17 @@ func TestSetFilePath(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			expectedData := testCase.Expected.(map[string]interface{})["data"].(string)
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
-			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
-			assetExtension := testCase.Data.(map[string]interface{})["asset_extension"].(string)
-			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
+			expectedData := testCase.Expected.(AssetExpectedData)
+			inputData := testCase.Data.(AssetInputData)
 
-			err = ModelFunctions.SetFilePath(&asset, assetType, assetExtension)
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, testCase.Expected)
+			err = ModelFunctions.SetFilePath(&inputData.asset, inputData.assetType, inputData.assetExtension)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err)
 				return
 			}
 
-			if diff := pretty.Diff(asset.DataMap[assetType], expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, asset.DataMap[assetType], expectedData, diff)
+			if diff := pretty.Diff(inputData.asset.DataMap[inputData.assetType], expectedData.data); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, inputData.asset.DataMap[inputData.assetType], expectedData.data, diff)
 				return
 			}
 		})
@@ -198,14 +249,12 @@ func TestGetFilePath(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			expectedData := testCase.Expected.(map[string]interface{})["data"].(string)
-			defaultPath := testCase.Data.(map[string]interface{})["default_path"].(string)
-			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
-			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
+			expectedData := testCase.Expected.(AssetExpectedData)
+			inputData := testCase.Data.(AssetInputData)
 
-			output := ModelFunctions.GetFilePath(&asset, assetType, defaultPath)
-			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			output := ModelFunctions.GetFilePath(&inputData.asset, inputData.assetType, inputData.defaultData)
+			if diff := pretty.Diff(output, expectedData.data); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.data, diff)
 				return
 			}
 		})
@@ -225,14 +274,12 @@ func TestGetField(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			expectedData := testCase.Expected.(string)
-			assetType := testCase.Data.(map[string]interface{})["asset_type"].(string)
-			defaultURL := testCase.Data.(map[string]interface{})["default_url"].(string)
-			asset := testCase.Data.(map[string]interface{})["asset"].(Asset)
+			expectedData := testCase.Expected.(AssetExpectedData)
+			inputData := testCase.Data.(AssetInputData)
 
-			output := ModelFunctions.GetField(&asset, assetType, defaultURL)
-			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			output := ModelFunctions.GetField(&inputData.asset, inputData.assetType, inputData.defaultData)
+			if diff := pretty.Diff(output, expectedData.data); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.data, diff)
 				return
 			}
 		})
@@ -252,28 +299,21 @@ func TestNewAsset(t *testing.T) {
 		testCaseString := testCaseString
 		t.Run(testCaseString, func(t *testing.T) {
 			testCase := dataSet.TestDataSet[testCaseString]
-			var expectedData *Asset
-			if testCase.Expected.(map[string]interface{})["data"] != nil {
-				expectedData = testCase.Expected.(map[string]interface{})["data"].(*Asset)
-			}
-			references := testCase.Data.(DataMap)
-			var expectedError error
-			if testCase.Expected.(map[string]interface{})["error"] != nil {
-				expectedError = testCase.Expected.(map[string]interface{})["error"].(error)
-			}
+			expectedData := testCase.Expected.(AssetExpectedData)
+			inputData := testCase.Data.(AssetInputData)
 
 			output, err := ModelFunctions.NewAsset(
-				references,
+				inputData.asset.DataMap,
 				func(*uuid.UUID) (string, error) {
 					return "test/path", nil
 				})
-			if diff := pretty.Diff(output, expectedData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData, diff)
+			if diff := pretty.Diff(output, expectedData.asset); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, output, expectedData.asset, diff)
 				return
 			}
 
-			if diff := pretty.Diff(err, expectedError); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedError, diff)
+			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
+				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
