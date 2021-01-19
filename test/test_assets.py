@@ -7,8 +7,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProductUpdateDetails",
-        "public": True
+        "name": "testProductUpdateDetails"
       },
       "user": {
         "name": "testUserOwnerUpdateDetails",
@@ -75,8 +74,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProductUpdateAssets",
-        "public": True
+        "name": "testProductUpdateAssets"
       },
       "user": {
         "name": "testUserOwnerUpdateAssets",

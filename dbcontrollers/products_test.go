@@ -69,7 +69,6 @@ func createProductTestData() (*test.OrderedTests, error) {
 
 	product := &models.Product{
 		Name:      "testProduct",
-		Public:    true,
 		ID:        productID,
 		DetailsID: assetID,
 		AssetsID:  assetID,
@@ -89,7 +88,6 @@ func createProductTestData() (*test.OrderedTests, error) {
 	productData := &models.ProductData{
 		ID:      product.ID,
 		Name:    product.Name,
-		Public:  product.Public,
 		Details: assets,
 		Assets:  assets,
 	}
@@ -335,7 +333,6 @@ func TestCreateProduct(t *testing.T) {
 
 			output, err := dbController.CreateProduct(
 				inputData.productData.Name,
-				inputData.productData.Public,
 				&inputData.userID,
 				func(*uuid.UUID) (string, error) {
 					return "testPath", nil

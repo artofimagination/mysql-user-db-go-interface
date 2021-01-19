@@ -50,7 +50,7 @@ func (c *MYSQLController) validateOwnership(users *models.ProductUserIDs) error 
 	return nil
 }
 
-func (c *MYSQLController) CreateProduct(name string, public bool, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProductData, error) {
+func (c *MYSQLController) CreateProduct(name string, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProductData, error) {
 	references := make(models.DataMap)
 	asset, err := c.ModelFunctions.NewAsset(references, generateAssetPath)
 	if err != nil {
@@ -63,7 +63,7 @@ func (c *MYSQLController) CreateProduct(name string, public bool, owner *uuid.UU
 		return nil, err
 	}
 
-	product, err := c.ModelFunctions.NewProduct(name, public, &productDetails.ID, &asset.ID)
+	product, err := c.ModelFunctions.NewProduct(name, &productDetails.ID, &asset.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,6 @@ func (c *MYSQLController) CreateProduct(name string, public bool, owner *uuid.UU
 	productData := models.ProductData{
 		ID:      product.ID,
 		Name:    product.Name,
-		Public:  product.Public,
 		Details: productDetails,
 		Assets:  asset,
 	}
@@ -197,7 +196,6 @@ func (c *MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData,
 	productData := models.ProductData{
 		ID:      product.ID,
 		Name:    product.Name,
-		Public:  product.Public,
 		Details: details,
 		Assets:  assets,
 	}
@@ -310,7 +308,6 @@ func (c *MYSQLController) GetProducts(productIDs []uuid.UUID) ([]models.ProductD
 		productData := models.ProductData{
 			ID:      product.ID,
 			Name:    product.Name,
-			Public:  product.Public,
 			Details: &details[index],
 			Assets:  &assets[index],
 		}

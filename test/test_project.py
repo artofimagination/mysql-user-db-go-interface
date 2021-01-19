@@ -9,7 +9,6 @@ createTestData = [
       {
       "product": {
         "name": "testProductAddProject",
-        "public": True
       },
       "user": {
         "name": "testUserOwnerAddProject",
@@ -77,8 +76,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProductGetProject",
-        "public": True
+        "name": "testProductGetProject"
       },
       "user": {
         "name": "testUserOwnerGetProject",
@@ -99,8 +97,7 @@ createTestData = [
     # Input data
     ({
       "product": {
-        "name": "testProductGetProjectMissing",
-        "public": True
+        "name": "testProductGetProjectMissing"
       },
       "user": {
         "name": "testUserOwnerGetProjectMissing",
@@ -152,8 +149,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProductGetProjectMultiple",
-        "public": True
+        "name": "testProductGetProjectMultiple"
       },
       "user": {
         "name": "testUserOwnerGetProjectMultiple",
@@ -182,8 +178,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProductGetProjectMultiple2",
-        "public": True
+        "name": "testProductGetProjectMultiple2"
       },
       "user": {
         "name": "testUserOwnerGetProjectMultiple2",
@@ -207,8 +202,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProductGetProjectMultiple3",
-        "public": True
+        "name": "testProductGetProjectMultiple3"
       },
       "user": {
         "name": "testUserOwnerGetProjectMultiple3",
@@ -287,8 +281,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProductDeleteProject",
-        "public": True
+        "name": "testProductDeleteProject"
       },
       "user": {
         "name": "testUserOwnerDeleteProject",
@@ -306,8 +299,7 @@ createTestData = [
     # Input data
     ({
       "product": {
-        "name": "testProductDeleteProjectMissing",
-        "public": True
+        "name": "testProductDeleteProjectMissing"
       },
       "user": {
         "name": "testUserOwnerDeleteProjectMissing",

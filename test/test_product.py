@@ -8,8 +8,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProduct",
-        "public": True
+        "name": "testProduct"
       },
       "user": {
         "name": "testUserOwner",
@@ -19,15 +18,13 @@ createTestData = [
     },
     # Expected
     { 
-      "Name":"testProduct",
-      "Public": True,
+      "Name":"testProduct"
     }),
 
     # Input data
     ({
       "product": {
-        "name": "testProduct",
-        "public": True
+        "name": "testProduct"
       },
       "user": {
         "name": "testUserOwner2",
@@ -41,8 +38,7 @@ createTestData = [
     # Input data
     ({
       "product": {
-        "name": "testProductMissingUser",
-        "public": True
+        "name": "testProductMissingUser"
       },
       "user_id": "c34a7368-344a-11eb-adc1-0242ac120002"
     },
@@ -70,8 +66,7 @@ def test_CreateProduct(httpConnection, data, expected):
 
   if r.status_code == 201:
     response = json.loads(r.text)
-    if response["Name"] != expected["Name"] or \
-      response["Public"] != expected["Public"]:
+    if response["Name"] != expected["Name"]:
       pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
       return
   elif r.status_code == 202:
@@ -87,8 +82,7 @@ createTestData = [
     # Input data
     ({
       "product": {
-        "name": "testProductGet",
-        "public": True
+        "name": "testProductGet"
       },
       "user": {
         "name": "testUserOwnerGet",
@@ -99,7 +93,6 @@ createTestData = [
     # Expected
     { 
       'Name': 'testProductGet',
-      'Public': True,
       'base_asset_path': 'testPath'
     }),
 
@@ -139,7 +132,6 @@ def test_GetProduct(httpConnection, data, expected):
     response = json.loads(r.text)
     try:
       if response["Name"] != expected["Name"] or \
-        response["Public"] != expected["Public"] or \
         "base_asset_path" not in response["Assets"]["DataMap"] or \
         response["Assets"]["DataMap"]["base_asset_path"] != "testPath" or \
         "base_asset_path" not in response["Details"]["DataMap"] or \
@@ -160,12 +152,10 @@ createTestData = [
     # Input data
     ({
       "product": [{
-        "name": "testProductGetMultiple1",
-        "public": True
+        "name": "testProductGetMultiple1"
       },
       {
-        "name": "testProductGetMultiple2",
-        "public": True
+        "name": "testProductGetMultiple2"
       }],
       "user": {
         "name": "testUserOwnerGetMultiple",
@@ -176,20 +166,17 @@ createTestData = [
     # Expected
     [{ 
       'Name': 'testProductGetMultiple1',
-      'Public': True,
       'base_asset_path': 'testPath'
     },
     { 
       'Name': 'testProductGetMultiple2',
-      'Public': True,
       'base_asset_path': 'testPath'
     }]),
 
     # Input data
     ({
       "product": [{
-        "name": "testProductGetMultipleFail",
-        "public": True
+        "name": "testProductGetMultipleFail"
       },
       {
         "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
@@ -203,7 +190,6 @@ createTestData = [
     # Expected
     [{ 
       'Name': 'testProductGetMultipleFail',
-      'Public': True,
       'base_asset_path': 'testPath'
     }]),
 
@@ -266,7 +252,6 @@ def test_GetProducts(httpConnection, data, expected):
     try:
       for index, product in enumerate(response):
         if product["Name"] != expected[index]["Name"] or \
-          product["Public"] != expected[index]["Public"] or \
           "base_asset_path" not in product["Assets"]["DataMap"] or \
           product["Assets"]["DataMap"]["base_asset_path"] != "testPath" or \
           "base_asset_path" not in product["Details"]["DataMap"] or \
@@ -287,8 +272,7 @@ createTestData = [
     (# Input data
       {
       "product": {
-        "name": "testProductDeleteProduct",
-        "public": True
+        "name": "testProductDeleteProduct"
       },
       "user": {
         "name": "testUserOwnerDeleteProduct",
