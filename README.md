@@ -65,6 +65,7 @@ To run functional testing using the example code run ```./runFunctionalTest.sh``
 Note: Functional testing requires python 3.8 or newer
 
 Once the example main-server is running the user can do the following using the curl command:
+
 User commands
 - add new user (will print the created user UUID): ```curl -i -X POST -H 'Content-Type: application/json' -d '{ "name": "test", "email": "test@test.com","password": "test"}' http://localhost:8080/add-user```
 - get user by id (UUID): ```curl -i -X GET http://localhost:8080/get-user?id=c34a7368-344a-11eb-adc1-0242ac120002```
@@ -76,6 +77,10 @@ User commands
 - authenticate: ```http://localhost:8080/authenticate?id=c34a7368-344a-11eb-adc1-0242ac120002&email=test@test.com&password=testPass```
 
 Product commands
+To be filled in
+
+Project commands
+To be filled in
 
 # Database
 ## Entity relation
