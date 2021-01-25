@@ -34,6 +34,20 @@ func (i *ModelMock) NewAsset(references models.DataMap, generatePath func(assetI
 	return i.asset, i.err
 }
 
+func (i *ModelMock) GetFilePath(asset *models.Asset, typeString string, defaultPath string) string {
+	return ""
+}
+func (i *ModelMock) SetFilePath(asset *models.Asset, typeString string, extension string) error {
+	return i.err
+}
+func (i *ModelMock) GetField(asset *models.Asset, typeString string, defaultURL string) string {
+	return ""
+}
+func (i *ModelMock) SetField(asset *models.Asset, typeString string, field interface{}) {}
+func (i *ModelMock) ClearAsset(asset *models.Asset, typeString string) error {
+	return i.err
+}
+
 func (i *ModelMock) NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*models.Project, error) {
 	return i.project, i.err
 }

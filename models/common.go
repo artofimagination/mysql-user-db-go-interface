@@ -21,6 +21,11 @@ type ModelFunctionsCommon interface {
 		assetsID uuid.UUID) (*User, error)
 	NewProduct(name string, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Product, error)
 	NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error)
+	GetFilePath(asset *Asset, typeString string, defaultPath string) string
+	SetFilePath(asset *Asset, typeString string, extension string) error
+	GetField(asset *Asset, typeString string, defaultURL string) string
+	SetField(asset *Asset, typeString string, field interface{})
+	ClearAsset(asset *Asset, typeString string) error
 }
 
 type UUIDCommon interface {
