@@ -47,7 +47,7 @@ The database can be used as a **store for webshops, platforms that allow users t
   +--------------------+------------+------+-----+-------------------+-------------------+
   
 # Usage
-It is recommended to call only the dbcontrollers functions using it in third party code.
+It is recommended to call only the dbcontrollers functions using it in third party code. Alternatively, the example main.go can be used to start a rest service to access the database.
 
 ## Build
 - Run ```docker-compose up --build --force-recreate -d main-server``` to generate and start all containers.
