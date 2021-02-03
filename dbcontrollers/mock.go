@@ -77,6 +77,7 @@ type DBFunctionMock struct {
 	userAdded            bool
 	product              *models.Product
 	project              *models.Project
+	projects             []models.Project
 	productAdded         bool
 	projectAdded         bool
 	productDeleted       bool
@@ -207,6 +208,10 @@ func (i *DBFunctionMock) DeleteProject(projectID *uuid.UUID, tx *sql.Tx) error {
 
 func (i *DBFunctionMock) GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProjectIDs, error) {
 	return i.userProjects, i.err
+}
+
+func (i *DBFunctionMock) GetProductProjects(productID *uuid.UUID, tx *sql.Tx) ([]models.Project, error) {
+	return i.projects, i.err
 }
 
 func (i *DBFunctionMock) GetProjectsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Project, error) {

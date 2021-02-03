@@ -61,6 +61,7 @@ type FunctionsCommon interface {
 	DeleteProject(projectID *uuid.UUID, tx *sql.Tx) error
 	DeleteProjectsByProductID(productID *uuid.UUID, tx *sql.Tx) error
 	GetProjectsByIDs(IDs []uuid.UUID, tx *sql.Tx) ([]models.Project, error)
+	GetProductProjects(productID *uuid.UUID, tx *sql.Tx) ([]models.Project, error)
 
 	GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProjectIDs, error)
 	UpdateUsersProjects(userID *uuid.UUID, projectID *uuid.UUID, privilege int, tx *sql.Tx) error

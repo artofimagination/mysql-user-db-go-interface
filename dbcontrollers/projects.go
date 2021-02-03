@@ -221,6 +221,23 @@ func (c *MYSQLController) GetProjectsByUserID(userID *uuid.UUID) ([]models.UserP
 	return projects, c.DBConnector.Commit(tx)
 }
 
+func (c *MYSQLController) GetProjectsByProductID(productID *uuid.UUID) ([]models.Project, error) {
+	tx, err := c.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	projects, err := c.DBFunctions.GetProductProjects(productID, tx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrNoProjectsForUser
+		}
+		return nil, err
+	}
+
+	return projects, c.DBConnector.Commit(tx)
+}
+
 func (c *MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectData, error) {
 	if len(projectIDs) == 0 {
 		return nil, ErrEmptyProjectIDList

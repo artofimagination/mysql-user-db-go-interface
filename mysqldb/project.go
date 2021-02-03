@@ -181,6 +181,35 @@ func (*MYSQLFunctions) GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models
 	return userProjects, nil
 }
 
+var GetProductProjectsQuery = "SELECT BIN_TO_UUID(id), BIN_TO_UUID(products_id), BIN_TO_UUID(project_details_id), BIN_TO_UUID(project_assets_id) FROM projects where products_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) GetProductProjects(productID *uuid.UUID, tx *sql.Tx) ([]models.Project, error) {
+	projects := make([]models.Project, 0)
+	rows, err := tx.Query(GetProductProjectsQuery, productID)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, sql.ErrNoRows
+	case err != nil:
+		return nil, RollbackWithErrorStack(tx, err)
+	default:
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		project := models.Project{}
+		err := rows.Scan(&project.ID, &project.ProductID, &project.DetailsID, &project.AssetsID)
+		if err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		projects = append(projects, project)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+	return projects, nil
+}
+
 var DeleteProjectQuery = "DELETE FROM projects where id = UUID_TO_BIN(?)"
 
 func (*MYSQLFunctions) DeleteProject(projectID *uuid.UUID, tx *sql.Tx) error {
