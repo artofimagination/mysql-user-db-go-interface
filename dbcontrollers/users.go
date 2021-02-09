@@ -17,8 +17,8 @@ var ErrInvalidEmailOrPasswd = errors.New("Invalid email or password")
 var ErrNoProductsForUser = errors.New("This user has no products")
 var ErrNoProjectsForUser = errors.New("This user has no projects")
 var ErrProductUserNotAssociated = errors.New("Unable to associate the product with the selected user")
-var ErrMissingUserSettings = errors.New("Settings for the selected user not found")
-var ErrMissingUserAssets = errors.New("Assets for the selected user not found")
+var ErrNoUserSetttingsUpdate = errors.New("Settings for the selected user not found or no change happened")
+var ErrNoUserAssetsUpdate = errors.New("Assets for the selected user not found or no change happened")
 var ErrEmptyUserIDList = errors.New("Request does not contain any user identifiers")
 
 func (c *MYSQLController) CreateUser(
@@ -306,7 +306,7 @@ func (c *MYSQLController) GetUsers(userIDs []uuid.UUID) ([]models.UserData, erro
 func (c *MYSQLController) UpdateUserSettings(userData *models.UserData) error {
 	if err := c.DBFunctions.UpdateAsset(mysqldb.UserSettings, userData.Settings); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.UserSettings).Error() == err.Error() {
-			return ErrMissingUserSettings
+			return ErrNoUserSetttingsUpdate
 		}
 		return err
 	}
@@ -316,7 +316,7 @@ func (c *MYSQLController) UpdateUserSettings(userData *models.UserData) error {
 func (c *MYSQLController) UpdateUserAssets(userData *models.UserData) error {
 	if err := c.DBFunctions.UpdateAsset(mysqldb.UserAssets, userData.Assets); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.UserAssets).Error() == err.Error() {
-			return ErrMissingUserAssets
+			return ErrNoUserAssetsUpdate
 		}
 		return err
 	}

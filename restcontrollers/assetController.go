@@ -35,7 +35,7 @@ func (c *RESTController) updateUserSettings(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrMissingUserSettings.Error() {
+	if err.Error() == dbcontrollers.ErrNoUserSetttingsUpdate.Error() {
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
@@ -71,7 +71,7 @@ func (c *RESTController) updateUserAssets(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrMissingUserAssets.Error() {
+	if err.Error() == dbcontrollers.ErrNoUserAssetsUpdate.Error() {
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
@@ -107,7 +107,7 @@ func (c *RESTController) updateProductDetails(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrMissingProductDetail.Error() {
+	if err.Error() == dbcontrollers.ErrNoProductDetailUpdate.Error() {
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
@@ -143,7 +143,7 @@ func (c *RESTController) updateProductAssets(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrMissingProductAsset.Error() {
+	if err.Error() == dbcontrollers.ErrNoProductAssetUpdate.Error() {
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
