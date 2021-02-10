@@ -185,13 +185,9 @@ var GetProductProjectsQuery = "SELECT BIN_TO_UUID(id), BIN_TO_UUID(products_id),
 
 func (*MYSQLFunctions) GetProductProjects(productID *uuid.UUID, tx *sql.Tx) ([]models.Project, error) {
 	projects := make([]models.Project, 0)
-	rows, err := tx.Query(GetProductProjectsQuery, productID)
-	switch {
-	case err == sql.ErrNoRows:
-		return nil, sql.ErrNoRows
-	case err != nil:
+	rows, err := tx.Query(GetProductProjectsQuery, &productID)
+	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
-	default:
 	}
 
 	defer rows.Close()
@@ -207,6 +203,11 @@ func (*MYSQLFunctions) GetProductProjects(productID *uuid.UUID, tx *sql.Tx) ([]m
 	if err != nil {
 		return nil, RollbackWithErrorStack(tx, err)
 	}
+
+	if len(projects) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
 	return projects, nil
 }
 

@@ -226,39 +226,18 @@ def test_GetProjects(httpConnection, data, expected):
   uuidList = list()
   userUUID = addUser(data, httpConnection)
   if userUUID is None:
+    pytest.fail(f"Failed to create user")
     return
 
   productUUID = addProduct(data, userUUID, httpConnection)
   if productUUID is None:
+    pytest.fail(f"Failed to create product")
     return
 
-  if "project" in data:
-    for element in data["project"]:
-      if "name" in element:
-        dataToSend = dict()
-        dataToSend["project"] = element
-        if userUUID is None:
-          pytest.fail(f"Missing user test data")
-          return
-        dataToSend["owner_id"] = userUUID
-        if productUUID is None:
-          pytest.fail(f"Missing product test data")
-          return None
-        dataToSend["product_id"] = productUUID
-        try:
-          r = httpConnection.POST("/add-project", dataToSend)
-        except Exception as e:
-          pytest.fail(f"Failed to send POST request")
-          return
-
-        if r.status_code != 201:
-          pytest.fail(f"Failed to run test.\nDetails: {r.text}")
-          return
-
-        response = json.loads(r.text)
-        uuidList.append(response["ID"])
-      else:
-        uuidList.append(element["id"])
+  uuidList = addProjects(data, userUUID, productUUID, httpConnection)
+  if uuidList is None:
+    pytest.fail(f"Failed to create projects")
+    return
 
   try:
     r = httpConnection.GET("/get-projects", {"ids": uuidList})
@@ -331,23 +310,20 @@ createTestData = [
       "visibility": "Public"
     }]
     ),
-    (# Input data
+    
+    ( # Input data
       {
-      "product": {
-        "name": "testProductGetProductProjects3"
-      },
       "user": {
         "name": "testUserOwnerGetProductProjects3",
         "email": "testEmailOwnerGetProductProjects3",
         "password": "testPassword"
       },
-      "project": [
-      {
-        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
-      }]
+      "product": {
+        "name": "testProductGetProductProjects3"
+      },
     },
     # Expected
-    "The selected project not found"
+    "No projects for this product"
     )
 ]
 
@@ -358,10 +334,17 @@ def test_GetProductProjects(httpConnection, data, expected):
   uuidList = list()
   userUUID = addUser(data, httpConnection)
   if userUUID is None:
+    pytest.fail(f"Failed to create user")
     return
 
   productUUID = addProduct(data, userUUID, httpConnection)
   if productUUID is None:
+    pytest.fail(f"Failed to create product")
+    return
+
+  uuidList = addProjects(data, userUUID, productUUID, httpConnection)
+  if uuidList is None:
+    pytest.fail(f"Failed to create projects")
     return
 
   try:

@@ -12,6 +12,7 @@ import (
 
 var ErrProjectExistsString = "Project with name %s already exists"
 var ErrProjectNotFound = errors.New("The selected project not found")
+var ErrNoProjectForProduct = errors.New("No projects for this product")
 var ErrMissingProjectDetail = errors.New("Details for the selected project not found")
 var ErrMissingProjectAsset = errors.New("Assets for the selected project not found")
 var ErrEmptyProjectIDList = errors.New("Request does not contain any project identifiers")
@@ -221,7 +222,38 @@ func (c *MYSQLController) GetProjectsByUserID(userID *uuid.UUID) ([]models.UserP
 	return projects, c.DBConnector.Commit(tx)
 }
 
-func (c *MYSQLController) GetProjectsByProductID(productID *uuid.UUID) ([]models.Project, error) {
+func (c *MYSQLController) buildProjectData(projects []models.Project, tx *sql.Tx) ([]models.ProjectData, error) {
+	projectDataList := make([]models.ProjectData, len(projects))
+	assetIDs := make([]uuid.UUID, 0)
+	detailsIDs := make([]uuid.UUID, 0)
+	for _, project := range projects {
+		assetIDs = append(assetIDs, project.AssetsID)
+		detailsIDs = append(detailsIDs, project.DetailsID)
+	}
+
+	details, err := c.DBFunctions.GetAssets(mysqldb.ProjectDetails, detailsIDs, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	assets, err := c.DBFunctions.GetAssets(mysqldb.ProjectAssets, assetIDs, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	for index, project := range projects {
+		projectData := models.ProjectData{
+			ID:        project.ID,
+			ProductID: project.ProductID,
+			Details:   &details[index],
+			Assets:    &assets[index],
+		}
+		projectDataList[index] = projectData
+	}
+	return projectDataList, nil
+}
+
+func (c *MYSQLController) GetProjectsByProductID(productID *uuid.UUID) ([]models.ProjectData, error) {
 	tx, err := c.DBConnector.ConnectSystem()
 	if err != nil {
 		return nil, err
@@ -230,12 +262,17 @@ func (c *MYSQLController) GetProjectsByProductID(productID *uuid.UUID) ([]models
 	projects, err := c.DBFunctions.GetProductProjects(productID, tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, ErrNoProjectsForUser
+			return nil, ErrNoProjectForProduct
 		}
 		return nil, err
 	}
 
-	return projects, c.DBConnector.Commit(tx)
+	projectDataList, err := c.buildProjectData(projects, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	return projectDataList, c.DBConnector.Commit(tx)
 }
 
 func (c *MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectData, error) {
@@ -259,32 +296,9 @@ func (c *MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectD
 		return nil, err
 	}
 
-	assetIDs := make([]uuid.UUID, 0)
-	detailsIDs := make([]uuid.UUID, 0)
-	for _, product := range projects {
-		assetIDs = append(assetIDs, product.AssetsID)
-		detailsIDs = append(detailsIDs, product.DetailsID)
-	}
-
-	details, err := c.DBFunctions.GetAssets(mysqldb.ProjectDetails, detailsIDs, tx)
+	projectDataList, err := c.buildProjectData(projects, tx)
 	if err != nil {
 		return nil, err
-	}
-
-	assets, err := c.DBFunctions.GetAssets(mysqldb.ProjectAssets, assetIDs, tx)
-	if err != nil {
-		return nil, err
-	}
-
-	projectDataList := make([]models.ProjectData, len(projects))
-	for index, project := range projects {
-		projectData := models.ProjectData{
-			ID:        project.ID,
-			ProductID: project.ProductID,
-			Details:   &details[index],
-			Assets:    &assets[index],
-		}
-		projectDataList[index] = projectData
 	}
 
 	return projectDataList, c.DBConnector.Commit(tx)

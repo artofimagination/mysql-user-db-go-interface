@@ -67,3 +67,34 @@ def addProject(data, userUUID, productUUID, httpConnection):
     return response["ID"]
   else:
     return data["id"]
+
+def addProjects(data, userUUID, productUUID, httpConnection):
+  uuidList = list()
+  if "project" in data:
+    for element in data["project"]:
+      if "name" in element:
+        dataToSend = dict()
+        dataToSend["project"] = element
+        if userUUID is None:
+          pytest.fail(f"Missing user test data")
+          return None
+        dataToSend["owner_id"] = userUUID
+        if productUUID is None:
+          pytest.fail(f"Missing product test data")
+          return None
+        dataToSend["product_id"] = productUUID
+        try:
+          r = httpConnection.POST("/add-project", dataToSend)
+        except Exception as e:
+          pytest.fail(f"Failed to send POST request")
+          return None
+
+        if r.status_code != 201:
+          pytest.fail(f"Failed to run test.\nDetails: {r.text}")
+          return None
+
+        response = json.loads(r.text)
+        uuidList.append(response["ID"])
+      else:
+        uuidList.append(element["id"])
+  return uuidList

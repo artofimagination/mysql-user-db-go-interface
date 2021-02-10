@@ -176,12 +176,12 @@ func (c *RESTController) getProductProjects(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
+	if err.Error() == dbcontrollers.ErrNoProjectForProduct.Error() {
 		w.WriteHeader(http.StatusAccepted)
 		fmt.Fprint(w, err.Error())
 		return
 	}
-	err = errors.Wrap(errors.WithStack(err), "Failed to get projects")
+	err = errors.Wrap(errors.WithStack(err), "Failed to get product projects")
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprint(w, err.Error())
 }
