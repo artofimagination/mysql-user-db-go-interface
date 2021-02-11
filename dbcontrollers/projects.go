@@ -13,8 +13,8 @@ import (
 var ErrProjectExistsString = "Project with name %s already exists"
 var ErrProjectNotFound = errors.New("The selected project not found")
 var ErrNoProjectForProduct = errors.New("No projects for this product")
-var ErrMissingProjectDetail = errors.New("Details for the selected project not found")
-var ErrMissingProjectAsset = errors.New("Assets for the selected project not found")
+var ErrNoProjectDetailsUpdate = errors.New("Details for the selected project not found or no change happened")
+var ErrNoProjectAssetsUpdate = errors.New("Assets for the selected project not found or no change happened")
 var ErrEmptyProjectIDList = errors.New("Request does not contain any project identifiers")
 
 func (c *MYSQLController) CreateProject(name string, visibility string, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
@@ -163,7 +163,7 @@ func (c *MYSQLController) GetProject(projectID *uuid.UUID) (*models.ProjectData,
 func (c *MYSQLController) UpdateProjectDetails(projectData *models.ProjectData) error {
 	if err := c.DBFunctions.UpdateAsset(mysqldb.ProjectDetails, projectData.Details); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProjectDetails).Error() == err.Error() {
-			return ErrMissingProjectDetail
+			return ErrNoProjectDetailsUpdate
 		}
 		return err
 	}
@@ -173,7 +173,7 @@ func (c *MYSQLController) UpdateProjectDetails(projectData *models.ProjectData) 
 func (c *MYSQLController) UpdateProjectAssets(projectData *models.ProjectData) error {
 	if err := c.DBFunctions.UpdateAsset(mysqldb.ProjectAssets, projectData.Assets); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProjectAssets).Error() == err.Error() {
-			return ErrMissingProjectAsset
+			return ErrNoProjectAssetsUpdate
 		}
 		return err
 	}

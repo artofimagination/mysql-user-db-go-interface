@@ -151,3 +151,75 @@ func (c *RESTController) updateProductAssets(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprint(w, err.Error())
 }
+
+func (c *RESTController) updateProjectDetails(w http.ResponseWriter, r *http.Request) {
+	log.Println("Update project details")
+	data, err := decodePostData(w, r)
+	if err != nil {
+		return
+	}
+
+	projectData, err := parseProjectData(data)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Failed to get product")
+	}
+
+	err = c.DBController.UpdateProjectDetails(projectData)
+	if err == nil {
+		statusCode, err := c.validateProject(projectData)
+		if err != nil {
+			w.WriteHeader(statusCode)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+
+		w.WriteHeader(statusCode)
+		fmt.Fprint(w, "Project details updated")
+		return
+	}
+
+	if err.Error() == dbcontrollers.ErrNoProjectDetailsUpdate.Error() {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
+}
+
+func (c *RESTController) updateProjectAssets(w http.ResponseWriter, r *http.Request) {
+	log.Println("Update project assets")
+	data, err := decodePostData(w, r)
+	if err != nil {
+		return
+	}
+
+	projectData, err := parseProjectData(data)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "Failed to get product")
+	}
+
+	err = c.DBController.UpdateProjectAssets(projectData)
+	if err == nil {
+		statusCode, err := c.validateProject(projectData)
+		if err != nil {
+			w.WriteHeader(statusCode)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+
+		w.WriteHeader(statusCode)
+		fmt.Fprint(w, "Project assets updated")
+		return
+	}
+
+	if err.Error() == dbcontrollers.ErrNoProjectAssetsUpdate.Error() {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
+}

@@ -7,9 +7,42 @@ import (
 	"net/http"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
+	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/pkg/errors"
 )
+
+func parseProjectData(data map[string]interface{}) (*models.ProjectData, error) {
+	projectData := &models.ProjectData{}
+	projectDataMap, ok := data["project"]
+	if !ok {
+		return nil, errors.New("Missing 'project'")
+	}
+
+	projectDataByte, err := json.Marshal(projectDataMap)
+	if err != nil {
+		return nil, errors.New("Invalid 'project json'")
+	}
+
+	if err := json.Unmarshal(projectDataByte, &projectData); err != nil {
+		return nil, errors.New("Invalid 'project'")
+	}
+
+	return projectData, nil
+}
+
+func (c *RESTController) validateProject(expected *models.ProjectData) (int, error) {
+	project, err := c.DBController.GetProject(&expected.ID)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	if diff := pretty.Diff(project, expected); len(diff) != 0 {
+		return http.StatusAccepted, errors.New("Failed to update project")
+	}
+	return http.StatusOK, nil
+}
 
 func (c *RESTController) addProject(w http.ResponseWriter, r *http.Request) {
 	log.Println("Adding project")
