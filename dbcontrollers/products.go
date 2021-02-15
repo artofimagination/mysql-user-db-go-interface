@@ -15,8 +15,8 @@ var ErrEmptyUsersList = errors.New("At least one product user is required")
 var ErrUnknownPrivilegeString = "Unknown privilege %d set for user %s"
 var ErrInvalidOwnerCount = errors.New("Product must have a single owner")
 var ErrProductNotFound = errors.New("The selected product not found")
-var ErrMissingProductDetail = errors.New("Details for the selected product not found")
-var ErrMissingProductAsset = errors.New("Assets for the selected product not found")
+var ErrNoProductDetailUpdate = errors.New("Details for the selected product not found or no change happened")
+var ErrNoProductAssetUpdate = errors.New("Assets for the selected product not found or no change happened")
 var ErrEmptyProductIDList = errors.New("Request does not contain any product identifiers")
 
 func (c *MYSQLController) validateOwnership(users *models.ProductUserIDs) error {
@@ -206,7 +206,7 @@ func (c *MYSQLController) GetProduct(productID *uuid.UUID) (*models.ProductData,
 func (c *MYSQLController) UpdateProductDetails(productData *models.ProductData) error {
 	if err := c.DBFunctions.UpdateAsset(mysqldb.ProductDetails, productData.Details); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProductDetails).Error() == err.Error() {
-			return ErrMissingProductDetail
+			return ErrNoProductDetailUpdate
 		}
 		return err
 	}
@@ -216,7 +216,7 @@ func (c *MYSQLController) UpdateProductDetails(productData *models.ProductData) 
 func (c *MYSQLController) UpdateProductAssets(productData *models.ProductData) error {
 	if err := c.DBFunctions.UpdateAsset(mysqldb.ProductAssets, productData.Assets); err != nil {
 		if fmt.Errorf(mysqldb.ErrAssetMissing, mysqldb.ProductAssets).Error() == err.Error() {
-			return ErrMissingProductAsset
+			return ErrNoProductAssetUpdate
 		}
 		return err
 	}

@@ -74,12 +74,12 @@ func (f *RepoFunctions) SetField(asset *Asset, typeString string, field interfac
 	asset.DataMap[typeString] = field
 }
 
-func (f *RepoFunctions) GetField(asset *Asset, typeString string, defaultURL string) string {
-	path, ok := asset.DataMap[typeString].(string)
+func (f *RepoFunctions) GetField(asset *Asset, typeString string, defaultValue string) interface{} {
+	field, ok := asset.DataMap[typeString]
 	if !ok {
-		return defaultURL
+		return defaultValue
 	}
-	return path
+	return field
 }
 
 func (f *RepoFunctions) ClearAsset(asset *Asset, typeString string) error {

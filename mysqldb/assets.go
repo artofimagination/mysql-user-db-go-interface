@@ -19,7 +19,7 @@ const (
 	ProjectAssets  = "project_assets"
 )
 
-var ErrAssetMissing = "This %s is missing"
+var ErrAssetMissing = "This %s is missing or old value is the same as new"
 
 var AddAssetQuery = "INSERT INTO %s (id, data) VALUES (UUID_TO_BIN(?), ?)"
 

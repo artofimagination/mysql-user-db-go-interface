@@ -40,7 +40,7 @@ func (i *ModelMock) GetFilePath(asset *models.Asset, typeString string, defaultP
 func (i *ModelMock) SetFilePath(asset *models.Asset, typeString string, extension string) error {
 	return i.err
 }
-func (i *ModelMock) GetField(asset *models.Asset, typeString string, defaultURL string) string {
+func (i *ModelMock) GetField(asset *models.Asset, typeString string, defaultURL string) interface{} {
 	return ""
 }
 func (i *ModelMock) SetField(asset *models.Asset, typeString string, field interface{}) {}

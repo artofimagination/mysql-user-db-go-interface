@@ -347,7 +347,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 			err:          sql.ErrNoRows,
 		}
 		mock.ExpectBegin()
-		mock.ExpectQuery(GetProductProjectsQuery).WithArgs(project.ProductID).WillReturnError(sql.ErrNoRows)
+		mock.ExpectQuery(GetProductProjectsQuery).WithArgs(project.ProductID).WillReturnRows(rows)
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     inputData,
 			Expected: expectedData,

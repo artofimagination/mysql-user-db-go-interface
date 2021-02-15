@@ -23,7 +23,7 @@ type ModelFunctionsCommon interface {
 	NewProject(productID *uuid.UUID, detailsID *uuid.UUID, assetsID *uuid.UUID) (*Project, error)
 	GetFilePath(asset *Asset, typeString string, defaultPath string) string
 	SetFilePath(asset *Asset, typeString string, extension string) error
-	GetField(asset *Asset, typeString string, defaultURL string) string
+	GetField(asset *Asset, typeString string, defaultURL string) interface{}
 	SetField(asset *Asset, typeString string, field interface{})
 	ClearAsset(asset *Asset, typeString string) error
 }
