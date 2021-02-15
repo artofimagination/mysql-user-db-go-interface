@@ -20,6 +20,7 @@ const (
 	deleteProjectsByProductIDTest
 	getProjectByIDTest
 	getUserProjectIDsTest
+	getProductProjectsTest
 	deleteProjectTest
 	updateUsersProjectsTest
 )
@@ -74,12 +75,14 @@ func createTestUserProjectsData(quantity int) (*models.UserProjectIDs, error) {
 
 type ProjectExpectedData struct {
 	project      *models.Project
+	projects     []models.Project
 	userProjects *models.UserProjectIDs
 	err          error
 }
 
 type ProjectInputData struct {
-	userID       uuid.UUID
+	userID       *uuid.UUID
+	productID    *uuid.UUID
 	project      *models.Project
 	projectUsers *models.ProjectUserIDs
 	privilege    int
@@ -99,6 +102,11 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 	if err != nil {
 		return nil, err
 	}
+	project2, err := createTestProjectData()
+	if err != nil {
+		return nil, err
+	}
+	project2.ProductID = project.ProductID
 	binaryProjectID, err := json.Marshal(project.ID)
 	if err != nil {
 		return nil, err
@@ -278,7 +286,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 	case getUserProjectIDsTest:
 		testCase := "valid_id"
 		inputData := ProjectInputData{
-			userID: userID,
+			userID: &userID,
 		}
 		expectedData := ProjectExpectedData{
 			userProjects: userProjects,
@@ -303,6 +311,43 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProjectIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     inputData,
+			Expected: expectedData,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+	case getProductProjectsTest:
+		testCase := "valid_id"
+		inputData := ProjectInputData{
+			productID: &project.ProductID,
+		}
+		projects := make([]models.Project, 2)
+		projects = append(projects, *project)
+		projects = append(projects, *project2)
+		expectedData := ProjectExpectedData{
+			projects: projects,
+			err:      nil,
+		}
+		rows := sqlmock.NewRows([]string{"id", "products_id", "project_details_id", "project_assets_id"})
+		for _, project := range projects {
+			rows.AddRow(project.ID, project.ProductID, project.DetailsID, project.AssetsID)
+		}
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetProductProjectsQuery).WithArgs(project.ProductID).WillReturnRows(rows)
+		dataSet.TestDataSet[testCase] = test.Data{
+			Data:     inputData,
+			Expected: expectedData,
+		}
+		dataSet.OrderedList = append(dataSet.OrderedList, testCase)
+
+		testCase = "missing_projects"
+		expectedData = ProjectExpectedData{
+			userProjects: nil,
+			err:          sql.ErrNoRows,
+		}
+		mock.ExpectBegin()
+		mock.ExpectQuery(GetProductProjectsQuery).WithArgs(project.ProductID).WillReturnError(sql.ErrNoRows)
 		dataSet.TestDataSet[testCase] = test.Data{
 			Data:     inputData,
 			Expected: expectedData,
@@ -371,7 +416,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		testCase := "valid_id"
 		inputData := ProjectInputData{
 			project:   project,
-			userID:    userID,
+			userID:    &userID,
 			privilege: 1,
 		}
 		expectedData := ProjectExpectedData{
@@ -485,7 +530,7 @@ func TestUpdateUsersProjects(t *testing.T) {
 			}
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-			err = DBFunctions.UpdateUsersProjects(&inputData.userID, &inputData.project.ID, inputData.privilege, tx)
+			err = DBFunctions.UpdateUsersProjects(inputData.userID, &inputData.project.ID, inputData.privilege, tx)
 			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
@@ -564,8 +609,34 @@ func TestGetUserProjectIDs(t *testing.T) {
 			}
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
-			output, err := DBFunctions.GetUserProjectIDs(&inputData.userID, tx)
+			output, err := DBFunctions.GetUserProjectIDs(inputData.userID, tx)
 			test.CheckResult(output, expectedData.userProjects, err, expectedData.err, testCaseString, t)
+		})
+	}
+}
+
+func TestGetProductProjects(t *testing.T) {
+	// Create test data
+	dataSet, err := createProjectsTestData(getProductProjectsTest)
+	if err != nil {
+		t.Errorf("Failed to generate test data: %s", err)
+		return
+	}
+	defer DBFunctions.DBConnector.(*DBConnectorMock).DB.Close()
+
+	// Run tests
+	for _, testCaseString := range dataSet.OrderedList {
+		testCaseString := testCaseString
+		t.Run(testCaseString, func(t *testing.T) {
+			tx, err := DBFunctions.DBConnector.(*DBConnectorMock).DB.Begin()
+			if err != nil {
+				t.Errorf("Failed to setup DB transaction %s", err)
+				return
+			}
+			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
+			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
+			output, err := DBFunctions.GetProductProjects(inputData.productID, tx)
+			test.CheckResult(output, expectedData.projects, err, expectedData.err, testCaseString, t)
 		})
 	}
 }

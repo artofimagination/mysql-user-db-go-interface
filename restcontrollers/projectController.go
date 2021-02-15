@@ -142,6 +142,50 @@ func (c *RESTController) getProject(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, err.Error())
 }
 
+func (c *RESTController) getProductProjects(w http.ResponseWriter, r *http.Request) {
+	log.Println("Getting projects belonging to a product")
+	if err := checkRequestType(GET, w, r); err != nil {
+		return
+	}
+
+	ids, ok := r.URL.Query()["product_id"]
+	if !ok || len(ids[0]) < 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, errors.New("Url Param 'product_id' is missing"))
+		return
+	}
+
+	id, err := uuid.Parse(ids[0])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, err)
+	}
+
+	projectList, err := c.DBController.GetProjectsByProductID(&id)
+	if err == nil {
+		b, err := json.Marshal(projectList)
+		if err != nil {
+			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w, err.Error())
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, string(b))
+		return
+	}
+
+	if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
+		w.WriteHeader(http.StatusAccepted)
+		fmt.Fprint(w, err.Error())
+		return
+	}
+	err = errors.Wrap(errors.WithStack(err), "Failed to get projects")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(w, err.Error())
+}
+
 func (c *RESTController) getProjects(w http.ResponseWriter, r *http.Request) {
 	log.Println("Getting multiple projects")
 	if err := checkRequestType(GET, w, r); err != nil {

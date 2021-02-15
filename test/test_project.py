@@ -281,6 +281,110 @@ createTestData = [
     (# Input data
       {
       "product": {
+        "name": "testProductGetProductProjects"
+      },
+      "user": {
+        "name": "testUserOwnerGetProductProjects",
+        "email": "testEmailOwnerGetProductProjects",
+        "password": "testPassword"
+      },
+      "project": [{ 
+        "name":"testProjectGetProductProjects1",
+        "visibility": "Public"
+      },
+      { 
+        "name":"testProjectGetProductProjects2",
+        "visibility": "Protected"
+      }]
+    },
+    # Expected
+    [{ 
+      "name":"testProjectGetProductProjects1",
+      "visibility": "Public"
+    },
+    { 
+      "name":"testProjectGetProductProjects2",
+      "visibility": "Protected"
+    }]
+    ),
+    (# Input data
+      {
+      "product": {
+        "name": "testProductGetProductProjects2"
+      },
+      "user": {
+        "name": "testUserOwnerGetProductProjects2",
+        "email": "testEmailOwnerGetProductProjects2",
+        "password": "testPassword"
+      },
+      "project": [{ 
+        "name":"testProjectGetProductProjects2",
+        "visibility": "Public"
+      },
+      {
+        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+      }]
+    },
+    # Expected
+    [{ 
+      "name":"testProjectGetProductProjects2",
+      "visibility": "Public"
+    }]
+    ),
+    (# Input data
+      {
+      "product": {
+        "name": "testProductGetProductProjects3"
+      },
+      "user": {
+        "name": "testUserOwnerGetProductProjects3",
+        "email": "testEmailOwnerGetProductProjects3",
+        "password": "testPassword"
+      },
+      "project": [
+      {
+        "id": "c34a7368-344a-11eb-adc1-0242ac120002"
+      }]
+    },
+    # Expected
+    "The selected project not found"
+    )
+]
+
+ids=['Existing projects', 'Missing a project', 'No project']
+
+@pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
+def test_GetProductProjects(httpConnection, data, expected):
+  uuidList = list()
+  userUUID = addUser(data, httpConnection)
+  if userUUID is None:
+    return
+
+  productUUID = addProduct(data, userUUID, httpConnection)
+  if productUUID is None:
+    return
+
+  try:
+    r = httpConnection.GET("/get-product-projects", {"product_id": productUUID})
+  except Exception as e:
+    pytest.fail(f"Failed to send GET request")
+    return
+
+  if r.status_code == 200:
+    response = json.loads(r.text)
+    for index, product in enumerate(response):
+      if product["Details"]["DataMap"]["name"] != expected[index]["name"] or \
+        product["Details"]["DataMap"]["visibility"] != expected[index]["visibility"]:
+        pytest.fail(f"Test failed\nReturned: {response}\nExpected: {expected}")
+    return
+  
+  if r.text != expected:
+    pytest.fail(f"Request failed\nStatus code: {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
+
+createTestData = [
+    (# Input data
+      {
+      "product": {
         "name": "testProductDeleteProject"
       },
       "user": {

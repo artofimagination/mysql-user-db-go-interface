@@ -105,6 +105,7 @@ func NewRESTController() (*RESTController, error) {
 	http.HandleFunc("/add-project", restController.addProject)
 	http.HandleFunc("/get-project", restController.getProject)
 	http.HandleFunc("/get-projects", restController.getProjects)
+	http.HandleFunc("/get-product-projects", restController.getProductProjects)
 	http.HandleFunc("/delete-project", restController.deleteProject)
 
 	return restController, nil
