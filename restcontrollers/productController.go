@@ -48,36 +48,33 @@ func (c *RESTController) addProduct(w http.ResponseWriter, r *http.Request) {
 	log.Println("Adding product")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		writeError(err.Error(), w, http.StatusBadRequest)
 		return
 	}
 
 	// Parse product info
 	productJSON, ok := data["product"]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'product'")
+		writeError("Missing 'product' element", w, http.StatusBadRequest)
 		return
 	}
 
 	name, ok := productJSON.(map[string]interface{})["name"].(string)
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'name'")
+		writeError("Missing 'name' element", w, http.StatusBadRequest)
 		return
 	}
 
 	// Get user ID
 	userIDString, ok := data["user"]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'user'")
+		writeError("Missing 'user' element", w, http.StatusBadRequest)
 		return
 	}
 
 	userID, err := uuid.Parse(userIDString.(string))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Invalid 'userID'")
+		writeError("Invalid 'userId' element", w, http.StatusBadRequest)
 		return
 	}
 
@@ -88,46 +85,39 @@ func (c *RESTController) addProduct(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		b, err := json.Marshal(product)
 		if err != nil {
-			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, err.Error())
+			writeError(err.Error(), w, http.StatusInternalServerError)
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
-		fmt.Fprint(w, string(b))
+		writeData(string(b), w, http.StatusCreated)
 		return
 	}
 
 	duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
 	if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+		writeError(err.Error(), w, http.StatusAccepted)
 		return
 	}
 
-	err = errors.Wrap(errors.WithStack(err), "Failed to create product")
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+	writeError(err.Error(), w, http.StatusInternalServerError)
 }
 
 func (c *RESTController) getProduct(w http.ResponseWriter, r *http.Request) {
 	log.Println("Getting product")
 	if err := checkRequestType(GET, w, r); err != nil {
+		writeError(err.Error(), w, http.StatusBadRequest)
 		return
 	}
 
 	ids, ok := r.URL.Query()["id"]
 	if !ok || len(ids[0]) < 1 {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, errors.New("Url Param 'id' is missing"))
+		writeError("Url Param 'id' is missing", w, http.StatusBadRequest)
 		return
 	}
 
 	id, err := uuid.Parse(ids[0])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, err)
+		writeError(err.Error(), w, http.StatusBadRequest)
 		return
 	}
 
@@ -135,36 +125,32 @@ func (c *RESTController) getProduct(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		b, err := json.Marshal(productData)
 		if err != nil {
-			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, err.Error())
+			writeError(err.Error(), w, http.StatusInternalServerError)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, string(b))
+		writeData(string(b), w, http.StatusOK)
 		return
 	}
 
 	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+		writeError(err.Error(), w, http.StatusAccepted)
 		return
 	}
-	err = errors.Wrap(errors.WithStack(err), "Failed to get user")
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	writeError(err.Error(), w, http.StatusInternalServerError)
 }
 
 func (c *RESTController) getProducts(w http.ResponseWriter, r *http.Request) {
 	log.Println("Getting multiple products")
 	if err := checkRequestType(GET, w, r); err != nil {
+		writeError(err.Error(), w, http.StatusBadRequest)
 		return
 	}
 
 	idList, err := parseIDList(w, r)
 	if err != nil {
-		fmt.Fprint(w, err)
+		writeError(err.Error(), w, http.StatusBadRequest)
 		return
 	}
 
@@ -172,45 +158,38 @@ func (c *RESTController) getProducts(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		b, err := json.Marshal(productData)
 		if err != nil {
-			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, err.Error())
+			writeError(err.Error(), w, http.StatusInternalServerError)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, string(b))
+		writeData(string(b), w, http.StatusOK)
 		return
 	}
 
 	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+		writeError(err.Error(), w, http.StatusAccepted)
 		return
 	}
-	err = errors.Wrap(errors.WithStack(err), "Failed to get products")
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+	writeError(err.Error(), w, http.StatusInternalServerError)
 }
 
 func (c *RESTController) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	log.Println("Deleting product")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		writeError(err.Error(), w, http.StatusBadRequest)
 		return
 	}
 
 	productIDString, ok := data["product_id"]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'product_id'")
+		writeError("Missing 'product_id' element", w, http.StatusBadRequest)
 		return
 	}
 
 	productID, err := uuid.Parse(productIDString.(string))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Invalid 'productID'")
+		writeError("Invalid 'product_id' element", w, http.StatusBadRequest)
 		return
 	}
 
@@ -218,22 +197,17 @@ func (c *RESTController) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		_, err = c.DBController.GetProduct(&productID)
 		if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
-			err = errors.Wrap(errors.WithStack(err), "Failed to get product")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, err)
+			writeError(err.Error(), w, http.StatusInternalServerError)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "Delete completed")
+		writeData(DataOK, w, http.StatusOK)
 		return
 	}
 
 	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+		writeError(err.Error(), w, http.StatusAccepted)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+	writeError(err.Error(), w, http.StatusInternalServerError)
 }

@@ -21,11 +21,25 @@ const (
 
 var testPath = "testPath"
 
+var DataOK = "\"OK\""
+
+func writeError(message string, w http.ResponseWriter, statusCode int) {
+	writeResponse(fmt.Sprintf("{\"error\":\"%s\"}", message), w, statusCode)
+}
+
+func writeData(data string, w http.ResponseWriter, statusCode int) {
+	writeResponse(fmt.Sprintf("{\"data\": %s}", data), w, statusCode)
+}
+
+func writeResponse(data string, w http.ResponseWriter, statusCode int) {
+	w.WriteHeader(statusCode)
+	fmt.Fprint(w, data)
+}
+
 func checkRequestType(requestTypeString string, w http.ResponseWriter, r *http.Request) error {
 	if r.Method != requestTypeString {
 		w.WriteHeader(http.StatusBadRequest)
 		errorString := fmt.Sprintf("Invalid request type %s", r.Method)
-		fmt.Fprint(w, errorString)
 		return errors.New(errorString)
 	}
 	return nil
@@ -41,7 +55,6 @@ func decodePostData(w http.ResponseWriter, r *http.Request) (map[string]interfac
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
-		fmt.Fprint(w, err.Error())
 		return nil, err
 	}
 
@@ -69,7 +82,7 @@ func parseIDList(w http.ResponseWriter, r *http.Request) ([]uuid.UUID, error) {
 }
 
 func sayHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hi! I am an example server!")
+	fmt.Fprintln(w, "Hi! I am a user database server!")
 }
 
 func NewRESTController() (*RESTController, error) {

@@ -1,6 +1,5 @@
 import pytest
 import json
-from functionalTest import httpConnection
 
 dataColumns = ("data", "expected")
 createTestData = [

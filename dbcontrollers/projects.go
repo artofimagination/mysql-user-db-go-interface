@@ -16,6 +16,9 @@ var ErrNoProjectForProduct = errors.New("No projects for this product")
 var ErrNoProjectDetailsUpdate = errors.New("Details for the selected project not found or no change happened")
 var ErrNoProjectAssetsUpdate = errors.New("Assets for the selected project not found or no change happened")
 var ErrEmptyProjectIDList = errors.New("Request does not contain any project identifiers")
+var ErrMissingProduct = errors.New("Missing product")
+
+var ErrMissingProductDBString = "Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`projects`, CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`products_id`) REFERENCES `products` (`id`))"
 
 func (c *MYSQLController) CreateProject(name string, visibility string, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
 	references := make(models.DataMap)
@@ -61,6 +64,9 @@ func (c *MYSQLController) CreateProject(name string, visibility string, owner *u
 	}
 
 	if err := c.DBFunctions.AddProject(project, tx); err != nil {
+		if err.Error() == ErrMissingProductDBString {
+			return nil, ErrMissingProduct
+		}
 		return nil, err
 	}
 
