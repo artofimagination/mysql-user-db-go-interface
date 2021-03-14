@@ -18,9 +18,8 @@ var ErrProductNotFound = errors.New("The selected product not found")
 var ErrNoProductDetailUpdate = errors.New("Details for the selected product not found or no change happened")
 var ErrNoProductAssetUpdate = errors.New("Assets for the selected product not found or no change happened")
 var ErrEmptyProductIDList = errors.New("Request does not contain any product identifiers")
-var ErrMissingUser = errors.New("Missing user")
 
-var ErrMissingUserDBString = "Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`users_products`, CONSTRAINT `users_products_ibfk_2` FOREIGN KEY (`users_id`) REFERENCES `users` (`id`))"
+var ErrMissingProductUserDBString = "Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`users_products`, CONSTRAINT `users_products_ibfk_2` FOREIGN KEY (`users_id`) REFERENCES `users` (`id`))"
 
 func (c *MYSQLController) validateOwnership(users *models.ProductUserIDs) error {
 	if users == nil || (users != nil && len(users.UserMap) == 0) {
@@ -107,14 +106,14 @@ func (c *MYSQLController) CreateProduct(name string, owner *uuid.UUID, generateA
 	}
 
 	if err := c.DBFunctions.AddProduct(product, tx); err != nil {
-		if err.Error() == ErrMissingUserDBString {
-			return nil, ErrMissingUser
-		}
 		return nil, err
 	}
 
 	users.UserMap[*owner] = privilege.ID
 	if err := c.DBFunctions.AddProductUsers(&product.ID, &users, tx); err != nil {
+		if err.Error() == ErrMissingProductUserDBString {
+			return nil, ErrUserNotFound
+		}
 		return nil, err
 	}
 

@@ -21,6 +21,8 @@ var ErrNoUserSetttingsUpdate = errors.New("Settings for the selected user not fo
 var ErrNoUserAssetsUpdate = errors.New("Assets for the selected user not found or no change happened")
 var ErrEmptyUserIDList = errors.New("Request does not contain any user identifiers")
 
+var ErrMissingUserDBString = "Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`users_products`, CONSTRAINT `users_products_ibfk_2` FOREIGN KEY (`users_id`) REFERENCES `users` (`id`))"
+
 func (c *MYSQLController) CreateUser(
 	name string,
 	email string,
@@ -80,6 +82,9 @@ func (c *MYSQLController) CreateUser(
 		errDuplicateName := fmt.Errorf(mysqldb.ErrSQLDuplicateUserNameEntryString, user.Name)
 		if err.Error() == errDuplicateName.Error() {
 			return nil, ErrDuplicateNameEntry
+		}
+		if err.Error() == ErrMissingUserDBString {
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}

@@ -1,5 +1,4 @@
 import pytest
-import json
 import common
 
 dataColumns = ("data", "expected")
@@ -40,10 +39,11 @@ def test_UpdateProductDetail(httpConnection, data, expected):
             pytest.fail(f"Failed to add user.\nDetails: {r.text}")
             return
 
-        response = json.loads(r.text)
-
+        response = common.getResponse(r.text, expected)
+        if response is None:
+            return None
         dataToSend["product"] = data["product"]
-        dataToSend["user"] = response["data"]["ID"]
+        dataToSend["user"] = response["ID"]
 
     if "product" in data:
         try:
@@ -56,10 +56,9 @@ def test_UpdateProductDetail(httpConnection, data, expected):
             pytest.fail(f"Failed to add product.\nDetails: {r.text}")
             return
 
-        response = common.getResponse(r.text)
+        response = common.getResponse(r.text, expected)
         if response is None:
-            return
-
+            return None
         dataToSend = dict()
         dataToSend["product"] = response
         for k, v in data["details_entry"].items():
@@ -71,9 +70,9 @@ def test_UpdateProductDetail(httpConnection, data, expected):
         pytest.fail("Failed to send POST request")
         return
 
-    response = common.getResponse(r.text)
+    response = common.getResponse(r.text, expected)
     if response is None:
-        return
+        return None
     if response != expected:
         pytest.fail(
             f"Request failed\nStatus code: \
@@ -117,9 +116,9 @@ def test_UpdateProductAsset(httpConnection, data, expected):
             pytest.fail("Failed to add user.\nDetails: {r.text}")
             return
 
-        response = common.getResponse(r.text)
+        response = common.getResponse(r.text, expected)
         if response is None:
-            return
+            return None
         dataToSend["product"] = data["product"]
         dataToSend["user"] = response["ID"]
 
@@ -133,10 +132,10 @@ def test_UpdateProductAsset(httpConnection, data, expected):
         if r.status_code != 201:
             pytest.fail(f"Failed to add product.\nDetails: {r.text}")
             return
-        response = common.getResponse(r.text)
-        if response is None:
-            return
 
+        response = common.getResponse(r.text, expected)
+        if response is None:
+            return None
         dataToSend = dict()
         dataToSend["product"] = response
         for k, v in data["details_entry"].items():
@@ -148,9 +147,9 @@ def test_UpdateProductAsset(httpConnection, data, expected):
         pytest.fail("Failed to send POST request")
         return
 
-    response = common.getResponse(r.text)
+    response = common.getResponse(r.text, expected)
     if response is None:
-        return
+        return None
     if response != expected:
         pytest.fail(
           f"Request failed\nStatus code: \
@@ -208,9 +207,9 @@ def test_UpdateProjectDetail(httpConnection, data, expected):
         if r.status_code != 201:
             pytest.fail(f"Failed to add project.\nDetails: {r.text}")
             return
-        response = common.getResponse(r.text)
+        response = common.getResponse(r.text, expected)
         if response is None:
-            return
+            return None
 
         dataToSend = dict()
         dataToSend["project"] = response
@@ -223,9 +222,9 @@ def test_UpdateProjectDetail(httpConnection, data, expected):
         pytest.fail("Failed to send POST request")
         return
 
-    response = common.getResponse(r.text)
+    response = common.getResponse(r.text, expected)
     if response is None:
-        return
+        return None
     if response != expected:
         pytest.fail(
             f"Request failed\nStatus code: \
@@ -283,9 +282,9 @@ def test_UpdateProjectAsset(httpConnection, data, expected):
         if r.status_code != 201:
             pytest.fail(f"Failed to add project.\nDetails: {r.text}")
             return
-        response = common.getResponse(r.text)
+        response = common.getResponse(r.text, expected)
         if response is None:
-            return
+            return None
 
         dataToSend = dict()
         dataToSend["project"] = response
@@ -298,9 +297,9 @@ def test_UpdateProjectAsset(httpConnection, data, expected):
         pytest.fail("Failed to send POST request")
         return
 
-    response = common.getResponse(r.text)
+    response = common.getResponse(r.text, expected)
     if response is None:
-        return
+        return None
     if response != expected:
         pytest.fail(
             f"Request failed\nStatus code: \
@@ -341,9 +340,9 @@ def test_UpdateUserSettings(httpConnection, data, expected):
             pytest.fail(f"Failed to add user.\nDetails: {r.text}")
             return
 
-        response = common.getResponse(r.text)
+        response = common.getResponse(r.text, expected)
         if response is None:
-            return
+            return None
         dataToSend["user"] = response
         for k, v in data["details_entry"].items():
             dataToSend["user"]["Settings"]["DataMap"][k] = v
@@ -354,9 +353,9 @@ def test_UpdateUserSettings(httpConnection, data, expected):
         pytest.fail("Failed to send POST request")
         return
 
-    response = common.getResponse(r.text)
+    response = common.getResponse(r.text, expected)
     if response is None:
-        return
+        return None
     if response != expected:
         pytest.fail(
             f"Request failed\nStatus code: \
@@ -397,9 +396,9 @@ def test_UpdateUserAsset(httpConnection, data, expected):
             pytest.fail(f"Failed to add user.\nDetails: {r.text}")
             return
 
-        response = common.getResponse(r.text)
+        response = common.getResponse(r.text, expected)
         if response is None:
-            return
+            return None
         dataToSend["user"] = response
         for k, v in data["details_entry"].items():
             dataToSend["user"]["Assets"]["DataMap"][k] = v
@@ -410,9 +409,9 @@ def test_UpdateUserAsset(httpConnection, data, expected):
         pytest.fail("Failed to send POST request")
         return
 
-    response = common.getResponse(r.text)
+    response = common.getResponse(r.text, expected)
     if response is None:
-        return
+        return None
     if response != expected:
         pytest.fail(
             f"Request failed\nStatus code: \

@@ -1,5 +1,4 @@
 import pytest
-import json
 import common
 
 dataColumns = ("data", "expected")
@@ -45,7 +44,7 @@ createTestData = [
             "user_id": "c34a7368-344a-11eb-adc1-0242ac120002"
         },
         # Expected
-        "Missing user")
+        "The selected user not found")
 ]
 
 ids = ['No existing product', 'Existing product', 'Missing user']
@@ -55,7 +54,6 @@ ids = ['No existing product', 'Existing product', 'Missing user']
 def test_CreateProduct(httpConnection, data, expected):
     userUUID = common.addUser(data, httpConnection)
     if userUUID is None:
-        pytest.fail("Failed to create user")
         return
 
     dataToSend = dict()
@@ -68,24 +66,19 @@ def test_CreateProduct(httpConnection, data, expected):
         pytest.fail("Failed to send POST request")
         return
 
+    response = common.getResponse(r.text, expected)
+    if response is None:
+        return None
     if r.status_code == 201:
-        response = json.loads(r.text)
         if response["Name"] != expected["Name"]:
             pytest.fail(
               f"Test failed\nReturned: {response}\nExpected: {expected}")
-            return
-    elif r.status_code == 202:
-        if r.text != expected:
-            pytest.fail(
-                f"Request failed\nStatus code: \
-                {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
         return
-    else:
-        if r.text != expected:
-            pytest.fail(
-                f"Request failed\nStatus code: \
-                {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
-        return
+
+    if response != expected:
+        pytest.fail(
+            f"Request failed\nStatus code: \
+            {r.status_code}\nReturned: {response}\nExpected: {expected}")
 
 
 createTestData = [
@@ -128,12 +121,10 @@ ids = ['Existing product', 'No existing product']
 def test_GetProduct(httpConnection, data, expected):
     userUUID = common.addUser(data, httpConnection)
     if userUUID is None:
-        pytest.fail("Failed to create user")
         return
 
     productUUID = common.addProduct(data, userUUID, httpConnection)
     if productUUID is None:
-        pytest.fail("Failed to create product")
         return
 
     try:
@@ -142,8 +133,10 @@ def test_GetProduct(httpConnection, data, expected):
         pytest.fail("Failed to send GET request")
         return
 
+    response = common.getResponse(r.text, expected)
+    if response is None:
+        return None
     if r.status_code == 200:
-        response = json.loads(r.text)
         try:
             asset = response["Assets"]["DataMap"]
             details = response["Details"]["DataMap"]
@@ -154,19 +147,15 @@ def test_GetProduct(httpConnection, data, expected):
                     details["base_asset_path"] != "testPath":
                 pytest.fail(
                     f"Test failed\nReturned: {response}\nExpected: {expected}")
-                return
+            return
         except Exception as e:
             pytest.fail(f"Failed to compare results.\nDetails: {e}")
             return
-    elif r.status_code == 202:
-        if r.text != expected:
-            pytest.fail(
-                f"Request failed\nStatus code: \
-                {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
-    else:
+
+    if response != expected:
         pytest.fail(
-            f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
-        return
+            f"Request failed\nStatus code: \
+            {r.status_code}\nReturned: {response}\nExpected: {expected}")
 
 
 createTestData = [
@@ -240,7 +229,6 @@ def test_GetProducts(httpConnection, data, expected):
     uuidList = list()
     userUUID = common.addUser(data, httpConnection)
     if userUUID is None:
-        pytest.fail("Failed to create user")
         return
 
     if "product" in data:
@@ -262,7 +250,9 @@ def test_GetProducts(httpConnection, data, expected):
                     pytest.fail(f"Failed to add product.\nDetails: {r.text}")
                     return
 
-                response = json.loads(r.text)
+                response = common.getResponse(r.text, expected)
+                if response is None:
+                    return None
                 uuidList.append(response["ID"])
             else:
                 uuidList.append(element["product_id"])
@@ -273,8 +263,10 @@ def test_GetProducts(httpConnection, data, expected):
         pytest.fail("Failed to send GET request")
         return
 
+    response = common.getResponse(r.text, expected)
+    if response is None:
+        return None
     if r.status_code == 200:
-        response = json.loads(r.text)
         try:
             for index, product in enumerate(response):
                 asset = product["Assets"]["DataMap"]
@@ -287,19 +279,15 @@ def test_GetProducts(httpConnection, data, expected):
                     pytest.fail(
                         f"Test failed\nReturned: \
                         {response}\nExpected: {expected}")
-                    return
+            return
         except Exception as e:
             pytest.fail(f"Failed to compare results.\nDetails: {e}")
             return
-    elif r.status_code == 202:
-        if r.text != expected:
-            pytest.fail(
-                f"Request failed\nStatus code: \
-                {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
-    else:
+
+    if response != expected:
         pytest.fail(
-            f"Request failed\nStatus code: {r.status_code}\nDetails: {r.text}")
-        return
+            f"Request failed\nStatus code: \
+            {r.status_code}\nReturned: {response}\nExpected: {expected}")
 
 
 createTestData = [
@@ -316,7 +304,7 @@ createTestData = [
             }
         },
         # Expected
-        "Delete completed"
+        "OK"
         ),
     (
         # Input data
@@ -338,12 +326,10 @@ ids = ['Existing product', 'No existing product']
 def test_DeleteProduct(httpConnection, data, expected):
     userUUID = common.addUser(data, httpConnection)
     if userUUID is None:
-        pytest.fail("Failed to create user")
         return
 
     productUUID = common.addProduct(data, userUUID, httpConnection)
     if productUUID is None:
-        pytest.fail("Failed to create product")
         return
 
     dataToSend = dict()
@@ -355,7 +341,10 @@ def test_DeleteProduct(httpConnection, data, expected):
         pytest.fail("Failed to send POST request")
         return
 
-    if r.text != expected:
+    response = common.getResponse(r.text, expected)
+    if response is None:
+        return None
+    if response != expected:
         pytest.fail(
             f"Request failed\nStatus code: \
-            {r.status_code}\nReturned: {r.text}\nExpected: {expected}")
+            {r.status_code}\nReturned: {response}\nExpected: {expected}")

@@ -66,13 +66,13 @@ def addProject(data, userUUID, productUUID, httpConnection):
             pytest.fail("Failed to send POST request")
             return None
 
-        if r.status_code != 201:
-            pytest.fail(f"Failed to run test.\nDetails: {r.text}")
-            return None
-
         response = getResponse(r.text)
         if response is None:
             return None
+        if r.status_code != 201:
+            pytest.fail(f"Failed to run test.\nDetails: {response}")
+            return None
+
         return response["ID"]
     else:
         return data["id"]
@@ -112,10 +112,15 @@ def addProjects(data, userUUID, productUUID, httpConnection):
     return uuidList
 
 
-def getResponse(responseText):
+# getResponse unwraps the data/error from json response.
+# @expected shall be set to None only if
+# the response result is just to generate a component for a test
+# but not actually returning a test result.
+def getResponse(responseText, expected=None):
     response = json.loads(responseText)
     if "error" in response:
         error = response["error"]
-        pytest.fail(f"Failed to run test.\nDetails: {error}")
+        if expected is None or (expected is not None and error != expected):
+            pytest.fail(f"Failed to run test.\nDetails: {error}")
         return None
     return response["data"]
