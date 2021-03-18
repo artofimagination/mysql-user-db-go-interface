@@ -8,11 +8,11 @@ networks:
       - subnet: 172.18.0.0/24
 
 services:
-  user-db:
-    container_name: user-db
+  system-mysql:
+    container_name: system-mysql
     image: mysql:8.0.21
     ports:
-      - 3306:3306
+      - ${MYSQL_DB_PORT}:${MYSQL_DB_PORT}
     networks:
       - development
     environment:
@@ -27,4 +27,4 @@ services:
     networks:
       - development
     depends_on: 
-      - user-db
+      - system-mysql

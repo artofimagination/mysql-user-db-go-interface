@@ -1,4 +1,3 @@
-user-settings
 test/*.py
 *_test.go
 runFunctionalTest.sh

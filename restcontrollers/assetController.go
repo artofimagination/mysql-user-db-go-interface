@@ -1,225 +1,204 @@
 package restcontrollers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
 )
 
-func (c *RESTController) updateUserSettings(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) updateUserSettings(w ResponseWriter, r *Request) {
 	log.Println("Update user settings")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	userData, err := parseUserData(data)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Failed to get suer")
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	err = c.DBController.UpdateUserSettings(userData)
-	if err == nil {
-		statusCode, err := c.validateUser(userData)
-		if err != nil {
-			w.WriteHeader(statusCode)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoUserSetttingsUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.WriteHeader(statusCode)
-		fmt.Fprint(w, "User settings updated")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoUserSetttingsUpdate.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	statusCode, err := c.validateUser(userData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(DataOK, statusCode)
 }
 
-func (c *RESTController) updateUserAssets(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) updateUserAssets(w ResponseWriter, r *Request) {
 	log.Println("Update user assets")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	userData, err := parseUserData(data)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Failed to get suer")
+		w.writeError(err.Error(), http.StatusBadRequest)
 	}
 
 	err = c.DBController.UpdateUserAssets(userData)
-	if err == nil {
-		statusCode, err := c.validateUser(userData)
-		if err != nil {
-			w.WriteHeader(statusCode)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoUserAssetsUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.WriteHeader(statusCode)
-		fmt.Fprint(w, "User assets updated")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoUserAssetsUpdate.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	statusCode, err := c.validateUser(userData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(DataOK, statusCode)
 }
 
-func (c *RESTController) updateProductDetails(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) updateProductDetails(w ResponseWriter, r *Request) {
 	log.Println("Update product details")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	productData, err := parseProductData(data)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Failed to get product")
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	err = c.DBController.UpdateProductDetails(productData)
-	if err == nil {
-		statusCode, err := c.validateProduct(productData)
-		if err != nil {
-			w.WriteHeader(statusCode)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProductDetailUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.WriteHeader(statusCode)
-		fmt.Fprint(w, "Product details updated")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProductDetailUpdate.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	statusCode, err := c.validateProduct(productData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(DataOK, statusCode)
 }
 
-func (c *RESTController) updateProductAssets(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) updateProductAssets(w ResponseWriter, r *Request) {
 	log.Println("Update product assets")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	productData, err := parseProductData(data)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Failed to get product")
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	err = c.DBController.UpdateProductAssets(productData)
-	if err == nil {
-		statusCode, err := c.validateProduct(productData)
-		if err != nil {
-			w.WriteHeader(statusCode)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProductAssetUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.WriteHeader(statusCode)
-		fmt.Fprint(w, "Product assets updated")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProductAssetUpdate.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	statusCode, err := c.validateProduct(productData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(DataOK, statusCode)
 }
 
-func (c *RESTController) updateProjectDetails(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) updateProjectDetails(w ResponseWriter, r *Request) {
 	log.Println("Update project details")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	projectData, err := parseProjectData(data)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Failed to get product")
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	err = c.DBController.UpdateProjectDetails(projectData)
-	if err == nil {
-		statusCode, err := c.validateProject(projectData)
-		if err != nil {
-			w.WriteHeader(statusCode)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProjectDetailsUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.WriteHeader(statusCode)
-		fmt.Fprint(w, "Project details updated")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProjectDetailsUpdate.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	statusCode, err := c.validateProject(projectData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(DataOK, statusCode)
 }
 
-func (c *RESTController) updateProjectAssets(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) updateProjectAssets(w ResponseWriter, r *Request) {
 	log.Println("Update project assets")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	projectData, err := parseProjectData(data)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Failed to get product")
+		w.writeError(err.Error(), http.StatusBadRequest)
 	}
 
 	err = c.DBController.UpdateProjectAssets(projectData)
-	if err == nil {
-		statusCode, err := c.validateProject(projectData)
-		if err != nil {
-			w.WriteHeader(statusCode)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProjectAssetsUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.WriteHeader(statusCode)
-		fmt.Fprint(w, "Project assets updated")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProjectAssetsUpdate.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	statusCode, err := c.validateProject(projectData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(DataOK, statusCode)
 }

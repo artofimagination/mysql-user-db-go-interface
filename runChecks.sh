@@ -8,6 +8,11 @@ status=$?;
 if [[ $status != 0 ]]; then 
   exit $status; 
 fi
+flake8 . --count --show-source --statistics --exclude=temp
+status=$?; 
+if [[ $status != 0 ]]; then 
+  exit $status; 
+fi
 ./runFunctionalTest.sh
 status=$?; 
 if [[ $status != 0 ]]; then 

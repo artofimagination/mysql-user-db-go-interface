@@ -1,4 +1,4 @@
-pip3 install -r test/requirements.txt
+#pip3 install -r test/requirements.txt
 docker-compose down
 docker stop $(docker ps -aq)
 docker rm $(docker ps -aq)

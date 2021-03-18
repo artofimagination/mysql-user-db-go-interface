@@ -21,17 +21,39 @@ const (
 
 var testPath = "testPath"
 
-func checkRequestType(requestTypeString string, w http.ResponseWriter, r *http.Request) error {
+var DataOK = "\"OK\""
+
+type ResponseWriter struct {
+	http.ResponseWriter
+}
+
+type Request struct {
+	*http.Request
+}
+
+func (w ResponseWriter) writeError(message string, statusCode int) {
+	w.writeResponse(fmt.Sprintf("{\"error\":\"%s\"}", message), statusCode)
+}
+
+func (w ResponseWriter) writeData(data string, statusCode int) {
+	w.writeResponse(fmt.Sprintf("{\"data\": %s}", data), statusCode)
+}
+
+func (w ResponseWriter) writeResponse(data string, statusCode int) {
+	w.WriteHeader(statusCode)
+	fmt.Fprint(w, data)
+}
+
+func checkRequestType(requestTypeString string, w ResponseWriter, r *Request) error {
 	if r.Method != requestTypeString {
 		w.WriteHeader(http.StatusBadRequest)
 		errorString := fmt.Sprintf("Invalid request type %s", r.Method)
-		fmt.Fprint(w, errorString)
 		return errors.New(errorString)
 	}
 	return nil
 }
 
-func decodePostData(w http.ResponseWriter, r *http.Request) (map[string]interface{}, error) {
+func decodePostData(w ResponseWriter, r *Request) (map[string]interface{}, error) {
 	if err := checkRequestType(POST, w, r); err != nil {
 		return nil, err
 	}
@@ -41,14 +63,13 @@ func decodePostData(w http.ResponseWriter, r *http.Request) (map[string]interfac
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		err = errors.Wrap(errors.WithStack(err), "Failed to decode request json")
-		fmt.Fprint(w, err.Error())
 		return nil, err
 	}
 
 	return data, nil
 }
 
-func parseIDList(w http.ResponseWriter, r *http.Request) ([]uuid.UUID, error) {
+func parseIDList(w ResponseWriter, r *Request) ([]uuid.UUID, error) {
 	ids, ok := r.URL.Query()["ids"]
 	if !ok || len(ids[0]) < 1 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -69,7 +90,15 @@ func parseIDList(w http.ResponseWriter, r *http.Request) ([]uuid.UUID, error) {
 }
 
 func sayHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hi! I am an example server!")
+	fmt.Fprintln(w, "Hi! I am a user database server!")
+}
+
+func makeHandler(fn func(ResponseWriter, *Request)) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		r := &Request{request}
+		w := ResponseWriter{writer}
+		fn(w, r)
+	}
 }
 
 func NewRESTController() (*RESTController, error) {
@@ -83,32 +112,32 @@ func NewRESTController() (*RESTController, error) {
 	}
 
 	http.HandleFunc("/", sayHello)
-	http.HandleFunc("/add-user", restController.addUser)
-	http.HandleFunc("/get-user", restController.getUser)
-	http.HandleFunc("/get-user-by-email", restController.getUserByEmail)
-	http.HandleFunc("/get-users", restController.getUsers)
-	http.HandleFunc("/update-user-settings", restController.updateUserSettings)
-	http.HandleFunc("/update-user-assets", restController.updateUserAssets)
-	http.HandleFunc("/delete-user", restController.deleteUser)
-	http.HandleFunc("/authenticate", restController.authenticate)
+	http.HandleFunc("/add-user", makeHandler(restController.addUser))
+	http.HandleFunc("/get-user", makeHandler(restController.getUser))
+	http.HandleFunc("/get-user-by-email", makeHandler(restController.getUserByEmail))
+	http.HandleFunc("/get-users", makeHandler(restController.getUsers))
+	http.HandleFunc("/update-user-settings", makeHandler(restController.updateUserSettings))
+	http.HandleFunc("/update-user-assets", makeHandler(restController.updateUserAssets))
+	http.HandleFunc("/delete-user", makeHandler(restController.deleteUser))
+	http.HandleFunc("/authenticate", makeHandler(restController.authenticate))
 
-	http.HandleFunc("/add-product-user", restController.addProductUser)
-	http.HandleFunc("/delete-product-user", restController.deleteProductUser)
+	http.HandleFunc("/add-product-user", makeHandler(restController.addProductUser))
+	http.HandleFunc("/delete-product-user", makeHandler(restController.deleteProductUser))
 
-	http.HandleFunc("/add-product", restController.addProduct)
-	http.HandleFunc("/get-product", restController.getProduct)
-	http.HandleFunc("/get-products", restController.getProducts)
-	http.HandleFunc("/update-product-details", restController.updateProductDetails)
-	http.HandleFunc("/update-product-assets", restController.updateProductAssets)
-	http.HandleFunc("/delete-product", restController.deleteProduct)
+	http.HandleFunc("/add-product", makeHandler(restController.addProduct))
+	http.HandleFunc("/get-product", makeHandler(restController.getProduct))
+	http.HandleFunc("/get-products", makeHandler(restController.getProducts))
+	http.HandleFunc("/update-product-details", makeHandler(restController.updateProductDetails))
+	http.HandleFunc("/update-product-assets", makeHandler(restController.updateProductAssets))
+	http.HandleFunc("/delete-product", makeHandler(restController.deleteProduct))
 
-	http.HandleFunc("/add-project", restController.addProject)
-	http.HandleFunc("/get-project", restController.getProject)
-	http.HandleFunc("/get-projects", restController.getProjects)
-	http.HandleFunc("/update-project-details", restController.updateProjectDetails)
-	http.HandleFunc("/update-project-assets", restController.updateProjectAssets)
-	http.HandleFunc("/get-product-projects", restController.getProductProjects)
-	http.HandleFunc("/delete-project", restController.deleteProject)
+	http.HandleFunc("/add-project", makeHandler(restController.addProject))
+	http.HandleFunc("/get-project", makeHandler(restController.getProject))
+	http.HandleFunc("/get-projects", makeHandler(restController.getProjects))
+	http.HandleFunc("/update-project-details", makeHandler(restController.updateProjectDetails))
+	http.HandleFunc("/update-project-assets", makeHandler(restController.updateProjectAssets))
+	http.HandleFunc("/get-product-projects", makeHandler(restController.getProductProjects))
+	http.HandleFunc("/delete-project", makeHandler(restController.deleteProject))
 
 	return restController, nil
 }

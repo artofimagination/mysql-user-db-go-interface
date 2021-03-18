@@ -44,40 +44,37 @@ func (c *RESTController) validateProduct(expected *models.ProductData) (int, err
 	return http.StatusOK, nil
 }
 
-func (c *RESTController) addProduct(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) addProduct(w ResponseWriter, r *Request) {
 	log.Println("Adding product")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Parse product info
 	productJSON, ok := data["product"]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'product'")
+		w.writeError("Missing 'product' element", http.StatusBadRequest)
 		return
 	}
 
 	name, ok := productJSON.(map[string]interface{})["name"].(string)
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'name'")
+		w.writeError("Missing 'name' element", http.StatusBadRequest)
 		return
 	}
 
 	// Get user ID
 	userIDString, ok := data["user"]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'user'")
+		w.writeError("Missing 'user' element", http.StatusBadRequest)
 		return
 	}
 
 	userID, err := uuid.Parse(userIDString.(string))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Invalid 'userID'")
+		w.writeError("Invalid 'userId' element", http.StatusBadRequest)
 		return
 	}
 
@@ -85,155 +82,132 @@ func (c *RESTController) addProduct(w http.ResponseWriter, r *http.Request) {
 		func(*uuid.UUID) (string, error) {
 			return testPath, nil
 		})
-	if err == nil {
-		b, err := json.Marshal(product)
-		if err != nil {
-			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
+		if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
-		fmt.Fprint(w, string(b))
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
-	if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	b, err := json.Marshal(product)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = errors.Wrap(errors.WithStack(err), "Failed to create product")
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+	w.writeData(string(b), http.StatusCreated)
 }
 
-func (c *RESTController) getProduct(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) getProduct(w ResponseWriter, r *Request) {
 	log.Println("Getting product")
 	if err := checkRequestType(GET, w, r); err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ids, ok := r.URL.Query()["id"]
 	if !ok || len(ids[0]) < 1 {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, errors.New("Url Param 'id' is missing"))
+		w.writeError("Url Param 'id' is missing", http.StatusBadRequest)
 		return
 	}
 
 	id, err := uuid.Parse(ids[0])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, err)
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	productData, err := c.DBController.GetProduct(&id)
-	if err == nil {
-		b, err := json.Marshal(productData)
-		if err != nil {
-			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, string(b))
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	b, err := json.Marshal(productData)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = errors.Wrap(errors.WithStack(err), "Failed to get user")
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(string(b), http.StatusOK)
 }
 
-func (c *RESTController) getProducts(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) getProducts(w ResponseWriter, r *Request) {
 	log.Println("Getting multiple products")
 	if err := checkRequestType(GET, w, r); err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	idList, err := parseIDList(w, r)
 	if err != nil {
-		fmt.Fprint(w, err)
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	productData, err := c.DBController.GetProducts(idList)
-	if err == nil {
-		b, err := json.Marshal(productData)
-		if err != nil {
-			err = errors.Wrap(errors.WithStack(err), "Failed to encode response")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, err.Error())
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, string(b))
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	b, err := json.Marshal(productData)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = errors.Wrap(errors.WithStack(err), "Failed to get products")
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(string(b), http.StatusOK)
 }
 
-func (c *RESTController) deleteProduct(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) deleteProduct(w ResponseWriter, r *Request) {
 	log.Println("Deleting product")
 	data, err := decodePostData(w, r)
 	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	productIDString, ok := data["product_id"]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Missing 'product_id'")
+		w.writeError("Missing 'product_id' element", http.StatusBadRequest)
 		return
 	}
 
 	productID, err := uuid.Parse(productIDString.(string))
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprint(w, "Invalid 'productID'")
+		w.writeError("Invalid 'product_id' element", http.StatusBadRequest)
 		return
 	}
 
 	err = c.DBController.DeleteProduct(&productID)
-	if err == nil {
-		_, err = c.DBController.GetProduct(&productID)
-		if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
-			err = errors.Wrap(errors.WithStack(err), "Failed to get product")
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, err)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "Delete completed")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.WriteHeader(http.StatusAccepted)
-		fmt.Fprint(w, err.Error())
+	_, err = c.DBController.GetProduct(&productID)
+	if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprint(w, err.Error())
+
+	w.writeData(DataOK, http.StatusOK)
 }
