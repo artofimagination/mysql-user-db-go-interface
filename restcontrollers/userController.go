@@ -2,7 +2,6 @@ package restcontrollers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -76,24 +75,24 @@ func (c *RESTController) addUser(w ResponseWriter, r *Request) {
 		}, func(password []byte) ([]byte, error) {
 			return password, nil
 		})
-	if err == nil {
-		b, err := json.Marshal(user)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrDuplicateEmailEntry.Error() ||
+			err.Error() == dbcontrollers.ErrDuplicateNameEntry.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(string(b), http.StatusCreated)
+		err = errors.Wrap(errors.WithStack(err), "Failed to create user")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrDuplicateEmailEntry.Error() ||
-		err.Error() == dbcontrollers.ErrDuplicateNameEntry.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(user)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = errors.Wrap(errors.WithStack(err), "Failed to create user")
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(string(b), http.StatusCreated)
 }
 
 func (c *RESTController) getUser(w ResponseWriter, r *Request) {
@@ -116,22 +115,22 @@ func (c *RESTController) getUser(w ResponseWriter, r *Request) {
 	}
 
 	userData, err := c.DBController.GetUser(&id)
-	if err == nil {
-		b, err := json.Marshal(userData)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(string(b), http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(userData)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(string(b), http.StatusOK)
 }
 
 func (c *RESTController) getUserByEmail(w ResponseWriter, r *Request) {
@@ -180,22 +179,22 @@ func (c *RESTController) getUsers(w ResponseWriter, r *Request) {
 	}
 
 	userData, err := c.DBController.GetUsers(idList)
-	if err == nil {
-		b, err := json.Marshal(userData)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(string(b), http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(userData)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(string(b), http.StatusOK)
 }
 
 func (c *RESTController) deleteUser(w ResponseWriter, r *Request) {
@@ -240,28 +239,28 @@ func (c *RESTController) deleteUser(w ResponseWriter, r *Request) {
 		nominees[productID] = nomineeID
 	}
 
-	if err = c.DBController.DeleteUser(&id, nominees); err == nil {
-		_, err = c.DBController.GetUser(&id)
-		if err != nil && err.Error() != dbcontrollers.ErrUserNotFound.Error() {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err = c.DBController.DeleteUser(&id, nominees); err != nil {
+		if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		_, err = c.DBController.GetProduct(&id)
-		if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
-			w.writeError(err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.writeData(DataOK, http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	_, err = c.DBController.GetUser(&id)
+	if err != nil && err.Error() != dbcontrollers.ErrUserNotFound.Error() {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	_, err = c.DBController.GetProduct(&id)
+	if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.writeData(DataOK, http.StatusOK)
 }
 
 func (c *RESTController) authenticate(w ResponseWriter, r *Request) {
@@ -302,16 +301,16 @@ func (c *RESTController) authenticate(w ResponseWriter, r *Request) {
 			}
 			return nil
 		})
-	if err == nil {
-		w.writeData(DataOK, http.StatusOK)
+	if err != nil {
+		if err.Error() == "Invalid password" || err.Error() == dbcontrollers.ErrUserNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
+			return
+		}
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == "Invalid password" || err.Error() == dbcontrollers.ErrUserNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
-		return
-	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+	w.writeData(DataOK, http.StatusOK)
 }
 
 func (c *RESTController) addProductUser(w ResponseWriter, r *Request) {
@@ -338,20 +337,17 @@ func (c *RESTController) addProductUser(w ResponseWriter, r *Request) {
 
 		privilege := userData["privilege"].(float64)
 
-		if err := c.DBController.AddProductUser(&productID, &userID, int(privilege)); err == nil {
-			w.writeData(DataOK, http.StatusCreated)
+		if err := c.DBController.AddProductUser(&productID, &userID, int(privilege)); err != nil {
+			if err.Error() == dbcontrollers.ErrProductNotFound.Error() ||
+				err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
+				w.writeError(err.Error(), http.StatusAccepted)
+				return
+			}
+			w.writeError(err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		if err.Error() == dbcontrollers.ErrProductNotFound.Error() ||
-			err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
-			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, err.Error())
-			w.writeError(err.Error(), http.StatusAccepted)
-			return
-		}
-		w.writeError(err.Error(), http.StatusInternalServerError)
 	}
+	w.writeData(DataOK, http.StatusCreated)
 }
 
 func (c *RESTController) deleteProductUser(w ResponseWriter, r *Request) {
@@ -374,13 +370,14 @@ func (c *RESTController) deleteProductUser(w ResponseWriter, r *Request) {
 		return
 	}
 
-	if err := c.DBController.DeleteProductUser(&productID, &userID); err == nil {
-		w.writeData(DataOK, http.StatusOK)
+	if err := c.DBController.DeleteProductUser(&productID, &userID); err != nil {
+		if err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
+			return
+		}
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err.Error() == dbcontrollers.ErrProductUserNotAssociated.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
-		return
-	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, http.StatusOK)
 }

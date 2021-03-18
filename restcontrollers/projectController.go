@@ -99,24 +99,24 @@ func (c *RESTController) addProject(w ResponseWriter, r *Request) {
 		func(*uuid.UUID) (string, error) {
 			return testPath, nil
 		})
-	if err == nil {
-		b, err := json.Marshal(project)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		duplicateProject := fmt.Errorf(dbcontrollers.ErrProjectExistsString, name)
+		if err.Error() == duplicateProject.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
 
-		w.writeData(string(b), http.StatusCreated)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	duplicateProject := fmt.Errorf(dbcontrollers.ErrProjectExistsString, name)
-	if err.Error() == duplicateProject.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(project)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.writeError(err.Error(), http.StatusInternalServerError)
+	w.writeData(string(b), http.StatusCreated)
 }
 
 func (c *RESTController) getProject(w ResponseWriter, r *Request) {
@@ -138,23 +138,23 @@ func (c *RESTController) getProject(w ResponseWriter, r *Request) {
 	}
 
 	projectData, err := c.DBController.GetProject(&id)
-	if err == nil {
-		b, err := json.Marshal(projectData)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
 
-		w.writeData(string(b), http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(projectData)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.writeError(err.Error(), http.StatusInternalServerError)
+	w.writeData(string(b), http.StatusOK)
 }
 
 func (c *RESTController) getProductProjects(w ResponseWriter, r *Request) {
@@ -176,22 +176,22 @@ func (c *RESTController) getProductProjects(w ResponseWriter, r *Request) {
 	}
 
 	projectList, err := c.DBController.GetProjectsByProductID(&id)
-	if err == nil {
-		b, err := json.Marshal(projectList)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProjectForProduct.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(string(b), http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProjectForProduct.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(projectList)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(string(b), http.StatusOK)
 }
 
 func (c *RESTController) getProjects(w ResponseWriter, r *Request) {
@@ -208,23 +208,23 @@ func (c *RESTController) getProjects(w ResponseWriter, r *Request) {
 	}
 
 	projectData, err := c.DBController.GetProjects(idList)
-	if err == nil {
-		b, err := json.Marshal(projectData)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(string(b), http.StatusOK)
+		err = errors.Wrap(errors.WithStack(err), "Failed to get projects")
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(projectData)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = errors.Wrap(errors.WithStack(err), "Failed to get projects")
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(string(b), http.StatusOK)
 }
 
 func (c *RESTController) deleteProject(w ResponseWriter, r *Request) {
@@ -248,20 +248,20 @@ func (c *RESTController) deleteProject(w ResponseWriter, r *Request) {
 	}
 
 	err = c.DBController.DeleteProject(&projectID)
-	if err == nil {
-		_, err = c.DBController.GetProject(&projectID)
-		if err != nil && err.Error() != dbcontrollers.ErrProjectNotFound.Error() {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(DataOK, http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	_, err = c.DBController.GetProject(&projectID)
+	if err != nil && err.Error() != dbcontrollers.ErrProjectNotFound.Error() {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, http.StatusOK)
 }

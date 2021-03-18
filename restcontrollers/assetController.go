@@ -22,22 +22,22 @@ func (c *RESTController) updateUserSettings(w ResponseWriter, r *Request) {
 	}
 
 	err = c.DBController.UpdateUserSettings(userData)
-	if err == nil {
-		statusCode, err := c.validateUser(userData)
-		if err != nil {
-			w.writeError(err.Error(), statusCode)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoUserSetttingsUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(DataOK, statusCode)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoUserSetttingsUpdate.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	statusCode, err := c.validateUser(userData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, statusCode)
 }
 
 func (c *RESTController) updateUserAssets(w ResponseWriter, r *Request) {
@@ -54,22 +54,22 @@ func (c *RESTController) updateUserAssets(w ResponseWriter, r *Request) {
 	}
 
 	err = c.DBController.UpdateUserAssets(userData)
-	if err == nil {
-		statusCode, err := c.validateUser(userData)
-		if err != nil {
-			w.writeError(err.Error(), statusCode)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoUserAssetsUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(DataOK, statusCode)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoUserAssetsUpdate.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	statusCode, err := c.validateUser(userData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, statusCode)
 }
 
 func (c *RESTController) updateProductDetails(w ResponseWriter, r *Request) {
@@ -87,22 +87,22 @@ func (c *RESTController) updateProductDetails(w ResponseWriter, r *Request) {
 	}
 
 	err = c.DBController.UpdateProductDetails(productData)
-	if err == nil {
-		statusCode, err := c.validateProduct(productData)
-		if err != nil {
-			w.writeError(err.Error(), statusCode)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProductDetailUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(DataOK, statusCode)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProductDetailUpdate.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	statusCode, err := c.validateProduct(productData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, statusCode)
 }
 
 func (c *RESTController) updateProductAssets(w ResponseWriter, r *Request) {
@@ -120,22 +120,22 @@ func (c *RESTController) updateProductAssets(w ResponseWriter, r *Request) {
 	}
 
 	err = c.DBController.UpdateProductAssets(productData)
-	if err == nil {
-		statusCode, err := c.validateProduct(productData)
-		if err != nil {
-			w.writeError(err.Error(), statusCode)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProductAssetUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(DataOK, statusCode)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProductAssetUpdate.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	statusCode, err := c.validateProduct(productData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, statusCode)
 }
 
 func (c *RESTController) updateProjectDetails(w ResponseWriter, r *Request) {
@@ -153,22 +153,22 @@ func (c *RESTController) updateProjectDetails(w ResponseWriter, r *Request) {
 	}
 
 	err = c.DBController.UpdateProjectDetails(projectData)
-	if err == nil {
-		statusCode, err := c.validateProject(projectData)
-		if err != nil {
-			w.writeError(err.Error(), statusCode)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProjectDetailsUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(DataOK, statusCode)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProjectDetailsUpdate.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	statusCode, err := c.validateProject(projectData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, statusCode)
 }
 
 func (c *RESTController) updateProjectAssets(w ResponseWriter, r *Request) {
@@ -185,20 +185,20 @@ func (c *RESTController) updateProjectAssets(w ResponseWriter, r *Request) {
 	}
 
 	err = c.DBController.UpdateProjectAssets(projectData)
-	if err == nil {
-		statusCode, err := c.validateProject(projectData)
-		if err != nil {
-			w.writeError(err.Error(), statusCode)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrNoProjectAssetsUpdate.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(DataOK, statusCode)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrNoProjectAssetsUpdate.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	statusCode, err := c.validateProject(projectData)
+	if err != nil {
+		w.writeError(err.Error(), statusCode)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, statusCode)
 }

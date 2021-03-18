@@ -82,24 +82,24 @@ func (c *RESTController) addProduct(w ResponseWriter, r *Request) {
 		func(*uuid.UUID) (string, error) {
 			return testPath, nil
 		})
-	if err == nil {
-		b, err := json.Marshal(product)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
+		if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
 
-		w.writeData(string(b), http.StatusCreated)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
-	if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(product)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.writeError(err.Error(), http.StatusInternalServerError)
+	w.writeData(string(b), http.StatusCreated)
 }
 
 func (c *RESTController) getProduct(w ResponseWriter, r *Request) {
@@ -122,23 +122,23 @@ func (c *RESTController) getProduct(w ResponseWriter, r *Request) {
 	}
 
 	productData, err := c.DBController.GetProduct(&id)
-	if err == nil {
-		b, err := json.Marshal(productData)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
 
-		w.writeData(string(b), http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(productData)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.writeError(err.Error(), http.StatusInternalServerError)
+	w.writeData(string(b), http.StatusOK)
 }
 
 func (c *RESTController) getProducts(w ResponseWriter, r *Request) {
@@ -155,22 +155,22 @@ func (c *RESTController) getProducts(w ResponseWriter, r *Request) {
 	}
 
 	productData, err := c.DBController.GetProducts(idList)
-	if err == nil {
-		b, err := json.Marshal(productData)
-		if err != nil {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(string(b), http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	b, err := json.Marshal(productData)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(string(b), http.StatusOK)
 }
 
 func (c *RESTController) deleteProduct(w ResponseWriter, r *Request) {
@@ -194,20 +194,20 @@ func (c *RESTController) deleteProduct(w ResponseWriter, r *Request) {
 	}
 
 	err = c.DBController.DeleteProduct(&productID)
-	if err == nil {
-		_, err = c.DBController.GetProduct(&productID)
-		if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
-			w.writeError(err.Error(), http.StatusInternalServerError)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
 			return
 		}
-
-		w.writeData(DataOK, http.StatusOK)
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err.Error() == dbcontrollers.ErrProductNotFound.Error() {
-		w.writeError(err.Error(), http.StatusAccepted)
+	_, err = c.DBController.GetProduct(&productID)
+	if err != nil && err.Error() != dbcontrollers.ErrProductNotFound.Error() {
+		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.writeError(err.Error(), http.StatusInternalServerError)
+
+	w.writeData(DataOK, http.StatusOK)
 }
