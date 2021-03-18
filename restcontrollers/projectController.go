@@ -44,54 +44,54 @@ func (c *RESTController) validateProject(expected *models.ProjectData) (int, err
 	return http.StatusOK, nil
 }
 
-func (c *RESTController) addProject(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) addProject(w ResponseWriter, r *Request) {
 	log.Println("Adding project")
 	data, err := decodePostData(w, r)
 	if err != nil {
-		writeError(err.Error(), w, http.StatusBadRequest)
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 	// Parse product info
 	projectJSON, ok := data["project"]
 	if !ok {
-		writeError("Missing 'project' element", w, http.StatusBadRequest)
+		w.writeError("Missing 'project' element", http.StatusBadRequest)
 		return
 	}
 
 	name, ok := projectJSON.(map[string]interface{})["name"].(string)
 	if !ok {
-		writeError("Missing 'name' element", w, http.StatusBadRequest)
+		w.writeError("Missing 'name' element", http.StatusBadRequest)
 		return
 	}
 
 	visibility, ok := projectJSON.(map[string]interface{})["visibility"].(string)
 	if !ok {
-		writeError("Missing 'visibility' element", w, http.StatusBadRequest)
+		w.writeError("Missing 'visibility' element", http.StatusBadRequest)
 		return
 	}
 
 	// Get user ID
 	userIDString, ok := data["owner_id"]
 	if !ok {
-		writeError("Missing 'user' element", w, http.StatusBadRequest)
+		w.writeError("Missing 'user' element", http.StatusBadRequest)
 		return
 	}
 
 	userID, err := uuid.Parse(userIDString.(string))
 	if err != nil {
-		writeError("Invalid 'userID'", w, http.StatusBadRequest)
+		w.writeError("Invalid 'userID'", http.StatusBadRequest)
 		return
 	}
 
 	productIDString, ok := data["product_id"]
 	if !ok {
-		writeError("Missing 'product' element", w, http.StatusBadRequest)
+		w.writeError("Missing 'product' element", http.StatusBadRequest)
 		return
 	}
 
 	productID, err := uuid.Parse(productIDString.(string))
 	if err != nil {
-		writeError("Invalid 'product id'", w, http.StatusBadRequest)
+		w.writeError("Invalid 'product id'", http.StatusBadRequest)
 		return
 	}
 
@@ -102,108 +102,108 @@ func (c *RESTController) addProject(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		b, err := json.Marshal(project)
 		if err != nil {
-			writeError(err.Error(), w, http.StatusInternalServerError)
+			w.writeError(err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		writeData(string(b), w, http.StatusCreated)
+		w.writeData(string(b), http.StatusCreated)
 		return
 	}
 
 	duplicateProject := fmt.Errorf(dbcontrollers.ErrProjectExistsString, name)
 	if err.Error() == duplicateProject.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
-		writeError(err.Error(), w, http.StatusAccepted)
+		w.writeError(err.Error(), http.StatusAccepted)
 		return
 	}
 
-	writeError(err.Error(), w, http.StatusInternalServerError)
+	w.writeError(err.Error(), http.StatusInternalServerError)
 }
 
-func (c *RESTController) getProject(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) getProject(w ResponseWriter, r *Request) {
 	log.Println("Getting project")
 	if err := checkRequestType(GET, w, r); err != nil {
-		writeError(err.Error(), w, http.StatusBadRequest)
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ids, ok := r.URL.Query()["id"]
 	if !ok || len(ids[0]) < 1 {
-		writeError("Url Param 'id' is missing", w, http.StatusBadRequest)
+		w.writeError("Url Param 'id' is missing", http.StatusBadRequest)
 		return
 	}
 
 	id, err := uuid.Parse(ids[0])
 	if err != nil {
-		writeError(err.Error(), w, http.StatusBadRequest)
+		w.writeError(err.Error(), http.StatusBadRequest)
 	}
 
 	projectData, err := c.DBController.GetProject(&id)
 	if err == nil {
 		b, err := json.Marshal(projectData)
 		if err != nil {
-			writeError(err.Error(), w, http.StatusInternalServerError)
+			w.writeError(err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		writeData(string(b), w, http.StatusOK)
+		w.writeData(string(b), http.StatusOK)
 		return
 	}
 
 	if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
-		writeError(err.Error(), w, http.StatusAccepted)
+		w.writeError(err.Error(), http.StatusAccepted)
 		return
 	}
 
-	writeError(err.Error(), w, http.StatusInternalServerError)
+	w.writeError(err.Error(), http.StatusInternalServerError)
 }
 
-func (c *RESTController) getProductProjects(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) getProductProjects(w ResponseWriter, r *Request) {
 	log.Println("Getting projects belonging to a product")
 	if err := checkRequestType(GET, w, r); err != nil {
-		writeError(err.Error(), w, http.StatusBadRequest)
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ids, ok := r.URL.Query()["product_id"]
 	if !ok || len(ids[0]) < 1 {
-		writeError("Url Param 'product_id' is missing", w, http.StatusBadRequest)
+		w.writeError("Url Param 'product_id' is missing", http.StatusBadRequest)
 		return
 	}
 
 	id, err := uuid.Parse(ids[0])
 	if err != nil {
-		writeError(err.Error(), w, http.StatusBadRequest)
+		w.writeError(err.Error(), http.StatusBadRequest)
 	}
 
 	projectList, err := c.DBController.GetProjectsByProductID(&id)
 	if err == nil {
 		b, err := json.Marshal(projectList)
 		if err != nil {
-			writeError(err.Error(), w, http.StatusInternalServerError)
+			w.writeError(err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		writeData(string(b), w, http.StatusOK)
+		w.writeData(string(b), http.StatusOK)
 		return
 	}
 
 	if err.Error() == dbcontrollers.ErrNoProjectForProduct.Error() {
-		writeError(err.Error(), w, http.StatusAccepted)
+		w.writeError(err.Error(), http.StatusAccepted)
 		return
 	}
-	writeError(err.Error(), w, http.StatusInternalServerError)
+	w.writeError(err.Error(), http.StatusInternalServerError)
 }
 
-func (c *RESTController) getProjects(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) getProjects(w ResponseWriter, r *Request) {
 	log.Println("Getting multiple projects")
 	if err := checkRequestType(GET, w, r); err != nil {
-		writeError(err.Error(), w, http.StatusBadRequest)
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	idList, err := parseIDList(w, r)
 	if err != nil {
-		writeError(err.Error(), w, http.StatusBadRequest)
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -211,39 +211,39 @@ func (c *RESTController) getProjects(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		b, err := json.Marshal(projectData)
 		if err != nil {
-			writeError(err.Error(), w, http.StatusInternalServerError)
+			w.writeError(err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		writeData(string(b), w, http.StatusOK)
+		w.writeData(string(b), http.StatusOK)
 		return
 	}
 
 	if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
-		writeError(err.Error(), w, http.StatusAccepted)
+		w.writeError(err.Error(), http.StatusAccepted)
 		return
 	}
 	err = errors.Wrap(errors.WithStack(err), "Failed to get projects")
-	writeError(err.Error(), w, http.StatusInternalServerError)
+	w.writeError(err.Error(), http.StatusInternalServerError)
 }
 
-func (c *RESTController) deleteProject(w http.ResponseWriter, r *http.Request) {
+func (c *RESTController) deleteProject(w ResponseWriter, r *Request) {
 	log.Println("Deleting project")
 	data, err := decodePostData(w, r)
 	if err != nil {
-		writeError(err.Error(), w, http.StatusBadRequest)
+		w.writeError(err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	projectIDString, ok := data["id"]
 	if !ok {
-		writeError("Missing 'project_id' element", w, http.StatusBadRequest)
+		w.writeError("Missing 'project_id' element", http.StatusBadRequest)
 		return
 	}
 
 	projectID, err := uuid.Parse(projectIDString.(string))
 	if err != nil {
-		writeError("Invalid 'productID'", w, http.StatusBadRequest)
+		w.writeError("Invalid 'productID'", http.StatusBadRequest)
 		return
 	}
 
@@ -251,17 +251,17 @@ func (c *RESTController) deleteProject(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		_, err = c.DBController.GetProject(&projectID)
 		if err != nil && err.Error() != dbcontrollers.ErrProjectNotFound.Error() {
-			writeError(err.Error(), w, http.StatusInternalServerError)
+			w.writeError(err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		writeData(DataOK, w, http.StatusOK)
+		w.writeData(DataOK, http.StatusOK)
 		return
 	}
 
 	if err.Error() == dbcontrollers.ErrProjectNotFound.Error() {
-		writeError(err.Error(), w, http.StatusAccepted)
+		w.writeError(err.Error(), http.StatusAccepted)
 		return
 	}
-	writeError(err.Error(), w, http.StatusInternalServerError)
+	w.writeError(err.Error(), http.StatusInternalServerError)
 }
