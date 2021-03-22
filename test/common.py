@@ -17,7 +17,7 @@ def addUser(data, httpConnection):
         response = getResponse(r.text)
         if response is None:
             return None
-        return response["ID"]
+        return response["id"]
     else:
         return data["user_id"]
 
@@ -43,7 +43,7 @@ def addProduct(data, userUUID, httpConnection):
         response = getResponse(r.text)
         if response is None:
             return None
-        return response["ID"]
+        return response["id"]
     else:
         return data["product_id"]
 
@@ -73,7 +73,7 @@ def addProject(data, userUUID, productUUID, httpConnection):
             pytest.fail(f"Failed to run test.\nDetails: {response}")
             return None
 
-        return response["ID"]
+        return response["id"]
     else:
         return data["id"]
 
@@ -106,7 +106,7 @@ def addProjects(data, userUUID, productUUID, httpConnection):
                 response = getResponse(r.text)
                 if response is None:
                     return None
-                uuidList.append(response["ID"])
+                uuidList.append(response["id"])
             else:
                 uuidList.append(element["id"])
     return uuidList

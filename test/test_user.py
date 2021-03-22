@@ -6,21 +6,21 @@ createTestData = [
     (
         # Input data
         {
-            'name': 'testUser',
+            'username': 'testUser',
             'email': 'testEmail',
             'password': 'testPassword'
         },
         # Expected
         {
-            "Name": "testUser",
-            "Email": "testEmail",
-            "Password": "dGVzdFBhc3N3b3Jk"
+            "username": "testUser",
+            "email": "testEmail",
+            "password": "dGVzdFBhc3N3b3Jk"
         }),
 
     (
         # Input data
         {
-            'name': 'testUserEmailExists',
+            'username': 'testUserEmailExists',
             'email': 'testEmail',
             'password': 'testPassword'
         },
@@ -30,7 +30,7 @@ createTestData = [
     (
         # Input data
         {
-            'name': 'testUser',
+            'username': 'testUser',
             'email': 'testEmailUserExists',
             'password': 'testPassword'
         },
@@ -53,8 +53,8 @@ def test_CreateUser(httpConnection, data, expected):
     if response is None:
         return None
     if r.status_code == 201:
-        if response["Name"] != expected["Name"] or \
-          response["Email"] != expected["Email"]:
+        if response["username"] != expected["username"] or \
+          response["email"] != expected["email"]:
             pytest.fail(
                 f"Test failed\nReturned: {response}\nExpected: {expected}")
         return
@@ -69,14 +69,14 @@ createTestData = [
     (
         # Input data
         {
-            'name': 'testUserGet',
+            'username': 'testUserGet',
             'email': 'testEmailGet',
             'password': 'testPassword'
         },
         # Expected
         {
-            "Name": "testUserGet",
-            "Email": "testEmailGet"
+            "username": "testUserGet",
+            "email": "testEmailGet"
         }),
 
     (
@@ -94,7 +94,7 @@ ids = ['Existing user', 'No existing user']
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_GetUser(httpConnection, data, expected):
     uuid = ""
-    if "name" in data:
+    if "username" in data:
         try:
             r = httpConnection.POST("/add-user", data)
         except Exception:
@@ -108,7 +108,7 @@ def test_GetUser(httpConnection, data, expected):
         response = common.getResponse(r.text, expected)
         if response is None:
             return None
-        uuid = response["ID"]
+        uuid = response["id"]
     else:
         uuid = data["id"]
 
@@ -124,12 +124,12 @@ def test_GetUser(httpConnection, data, expected):
     if r.status_code == 200:
         try:
             zeroID = '00000000-0000-0000-0000-000000000000'
-            if response["Name"] != expected["Name"] or \
-                response["Email"] != expected["Email"] or \
-                response["Settings"]["ID"] == '' or \
-                response["Settings"]["ID"] == zeroID or \
-                response["Assets"]["ID"] == '' or \
-                    response["Assets"]["ID"] == zeroID:
+            if response["username"] != expected["username"] or \
+                response["email"] != expected["email"] or \
+                response["settings"]["id"] == '' or \
+                response["settings"]["id"] == zeroID or \
+                response["assets"]["id"] == '' or \
+                    response["assets"]["id"] == zeroID:
                 pytest.fail(
                   f"Test failed\nReturned: {response}\nExpected: {expected}")
             return
@@ -146,14 +146,14 @@ createTestData = [
     (
         # Input data
         {
-            'name': 'testUserGetByEmail',
+            'username': 'testUserGetByEmail',
             'email': 'testEmailGetByEmail',
             'password': 'testPassword'
         },
         # Expected
         {
-            "Name": "testUserGetByEmail",
-            "Email": "testEmailGetByEmail",
+            "username": "testUserGetByEmail",
+            "email": "testEmailGetByEmail",
         }),
 
     (
@@ -171,7 +171,7 @@ ids = ['Existing user', 'No existing user']
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
 def test_GetUserByEmail(httpConnection, data, expected):
     email = ""
-    if "name" in data:
+    if "username" in data:
         try:
             r = httpConnection.POST("/add-user", data)
         except Exception:
@@ -185,7 +185,7 @@ def test_GetUserByEmail(httpConnection, data, expected):
             pytest.fail(f"Failed to add user.\nDetails: {response}")
             return
 
-        email = response["Email"]
+        email = response["email"]
     else:
         email = data["email"]
 
@@ -201,12 +201,12 @@ def test_GetUserByEmail(httpConnection, data, expected):
     if r.status_code == 200:
         try:
             zeroID = '00000000-0000-0000-0000-000000000000'
-            if response["Name"] != expected["Name"] or \
-                response["Email"] != expected["Email"] or \
-                response["Settings"]["ID"] == '' or \
-                response["Settings"]["ID"] == zeroID or \
-                response["Assets"]["ID"] == '' or \
-                    response["Assets"]["ID"] == zeroID:
+            if response["username"] != expected["username"] or \
+                response["email"] != expected["email"] or \
+                response["settings"]["id"] == '' or \
+                response["settings"]["id"] == zeroID or \
+                response["assets"]["id"] == '' or \
+                    response["assets"]["id"] == zeroID:
                 pytest.fail(
                     f"Test failed\nReturned: {response}\nExpected: {expected}")
             return
@@ -224,28 +224,28 @@ createTestData = [
     (
         # Input data
         [{
-            'name': 'testUserGetMultiple1',
+            'username': 'testUserGetMultiple1',
             'email': 'testEmailGetMultiple1',
             'password': 'testPassword'
         }, {
-            'name': 'testUserGetMultiple2',
+            'username': 'testUserGetMultiple2',
             'email': 'testEmailGetMultiple2',
             'password': 'testPassword'
         }],
         # Expected
         [{
-            "Name": "testUserGetMultiple1",
-            "Email": "testEmailGetMultiple1"
+            "username": "testUserGetMultiple1",
+            "email": "testEmailGetMultiple1"
         }, {
-            "Name": "testUserGetMultiple2",
-            "Email": "testEmailGetMultiple2"
+            "username": "testUserGetMultiple2",
+            "email": "testEmailGetMultiple2"
         }]
     ),
 
     (
         # Input data
         [{
-            'name': 'testUserGetMultipleFail',
+            'username': 'testUserGetMultipleFail',
             'email': 'testEmailGetMultipleFail',
             'password': 'testPassword'
         }, {
@@ -253,8 +253,8 @@ createTestData = [
         }],
         # Expected
         [{
-            "Name": "testUserGetMultipleFail",
-            "Email": "testEmailGetMultipleFail"
+            "username": "testUserGetMultipleFail",
+            "email": "testEmailGetMultipleFail"
         }]),
 
     (
@@ -271,7 +271,7 @@ ids = ['Existing users', 'Missing a user', 'No user']
 def test_GetUsers(httpConnection, data, expected):
     uuidList = list()
     for element in data:
-        if "name" in element:
+        if "username" in element:
             try:
                 r = httpConnection.POST("/add-user", element)
             except Exception:
@@ -285,7 +285,7 @@ def test_GetUsers(httpConnection, data, expected):
                 pytest.fail(f"Failed to add user.\nDetails: {response}")
                 return
 
-            uuidList.append(response["ID"])
+            uuidList.append(response["id"])
         else:
             uuidList.append(element["id"])
 
@@ -301,10 +301,10 @@ def test_GetUsers(httpConnection, data, expected):
     if r.status_code == 200:
         try:
             for index, user in enumerate(response):
-                asset = user["Assets"]["DataMap"]
-                settings = user["Settings"]["DataMap"]
-                if user["Name"] != expected[index]["Name"] or \
-                    user["Email"] != expected[index]["Email"] or \
+                asset = user["assets"]["datamap"]
+                settings = user["settings"]["datamap"]
+                if user["username"] != expected[index]["username"] or \
+                    user["email"] != expected[index]["email"] or \
                     "base_asset_path" not in asset or \
                     asset["base_asset_path"] != "testPath" or \
                     "base_asset_path" not in settings or \
@@ -328,7 +328,7 @@ createTestData = [
         # Input data
         {
             "user": {
-                'name': 'testUserGetPassword',
+                'username': 'testUserGetPassword',
                 'email': 'testEmailGetPassword',
                 'password': 'testPassword'
             },
@@ -344,7 +344,7 @@ createTestData = [
         # Input data
         {
             "user": {
-                'name': 'testUserGetPasswordInvalid',
+                'username': 'testUserGetPasswordInvalid',
                 'email': 'testEmailGetPasswordInvalid',
                 'password': 'testPassword'
             },
@@ -387,7 +387,7 @@ def test_Authenticate(httpConnection, data, expected):
             pytest.fail(f"Failed to add user.\nDetails: {response}")
             return
 
-        uuid = response["ID"]
+        uuid = response["id"]
         email = data["login"]["email"]
         password = data["login"]["password"]
     else:
@@ -419,13 +419,13 @@ createTestData = [
               "public": True
           },
           "user": {
-              "name": "testProductUser",
+              "username": "testProductUser",
               "email": "testEmailProductUser",
               "password": "testPassword"
           },
           "partner_user": [{
               "user": {
-                "name": "testUserPartner",
+                "username": "testUserPartner",
                 "email": "testEmailPartner",
                 "password": "testPassword"
               },
@@ -467,7 +467,7 @@ def test_AddProductUsers(httpConnection, data, expected):
                 return
 
             partnerUUID = dict()
-            partnerUUID["id"] = response["ID"]
+            partnerUUID["id"] = response["id"]
             partnerUUID["privilege"] = user["privilege"]
             partnerUUIDs.append(partnerUUID)
 
@@ -497,7 +497,7 @@ createTestData = [
               "name": "testProductUserDelete"
           },
           "user": {
-              "name": "testProductUserDelete",
+              "username": "testProductUserDelete",
               "email": "testEmailProductUserDelete",
               "password": "testPassword"
           }
@@ -542,7 +542,7 @@ createTestData = [
         # Input data
         {
             "user": {
-                "name": "testUserDelete",
+                "username": "testUserDelete",
                 "email": "testEmailDelete",
                 'password': 'testPassword'
             },
@@ -550,7 +550,7 @@ createTestData = [
                 "name": "testProductDelete"
             }],
             "nominated_users": [{
-                "name": "testUserNominated1",
+                "username": "testUserNominated1",
                 "email": "testEmailNominated1",
                 'password': 'testPassword'
             }]
@@ -570,7 +570,7 @@ createTestData = [
         # Input data
         {
             "user": {
-                "name": "testUserDeleteNoNominee",
+                "username": "testUserDeleteNoNominee",
                 "email": "testEmailDeleteNoNominee",
                 'password': 'testPassword'
             },
@@ -609,7 +609,7 @@ def test_DeleteUser(httpConnection, data, expected):
             if r.status_code != 201:
                 pytest.fail(f"Failed to add user.\nDetails: {response}")
                 return
-            productUUIDs.append(response["ID"])
+            productUUIDs.append(response["id"])
 
     # Add nominated users and their product relationship
     nominatedUUIDs = list()
@@ -629,11 +629,11 @@ def test_DeleteUser(httpConnection, data, expected):
                     f"Failed to add nominated user.\nDetails: {r.text}")
                 return
 
-            nominatedUUIDs.append(response["ID"])
+            nominatedUUIDs.append(response["id"])
 
             productUsers = list()
             productUser = dict()
-            productUser["id"] = response["ID"]
+            productUser["id"] = response["id"]
             productUser["privilege"] = 2
             productUsers.append(productUser)
             dataToSend = dict()

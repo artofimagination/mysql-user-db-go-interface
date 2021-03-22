@@ -17,8 +17,8 @@ const (
 var ErrAssetRefNotInitialised = errors.New("Asset references not initialised")
 
 type Asset struct {
-	ID      uuid.UUID `validation:"required"`
-	DataMap DataMap   `validation:"required"`
+	ID      uuid.UUID `json:"id" validate:"required"`
+	DataMap DataMap   `json:"datamap" validate:"required"`
 }
 
 // Assets structure contains the identification of all user related documents images.

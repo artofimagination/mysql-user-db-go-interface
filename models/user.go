@@ -12,12 +12,12 @@ var ErrInvalidSettingsID = "Invalid settings uuid"
 var ErrInvalidAssetsID = "Invalid assets uuid"
 
 type UserData struct {
-	ID       uuid.UUID
-	Name     string
-	Email    string
-	Password []byte
-	Settings *Asset
-	Assets   *Asset
+	ID       uuid.UUID `json:"id" validate:"required"`
+	Name     string    `json:"username" validate:"required"`
+	Email    string    `json:"email" validate:"required"`
+	Password []byte    `json:"password" validate:"required"`
+	Settings *Asset    `json:"settings" validate:"required"`
+	Assets   *Asset    `json:"assets" validate:"required"`
 }
 
 type ProductUser struct {
