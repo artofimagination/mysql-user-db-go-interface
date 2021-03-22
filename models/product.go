@@ -5,10 +5,10 @@ import (
 )
 
 type ProductData struct {
-	ID      uuid.UUID
-	Name    string
-	Assets  *Asset
-	Details *Asset
+	ID      uuid.UUID `json:"id" validate:"required"`
+	Name    string    `json:"name" validate:"required"`
+	Assets  *Asset    `json:"assets" validate:"required"`
+	Details *Asset    `json:"details" validate:"required"`
 }
 
 type UserProduct struct {

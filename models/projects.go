@@ -5,10 +5,10 @@ import (
 )
 
 type ProjectData struct {
-	ID        uuid.UUID
-	ProductID uuid.UUID
-	Assets    *Asset
-	Details   *Asset
+	ID        uuid.UUID `json:"id" validate:"required"`
+	ProductID uuid.UUID `json:"product-id" validate:"required"`
+	Assets    *Asset    `json:"assets" validate:"required"`
+	Details   *Asset    `json:"details" validate:"required"`
 }
 
 type UserProject struct {

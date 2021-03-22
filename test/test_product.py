@@ -10,14 +10,14 @@ createTestData = [
                 "name": "testProduct"
             },
             "user": {
-                "name": "testUserOwner",
+                "username": "testUserOwner",
                 "email": "testEmailOwner",
                 "password": "testPassword"
             }
         },
         # Expected
         {
-            "Name": "testProduct"
+            "name": "testProduct"
         }),
 
     (
@@ -27,7 +27,7 @@ createTestData = [
               "name": "testProduct"
             },
             "user": {
-              "name": "testUserOwner2",
+              "username": "testUserOwner2",
               "email": "testEmailOwner2",
               "password": "testPassword"
             }
@@ -70,7 +70,7 @@ def test_CreateProduct(httpConnection, data, expected):
     if response is None:
         return None
     if r.status_code == 201:
-        if response["Name"] != expected["Name"]:
+        if response["name"] != expected["name"]:
             pytest.fail(
               f"Test failed\nReturned: {response}\nExpected: {expected}")
         return
@@ -89,14 +89,14 @@ createTestData = [
               "name": "testProductGet"
             },
             "user": {
-              "name": "testUserOwnerGet",
+              "username": "testUserOwnerGet",
               "email": "testEmailOwnerGet",
               "password": "testPassword"
             }
         },
         # Expected
         {
-            'Name': 'testProductGet',
+            'name': 'testProductGet',
             'base_asset_path': 'testPath'
         }),
 
@@ -104,7 +104,7 @@ createTestData = [
       # Input data
       {
           "user": {
-            "name": "testUserOwnerGet1",
+            "username": "testUserOwnerGet1",
             "email": "testEmailOwnerGet1",
             "password": "testPassword"
           },
@@ -138,9 +138,9 @@ def test_GetProduct(httpConnection, data, expected):
         return None
     if r.status_code == 200:
         try:
-            asset = response["Assets"]["DataMap"]
-            details = response["Details"]["DataMap"]
-            if response["Name"] != expected["Name"] or \
+            asset = response["assets"]["datamap"]
+            details = response["details"]["datamap"]
+            if response["name"] != expected["name"] or \
                 "base_asset_path" not in asset or \
                 asset["base_asset_path"] != "testPath" or \
                 "base_asset_path" not in details or \
@@ -169,7 +169,7 @@ createTestData = [
                     "name": "testProductGetMultiple2"
                 }],
             "user": {
-                "name": "testUserOwnerGetMultiple",
+                "username": "testUserOwnerGetMultiple",
                 "email": "testEmailOwnerGetMultiple",
                 "password": "testPassword"
             }
@@ -177,11 +177,11 @@ createTestData = [
         # Expected
         [
             {
-                'Name': 'testProductGetMultiple1',
+                'name': 'testProductGetMultiple1',
                 'base_asset_path': 'testPath'
             },
             {
-                'Name': 'testProductGetMultiple2',
+                'name': 'testProductGetMultiple2',
                 'base_asset_path': 'testPath'
             }]),
 
@@ -195,14 +195,14 @@ createTestData = [
                     "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
                 }],
             "user": {
-                "name": "testUserOwnerGetMultipleFail",
+                "username": "testUserOwnerGetMultipleFail",
                 "email": "testEmailOwnerGetMultipleFail",
                 "password": "testPassword"
             }
         },
         # Expected
         [{
-            'Name': 'testProductGetMultipleFail',
+            'name': 'testProductGetMultipleFail',
             'base_asset_path': 'testPath'
         }]),
     (
@@ -212,7 +212,7 @@ createTestData = [
                   "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
             }],
             "user": {
-                "name": "testUserOwnerGetMultipleNoProduct",
+                "username": "testUserOwnerGetMultipleNoProduct",
                 "email": "testEmailOwnerGetMultipleNoProduct",
                 "password": "testPassword"
             }
@@ -253,7 +253,7 @@ def test_GetProducts(httpConnection, data, expected):
                 response = common.getResponse(r.text, expected)
                 if response is None:
                     return None
-                uuidList.append(response["ID"])
+                uuidList.append(response["id"])
             else:
                 uuidList.append(element["product_id"])
 
@@ -269,9 +269,9 @@ def test_GetProducts(httpConnection, data, expected):
     if r.status_code == 200:
         try:
             for index, product in enumerate(response):
-                asset = product["Assets"]["DataMap"]
-                details = product["Details"]["DataMap"]
-                if product["Name"] != expected[index]["Name"] or \
+                asset = product["assets"]["datamap"]
+                details = product["details"]["datamap"]
+                if product["name"] != expected[index]["name"] or \
                     "base_asset_path" not in asset or \
                     asset["base_asset_path"] != "testPath" or \
                     "base_asset_path" not in details or \
@@ -298,7 +298,7 @@ createTestData = [
                 "name": "testProductDeleteProduct"
             },
             "user": {
-                "name": "testUserOwnerDeleteProduct",
+                "username": "testUserOwnerDeleteProduct",
                 "email": "testEmailOwnerDeleteProduct",
                 "password": "testPassword"
             }
@@ -310,7 +310,7 @@ createTestData = [
         # Input data
         {
           "user": {
-            "name": "testUserOwnerDeleteProduct1",
+            "username": "testUserOwnerDeleteProduct1",
             "email": "testEmailOwnerDeleteProduct1",
             "password": "testPassword"
           },

@@ -50,9 +50,9 @@ func (c *RESTController) addUser(w ResponseWriter, r *Request) {
 		return
 	}
 
-	name, ok := data["name"].(string)
+	name, ok := data["username"].(string)
 	if !ok {
-		w.writeError("Missing 'name' element", http.StatusBadRequest)
+		w.writeError("Missing 'username' element", http.StatusBadRequest)
 		return
 	}
 

@@ -10,7 +10,7 @@ createTestData = [
               "name": "testProductUpdateDetails"
           },
           "user": {
-              "name": "testUserOwnerUpdateDetails",
+              "username": "testUserOwnerUpdateDetails",
               "email": "testEmailOwnerUpdateDetails",
               "password": "testPassword"
           },
@@ -43,7 +43,7 @@ def test_UpdateProductDetail(httpConnection, data, expected):
         if response is None:
             return None
         dataToSend["product"] = data["product"]
-        dataToSend["user"] = response["ID"]
+        dataToSend["user"] = response["id"]
 
     if "product" in data:
         try:
@@ -62,7 +62,7 @@ def test_UpdateProductDetail(httpConnection, data, expected):
         dataToSend = dict()
         dataToSend["product"] = response
         for k, v in data["details_entry"].items():
-            dataToSend["product"]["Details"]["DataMap"][k] = v
+            dataToSend["product"]["details"]["datamap"][k] = v
 
     try:
         r = httpConnection.POST("/update-product-details", dataToSend)
@@ -87,7 +87,7 @@ createTestData = [
                 "name": "testProductUpdateAssets"
             },
             "user": {
-                "name": "testUserOwnerUpdateAssets",
+                "username": "testUserOwnerUpdateAssets",
                 "email": "testEmailOwnerUpdateAssets",
                 "password": "testPassword"
             },
@@ -120,7 +120,7 @@ def test_UpdateProductAsset(httpConnection, data, expected):
         if response is None:
             return None
         dataToSend["product"] = data["product"]
-        dataToSend["user"] = response["ID"]
+        dataToSend["user"] = response["id"]
 
     if "product" in data:
         try:
@@ -139,7 +139,7 @@ def test_UpdateProductAsset(httpConnection, data, expected):
         dataToSend = dict()
         dataToSend["product"] = response
         for k, v in data["details_entry"].items():
-            dataToSend["product"]["Assets"]["DataMap"][k] = v
+            dataToSend["product"]["assets"]["datamap"][k] = v
 
     try:
         r = httpConnection.POST("/update-product-assets", dataToSend)
@@ -164,7 +164,7 @@ createTestData = [
                 "name": "testProjectUpdateDetails"
             },
             "user": {
-                "name": "testUserProjectUpdateDetails",
+                "username": "testUserProjectUpdateDetails",
                 "email": "testEmailProjectUpdateDetails",
                 "password": "testPassword"
             },
@@ -214,7 +214,7 @@ def test_UpdateProjectDetail(httpConnection, data, expected):
         dataToSend = dict()
         dataToSend["project"] = response
         for k, v in data["details_entry"].items():
-            dataToSend["project"]["Details"]["DataMap"][k] = v
+            dataToSend["project"]["details"]["datamap"][k] = v
 
     try:
         r = httpConnection.POST("/update-project-details", dataToSend)
@@ -239,7 +239,7 @@ createTestData = [
                 "name": "testProjectUpdateAssets"
             },
             "user": {
-                "name": "testUserProjectUpdateAssets",
+                "username": "testUserProjectUpdateAssets",
                 "email": "testEmailProjectUpdateAssets",
                 "password": "testPassword"
             },
@@ -289,7 +289,7 @@ def test_UpdateProjectAsset(httpConnection, data, expected):
         dataToSend = dict()
         dataToSend["project"] = response
         for k, v in data["details_entry"].items():
-            dataToSend["project"]["Assets"]["DataMap"][k] = v
+            dataToSend["project"]["assets"]["datamap"][k] = v
 
     try:
         r = httpConnection.POST("/update-project-assets", dataToSend)
@@ -311,7 +311,7 @@ createTestData = [
         # Input data
         {
             "user": {
-                "name": "testUserUpdateSettings",
+                "username": "testUserUpdateSettings",
                 "email": "testEmailUpdateSettings",
                 "password": "testPassword"
             },
@@ -345,7 +345,7 @@ def test_UpdateUserSettings(httpConnection, data, expected):
             return None
         dataToSend["user"] = response
         for k, v in data["details_entry"].items():
-            dataToSend["user"]["Settings"]["DataMap"][k] = v
+            dataToSend["user"]["settings"]["datamap"][k] = v
 
     try:
         r = httpConnection.POST("/update-user-settings", dataToSend)
@@ -367,7 +367,7 @@ createTestData = [
       # Input data
       {
           "user": {
-              "name": "testUserUpdateUserAssets",
+              "username": "testUserUpdateUserAssets",
               "email": "testEmailUpdateUserAssets",
               "password": "testPassword"
           },
@@ -401,7 +401,7 @@ def test_UpdateUserAsset(httpConnection, data, expected):
             return None
         dataToSend["user"] = response
         for k, v in data["details_entry"].items():
-            dataToSend["user"]["Assets"]["DataMap"][k] = v
+            dataToSend["user"]["assets"]["datamap"][k] = v
 
     try:
         r = httpConnection.POST("/update-user-assets", dataToSend)

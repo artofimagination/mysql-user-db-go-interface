@@ -10,7 +10,7 @@ createTestData = [
               "name": "testProductAddProject",
             },
             "user": {
-              "name": "testUserOwnerAddProject",
+              "username": "testUserOwnerAddProject",
               "email": "testEmailOwnerAddProject",
               "password": "testPassword"
             },
@@ -67,7 +67,7 @@ def test_CreateProject(httpConnection, data, expected):
     if response is None:
         return None
     if r.status_code == 201:
-        details = response["Details"]["DataMap"]
+        details = response["details"]["datamap"]
         if details["name"] != expected["name"] or \
                 details["visibility"] != expected["visibility"]:
             pytest.fail(
@@ -88,7 +88,7 @@ createTestData = [
               "name": "testProductGetProject"
           },
           "user": {
-              "name": "testUserOwnerGetProject",
+              "username": "testUserOwnerGetProject",
               "email": "testEmailOwnerGetProject",
               "password": "testPassword"
           },
@@ -110,7 +110,7 @@ createTestData = [
                 "name": "testProductGetProjectMissing"
             },
             "user": {
-                "name": "testUserOwnerGetProjectMissing",
+                "username": "testUserOwnerGetProjectMissing",
                 "email": "testEmailOwnerGetProjectMissing",
                 "password": "testPassword"
             },
@@ -154,7 +154,7 @@ def test_GetProject(httpConnection, data, expected):
     if response is None:
         return None
     if r.status_code == 200:
-        details = response["Details"]["DataMap"]
+        details = response["details"]["datamap"]
         if details["name"] != expected["name"] or \
                 details["visibility"] != expected["visibility"]:
             pytest.fail(
@@ -175,7 +175,7 @@ createTestData = [
               "name": "testProductGetProjectMultiple"
             },
             "user": {
-              "name": "testUserOwnerGetProjectMultiple",
+              "username": "testUserOwnerGetProjectMultiple",
               "email": "testEmailOwnerGetProjectMultiple",
               "password": "testPassword"
             },
@@ -207,7 +207,7 @@ createTestData = [
             "name": "testProductGetProjectMultiple2"
           },
           "user": {
-            "name": "testUserOwnerGetProjectMultiple2",
+            "username": "testUserOwnerGetProjectMultiple2",
             "email": "testEmailOwnerGetProjectMultiple2",
             "password": "testPassword"
           },
@@ -233,7 +233,7 @@ createTestData = [
               "name": "testProductGetProjectMultiple3"
           },
           "user": {
-              "name": "testUserOwnerGetProjectMultiple3",
+              "username": "testUserOwnerGetProjectMultiple3",
               "email": "testEmailOwnerGetProjectMultiple3",
               "password": "testPassword"
           },
@@ -274,7 +274,7 @@ def test_GetProjects(httpConnection, data, expected):
         return None
     if r.status_code == 200:
         for index, product in enumerate(response):
-            details = product["Details"]["DataMap"]
+            details = product["details"]["datamap"]
             if details["name"] != expected[index]["name"] or \
                     details["visibility"] != expected[index]["visibility"]:
                 pytest.fail(
@@ -295,7 +295,7 @@ createTestData = [
               "name": "testProductGetProductProjects"
             },
             "user": {
-              "name": "testUserOwnerGetProductProjects",
+              "username": "testUserOwnerGetProductProjects",
               "email": "testEmailOwnerGetProductProjects",
               "password": "testPassword"
             },
@@ -325,7 +325,7 @@ createTestData = [
                 "name": "testProductGetProductProjects2"
             },
             "user": {
-              "name": "testUserOwnerGetProductProjects2",
+              "username": "testUserOwnerGetProductProjects2",
               "email": "testEmailOwnerGetProductProjects2",
               "password": "testPassword"
             },
@@ -347,7 +347,7 @@ createTestData = [
       # Input data
       {
           "user": {
-              "name": "testUserOwnerGetProductProjects3",
+              "username": "testUserOwnerGetProductProjects3",
               "email": "testEmailOwnerGetProductProjects3",
               "password": "testPassword"
           },
@@ -390,7 +390,7 @@ def test_GetProductProjects(httpConnection, data, expected):
         return None
     if r.status_code == 200:
         for index, product in enumerate(response):
-            details = product["Details"]["DataMap"]
+            details = product["details"]["datamap"]
             if details["name"] != expected[index]["name"] or \
                     details["visibility"] != expected[index]["visibility"]:
                 pytest.fail(
@@ -411,7 +411,7 @@ createTestData = [
               "name": "testProductDeleteProject"
             },
             "user": {
-              "name": "testUserOwnerDeleteProject",
+              "username": "testUserOwnerDeleteProject",
               "email": "testEmailOwnerDeleteProject",
               "password": "testPassword"
             },
@@ -430,7 +430,7 @@ createTestData = [
               "name": "testProductDeleteProjectMissing"
           },
           "user": {
-              "name": "testUserOwnerDeleteProjectMissing",
+              "username": "testUserOwnerDeleteProjectMissing",
               "email": "testEmailOwnerDeleteProjectMissing",
               "password": "testPassword"
           },
