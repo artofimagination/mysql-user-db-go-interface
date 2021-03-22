@@ -93,6 +93,7 @@ func (c *MYSQLController) CreateUser(
 		ID:       user.ID,
 		Name:     user.Name,
 		Email:    user.Email,
+		Password: user.Password,
 		Settings: userSettings,
 		Assets:   asset,
 	}
@@ -210,6 +211,7 @@ func (c *MYSQLController) GetUser(userID *uuid.UUID) (*models.UserData, error) {
 		ID:       user.ID,
 		Name:     user.Name,
 		Email:    user.Email,
+		Password: user.Password,
 		Settings: settings,
 		Assets:   assets,
 	}
@@ -248,6 +250,7 @@ func (c *MYSQLController) GetUserByEmail(email string) (*models.UserData, error)
 		ID:       user.ID,
 		Name:     user.Name,
 		Email:    user.Email,
+		Password: user.Password,
 		Settings: settings,
 		Assets:   assets,
 	}
@@ -299,6 +302,7 @@ func (c *MYSQLController) GetUsers(userIDs []uuid.UUID) ([]models.UserData, erro
 			ID:       user.ID,
 			Name:     user.Name,
 			Email:    user.Email,
+			Password: user.Password,
 			Settings: &settings[index],
 			Assets:   &assets[index],
 		}

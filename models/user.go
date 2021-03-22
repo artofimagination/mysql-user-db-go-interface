@@ -15,6 +15,7 @@ type UserData struct {
 	ID       uuid.UUID
 	Name     string
 	Email    string
+	Password []byte
 	Settings *Asset
 	Assets   *Asset
 }
