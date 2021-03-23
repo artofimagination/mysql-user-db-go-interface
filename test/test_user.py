@@ -113,7 +113,7 @@ def test_GetUser(httpConnection, data, expected):
         uuid = data["id"]
 
     try:
-        r = httpConnection.GET("/get-user", {"id": uuid})
+        r = httpConnection.GET("/get-user-by-id", {"id": uuid})
     except Exception:
         pytest.fail("Failed to send GET request")
         return
