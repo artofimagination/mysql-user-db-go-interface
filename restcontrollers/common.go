@@ -53,7 +53,7 @@ const (
 
 var testPath = "testPath"
 
-var DataOK = "\"OK\""
+var DataOK = "OK"
 
 type ResponseWriter struct {
 	http.ResponseWriter
@@ -63,17 +63,33 @@ type Request struct {
 	*http.Request
 }
 
+type ResponseData struct {
+	Error string      `json:"error" validation:"required"`
+	Data  interface{} `json:"data" validation:"required"`
+}
+
 func (w ResponseWriter) writeError(message string, statusCode int) {
-	w.writeResponse(fmt.Sprintf("{\"error\":\"%s\"}", message), statusCode)
+	response := &ResponseData{
+		Error: message,
+	}
+	w.writeResponse(response, statusCode)
 }
 
-func (w ResponseWriter) writeData(data string, statusCode int) {
-	w.writeResponse(fmt.Sprintf("{\"data\": %s}", data), statusCode)
+func (w ResponseWriter) writeData(data interface{}, statusCode int) {
+	response := &ResponseData{
+		Data: data,
+	}
+	w.writeResponse(response, statusCode)
 }
 
-func (w ResponseWriter) writeResponse(data string, statusCode int) {
+func (w ResponseWriter) writeResponse(response *ResponseData, statusCode int) {
+	b, err := json.Marshal(response)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(statusCode)
-	fmt.Fprint(w, data)
+	fmt.Fprint(w, string(b))
 }
 
 func checkRequestType(requestTypeString string, w ResponseWriter, r *Request) error {
@@ -101,10 +117,9 @@ func decodePostData(w ResponseWriter, r *Request) (map[string]interface{}, error
 	return data, nil
 }
 
-func parseIDList(w ResponseWriter, r *Request) ([]uuid.UUID, error) {
+func parseIDList(r *Request) ([]uuid.UUID, error) {
 	ids, ok := r.URL.Query()["ids"]
 	if !ok || len(ids[0]) < 1 {
-		w.WriteHeader(http.StatusBadRequest)
 		return nil, errors.New("Missing 'ids'")
 	}
 
@@ -112,7 +127,6 @@ func parseIDList(w ResponseWriter, r *Request) ([]uuid.UUID, error) {
 	for _, idString := range ids {
 		id, err := uuid.Parse(idString)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
 			return nil, errors.New("Invalid 'ids'")
 		}
 		idList = append(idList, id)

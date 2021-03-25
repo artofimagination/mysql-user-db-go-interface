@@ -93,13 +93,7 @@ func (c *RESTController) addProduct(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(product)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusCreated)
+	w.writeData(product, http.StatusCreated)
 }
 
 func (c *RESTController) getProduct(w ResponseWriter, r *Request) {
@@ -132,13 +126,7 @@ func (c *RESTController) getProduct(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(productData)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusOK)
+	w.writeData(productData, http.StatusOK)
 }
 
 func (c *RESTController) getProducts(w ResponseWriter, r *Request) {
@@ -148,7 +136,7 @@ func (c *RESTController) getProducts(w ResponseWriter, r *Request) {
 		return
 	}
 
-	idList, err := parseIDList(w, r)
+	idList, err := parseIDList(r)
 	if err != nil {
 		w.writeError(err.Error(), http.StatusBadRequest)
 		return
@@ -164,13 +152,7 @@ func (c *RESTController) getProducts(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(productData)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusOK)
+	w.writeData(productData, http.StatusOK)
 }
 
 func (c *RESTController) deleteProduct(w ResponseWriter, r *Request) {

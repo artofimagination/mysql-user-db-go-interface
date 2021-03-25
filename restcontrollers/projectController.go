@@ -110,13 +110,7 @@ func (c *RESTController) addProject(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(project)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusCreated)
+	w.writeData(project, http.StatusCreated)
 }
 
 func (c *RESTController) getProject(w ResponseWriter, r *Request) {
@@ -148,13 +142,7 @@ func (c *RESTController) getProject(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(projectData)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusOK)
+	w.writeData(projectData, http.StatusOK)
 }
 
 func (c *RESTController) getProductProjects(w ResponseWriter, r *Request) {
@@ -185,13 +173,7 @@ func (c *RESTController) getProductProjects(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(projectList)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusOK)
+	w.writeData(projectList, http.StatusOK)
 }
 
 func (c *RESTController) getProjects(w ResponseWriter, r *Request) {
@@ -201,7 +183,7 @@ func (c *RESTController) getProjects(w ResponseWriter, r *Request) {
 		return
 	}
 
-	idList, err := parseIDList(w, r)
+	idList, err := parseIDList(r)
 	if err != nil {
 		w.writeError(err.Error(), http.StatusBadRequest)
 		return
@@ -218,13 +200,7 @@ func (c *RESTController) getProjects(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(projectData)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusOK)
+	w.writeData(projectData, http.StatusOK)
 }
 
 func (c *RESTController) deleteProject(w ResponseWriter, r *Request) {

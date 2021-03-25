@@ -86,13 +86,7 @@ func (c *RESTController) addUser(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(user)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusCreated)
+	w.writeData(user, http.StatusCreated)
 }
 
 func (c *RESTController) getUser(w ResponseWriter, r *Request) {
@@ -124,13 +118,7 @@ func (c *RESTController) getUser(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(userData)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusOK)
+	w.writeData(userData, http.StatusOK)
 }
 
 func (c *RESTController) getUserByEmail(w ResponseWriter, r *Request) {
@@ -156,13 +144,7 @@ func (c *RESTController) getUserByEmail(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(userData)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusOK)
+	w.writeData(userData, http.StatusOK)
 }
 
 func (c *RESTController) getUsers(w ResponseWriter, r *Request) {
@@ -172,7 +154,7 @@ func (c *RESTController) getUsers(w ResponseWriter, r *Request) {
 		return
 	}
 
-	idList, err := parseIDList(w, r)
+	idList, err := parseIDList(r)
 	if err != nil {
 		w.writeError(err.Error(), http.StatusBadRequest)
 		return
@@ -188,13 +170,7 @@ func (c *RESTController) getUsers(w ResponseWriter, r *Request) {
 		return
 	}
 
-	b, err := json.Marshal(userData)
-	if err != nil {
-		w.writeError(err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.writeData(string(b), http.StatusOK)
+	w.writeData(userData, http.StatusOK)
 }
 
 func (c *RESTController) deleteUser(w ResponseWriter, r *Request) {
