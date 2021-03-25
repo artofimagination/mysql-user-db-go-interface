@@ -4,9 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/artofimagination/mysql-user-db-go-interface/tests"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 )
 
 const (
@@ -22,10 +21,10 @@ type ProductInputData struct {
 	product *Product
 }
 
-func createTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := &test.OrderedTests{
-		OrderedList: make(test.OrderedTestList, 0),
-		TestDataSet: make(test.DataSet),
+func createTestData(testID int) (*tests.OrderedTests, error) {
+	dataSet := &tests.OrderedTests{
+		OrderedList: make(tests.OrderedTestList, 0),
+		TestDataSet: make(tests.DataSet),
 	}
 
 	assetsID, err := uuid.NewUUID()
@@ -66,7 +65,7 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		input := ProductInputData{
 			product: product,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     input,
 			Mock:     nil,
 			Expected: expected,
@@ -81,7 +80,7 @@ func createTestData(testID int) (*test.OrderedTests, error) {
 		input = ProductInputData{
 			product: product,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     input,
 			Mock:     nil,
 			Expected: expected,
@@ -114,15 +113,7 @@ func TestNewProduct(t *testing.T) {
 				&inputData.product.DetailsID,
 				&inputData.product.AssetsID,
 			)
-			if diff := pretty.Diff(output, expectedData.product); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.product, diff)
-				return
-			}
-
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(output, expectedData.product, err, expectedData.err, testCaseString, t)
 		})
 	}
 }

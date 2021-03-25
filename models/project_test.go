@@ -4,9 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/artofimagination/mysql-user-db-go-interface/tests"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 )
 
 const (
@@ -27,10 +26,10 @@ type ProjectInputData struct {
 	project *Project
 }
 
-func createProjectTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := &test.OrderedTests{
-		OrderedList: make(test.OrderedTestList, 0),
-		TestDataSet: make(test.DataSet),
+func createProjectTestData(testID int) (*tests.OrderedTests, error) {
+	dataSet := &tests.OrderedTests{
+		OrderedList: make(tests.OrderedTestList, 0),
+		TestDataSet: make(tests.DataSet),
 	}
 
 	assetsID, err := uuid.NewUUID()
@@ -74,7 +73,7 @@ func createProjectTestData(testID int) (*test.OrderedTests, error) {
 			projectID: projectID,
 			err:       nil,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 			Mock:     mockData,
@@ -91,7 +90,7 @@ func createProjectTestData(testID int) (*test.OrderedTests, error) {
 			projectID: projectID,
 			err:       err,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 			Mock:     mockData,
@@ -130,15 +129,7 @@ func TestNewProject(t *testing.T) {
 				&inputData.project.DetailsID,
 				&inputData.project.AssetsID,
 			)
-			if diff := pretty.Diff(output, expectedData.project); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.project, diff)
-				return
-			}
-
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(output, expectedData.project, err, expectedData.err, testCaseString, t)
 		})
 	}
 }

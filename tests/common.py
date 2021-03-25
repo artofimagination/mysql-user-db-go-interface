@@ -118,7 +118,7 @@ def addProjects(data, userUUID, productUUID, httpConnection):
 # but not actually returning a test result.
 def getResponse(responseText, expected=None):
     response = json.loads(responseText)
-    if "error" in response:
+    if "error" in response and response["error"] != "":
         error = response["error"]
         if expected is None or (expected is not None and error != expected):
             pytest.fail(f"Failed to run test.\nDetails: {error}")
