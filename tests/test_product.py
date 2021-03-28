@@ -33,7 +33,9 @@ createTestData = [
             }
         },
         # Expected
-        "Product with name testProduct already exists"),
+        {
+            "error": "Product with name testProduct already exists"
+        }),
 
     (
         # Input data
@@ -44,7 +46,9 @@ createTestData = [
             "user_id": "c34a7368-344a-11eb-adc1-0242ac120002"
         },
         # Expected
-        "The selected user not found")
+        {
+            "error": "The selected user not found"
+        })
 ]
 
 ids = ['No existing product', 'Existing product', 'Missing user']
@@ -111,7 +115,9 @@ createTestData = [
           "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
       },
       # Expected
-      "The selected product not found")
+      {
+          "error": "The selected product not found"
+      })
 ]
 
 ids = ['Existing product', 'No existing product']
@@ -218,7 +224,9 @@ createTestData = [
             }
         },
         # Expected
-        "The selected product not found")
+        {
+            "error": "The selected product not found"
+        })
 ]
 
 ids = ['Existing products', 'Missing a product', 'No product']
@@ -317,7 +325,9 @@ createTestData = [
           "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
         },
         # Expected
-        "The selected product not found")]
+        {
+            "error": "The selected product not found"
+        })]
 
 ids = ['Existing product', 'No existing product']
 

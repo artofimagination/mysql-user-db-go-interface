@@ -3,6 +3,7 @@ package restcontrollers
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -240,4 +241,164 @@ func (c *RESTController) deleteProject(w ResponseWriter, r *Request) {
 	}
 
 	w.writeData(DataOK, http.StatusOK)
+}
+
+func (c *RESTController) addProjectViewer(w ResponseWriter, r *Request) {
+	log.Println("Adding project viewer")
+	if err := checkRequestType(POST, w, r); err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
+	}
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	projectViewer := &models.ProjectViewer{}
+	if err := json.Unmarshal(body, &projectViewer); err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := c.DBController.CreateProjectViewer(projectViewer); err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.writeData(DataOK, http.StatusCreated)
+}
+
+func (c *RESTController) deleteProjectViewerByUserID(w ResponseWriter, r *Request) {
+	log.Println("Deleting project viewer by user id")
+	data, err := decodePostData(w, r)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userIDString, ok := data["user_id"]
+	if !ok {
+		w.writeError("Missing 'user_id' element", http.StatusBadRequest)
+		return
+	}
+
+	userID, err := uuid.Parse(userIDString.(string))
+	if err != nil {
+		w.writeError("Invalid 'user id'", http.StatusBadRequest)
+		return
+	}
+
+	err = c.DBController.DeleteProjectViewerByUserID(&userID)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = c.DBController.GetProjectViewersByUserID(&userID)
+	if err != nil && err.Error() != dbcontrollers.ErrUserIsNotConnectedToAnyViewer.Error() {
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.writeData(DataOK, http.StatusOK)
+}
+
+func (c *RESTController) deleteProjectViewerByViewerID(w ResponseWriter, r *Request) {
+	log.Println("Deleting project viewer by viewer id")
+	data, err := decodePostData(w, r)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	viewerIDString, ok := data["viewer_id"]
+	if !ok {
+		w.writeError("Missing 'viewer_id' element", http.StatusBadRequest)
+		return
+	}
+
+	viewerID, err := uuid.Parse(viewerIDString.(string))
+	if err != nil {
+		w.writeError("Invalid 'viewer id'", http.StatusBadRequest)
+		return
+	}
+
+	err = c.DBController.DeleteProjectViewerByViewerID(&viewerID)
+	if err != nil {
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = c.DBController.GetProjectViewersByViewerID(&viewerID)
+	if err != nil && err != dbcontrollers.ErrProjectViewerNotFound {
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.writeData(DataOK, http.StatusOK)
+}
+
+func (c *RESTController) getProjectViewersByUserID(w ResponseWriter, r *Request) {
+	log.Println("Getting project viewers by user id")
+	if err := checkRequestType(GET, w, r); err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ids, ok := r.URL.Query()["user_id"]
+	if !ok || len(ids[0]) < 1 {
+		w.writeError("Url Param 'user_id' is missing", http.StatusBadRequest)
+		return
+	}
+
+	id, err := uuid.Parse(ids[0])
+	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+	}
+
+	projectViewers, err := c.DBController.GetProjectViewersByUserID(&id)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrUserIsNotConnectedToAnyViewer.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
+			return
+		}
+
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.writeData(projectViewers, http.StatusOK)
+}
+
+func (c *RESTController) getProjectViewersByViewerID(w ResponseWriter, r *Request) {
+	log.Println("Getting project viewers by viewer id")
+	if err := checkRequestType(GET, w, r); err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ids, ok := r.URL.Query()["viewer_id"]
+	if !ok || len(ids[0]) < 1 {
+		w.writeError("Url Param 'viewer_id' is missing", http.StatusBadRequest)
+		return
+	}
+
+	id, err := uuid.Parse(ids[0])
+	if err != nil {
+		w.writeError(err.Error(), http.StatusBadRequest)
+	}
+
+	projectViewers, err := c.DBController.GetProjectViewersByViewerID(&id)
+	if err != nil {
+		if err.Error() == dbcontrollers.ErrProjectViewerNotFound.Error() {
+			w.writeError(err.Error(), http.StatusAccepted)
+			return
+		}
+
+		w.writeError(err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.writeData(projectViewers, http.StatusOK)
 }

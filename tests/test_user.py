@@ -25,7 +25,9 @@ createTestData = [
             'password': 'testPassword'
         },
         # Expected
-        "User with this email already exists"),
+        {
+            "error": "User with this email already exists"
+        }),
 
     (
         # Input data
@@ -35,7 +37,9 @@ createTestData = [
             'password': 'testPassword'
         },
         # Expected
-        "User with this name already exists")
+        {
+            "error": "User with this name already exists"
+        })
 ]
 
 ids = ['No existing email', 'Existing email', 'Existing name']
@@ -85,7 +89,9 @@ createTestData = [
           "id": "c34a7368-344a-11eb-adc1-0242ac120002"
         },
         # Expected
-        "The selected user not found")
+        {
+          "error": "The selected user not found"
+        })
 ]
 
 ids = ['Existing user', 'No existing user']
@@ -162,7 +168,9 @@ createTestData = [
           "email": "testEmailGetWrong"
       },
       # Expected
-      "The selected user not found")
+      {
+          "error": "The selected user not found"
+      })
 ]
 
 ids = ['Existing user', 'No existing user']
@@ -261,7 +269,9 @@ createTestData = [
         [{
             "id": "c34a7368-344a-11eb-adc1-0242ac120002"
         }],
-        "The selected user not found")
+        {
+            "error": "The selected user not found"
+        })
 ]
 
 ids = ['Existing users', 'Missing a user', 'No user']
@@ -354,7 +364,9 @@ createTestData = [
             }
         },
         # Expected
-        'Invalid password'),
+        {
+          "error": 'Invalid password'
+        }),
 
     (
         # Input data
@@ -362,7 +374,9 @@ createTestData = [
           "id": "c34a7368-344a-11eb-adc1-0242ac120002"
         },
         # Expected
-        "The selected user not found")
+        {
+          "error": "The selected user not found"
+        })
 ]
 
 ids = ['Valid password', 'Invalid Password', 'No user found']
@@ -564,7 +578,9 @@ createTestData = [
             "user_id": "c34a7368-344a-11eb-adc1-0242ac120002"
         },
         # Expected
-        "The selected user not found"),
+        {
+            "error": "The selected user not found"
+        }),
 
     (
         # Input data

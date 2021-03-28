@@ -10,10 +10,6 @@ def addUser(data, httpConnection):
             pytest.fail("Failed to send POST request")
             return None
 
-        if r.status_code != 201:
-            pytest.fail(f"Failed to run test.\nDetails: {r.text}")
-            return None
-
         response = getResponse(r.text)
         if response is None:
             return None
@@ -34,10 +30,6 @@ def addProduct(data, userUUID, httpConnection):
             r = httpConnection.POST("/add-product", dataToSend)
         except Exception:
             pytest.fail("Failed to send POST request")
-            return None
-
-        if r.status_code != 201:
-            pytest.fail(f"Failed to run test.\nDetails: {r.text}")
             return None
 
         response = getResponse(r.text)
@@ -99,10 +91,6 @@ def addProjects(data, userUUID, productUUID, httpConnection):
                     pytest.fail("Failed to send POST request")
                     return None
 
-                if r.status_code != 201:
-                    pytest.fail(f"Failed to run test.\nDetails: {r.text}")
-                    return None
-
                 response = getResponse(r.text)
                 if response is None:
                     return None
@@ -110,6 +98,38 @@ def addProjects(data, userUUID, productUUID, httpConnection):
             else:
                 uuidList.append(element["id"])
     return uuidList
+
+
+def addProjectViewer(data, httpConnection):
+    if "viewer_id" in data:
+        userUUID = addUser(data, httpConnection)
+        if userUUID is None:
+            return None
+
+        productUUID = addProduct(data, userUUID, httpConnection)
+        if productUUID is None:
+            return None
+
+        projectUUID = addProject(
+          data,
+          userUUID,
+          productUUID,
+          httpConnection)
+        if projectUUID is None:
+            return None
+
+        dataToSend = dict()
+        dataToSend["project_id"] = projectUUID
+        dataToSend["viewer_id"] = data["viewer_id"]
+        dataToSend["user_id"] = userUUID
+        dataToSend["is_owner"] = data["is_owner"]
+
+        try:
+            r = httpConnection.POST("/add-project-viewer", dataToSend)
+        except Exception:
+            pytest.fail("Failed to send POST request")
+            return
+        return r
 
 
 # getResponse unwraps the data/error from json response.
@@ -120,7 +140,8 @@ def getResponse(responseText, expected=None):
     response = json.loads(responseText)
     if "error" in response and response["error"] != "":
         error = response["error"]
-        if expected is None or (expected is not None and error != expected):
-            pytest.fail(f"Failed to run test.\nDetails: {error}")
+        if expected is None or \
+                (expected is not None and error != expected["error"]):
+            pytest.fail(f"Failed to run test.\nReturned: {error}\n")
         return None
     return response["data"]

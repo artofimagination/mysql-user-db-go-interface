@@ -33,6 +33,13 @@ type ProjectUserIDs struct {
 	UserIDArray []uuid.UUID
 }
 
+type ProjectViewer struct {
+	UserID    uuid.UUID `json:"user_id" validate:"required"`
+	ViewerID  uuid.UUID `json:"viewer_id" validate:"required"`
+	ProjectID uuid.UUID `json:"project_id" validate:"required"`
+	IsOwner   bool      `json:"is_owner" validate:"required"`
+}
+
 // Viewers describes a set of project data. Each set has a single viewer ID.
 // Whichever user possese this ID can view the data with this ID. The set of project data has a single owner user.
 // This structure contains the owner and the list of users who can view the data.

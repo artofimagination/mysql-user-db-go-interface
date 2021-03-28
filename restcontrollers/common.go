@@ -37,13 +37,18 @@ const (
 )
 
 const (
-	ProjectPathAdd               = "/add-project"
-	ProjectPathGetByID           = "/get-project"
-	ProjectPathGetMultiple       = "/get-projects"
-	ProjectPathUpdateDetails     = "/update-project-details"
-	ProjectPathUpdateAssets      = "/update-project-assets"
-	ProjectPathGetProductProject = "/get-product-projects"
-	ProjectPathDelete            = "/delete-project"
+	ProjectPathAdd                  = "/add-project"
+	ProjectPathGetByID              = "/get-project"
+	ProjectPathGetMultiple          = "/get-projects"
+	ProjectPathUpdateDetails        = "/update-project-details"
+	ProjectPathUpdateAssets         = "/update-project-assets"
+	ProjectPathGetProductProject    = "/get-product-projects"
+	ProjectPathDelete               = "/delete-project"
+	ProjectPathAddViewer            = "/add-project-viewer"
+	ProjectPathGetViewerByUser      = "/get-project-viewer-by-user"
+	ProjectPathGetViewerByViewer    = "/get-project-viewer-by-viewer"
+	ProjectPathDeleteViewerByUser   = "/delete-project-viewer-by-user"
+	ProjectPathDeleteViewerByViewer = "/delete-project-viewer-by-viewer"
 )
 
 const (
@@ -184,6 +189,11 @@ func NewRESTController() (*RESTController, error) {
 	http.HandleFunc(ProjectPathUpdateAssets, makeHandler(restController.updateProjectAssets))
 	http.HandleFunc(ProjectPathGetProductProject, makeHandler(restController.getProductProjects))
 	http.HandleFunc(ProjectPathDelete, makeHandler(restController.deleteProject))
+	http.HandleFunc(ProjectPathAddViewer, makeHandler(restController.addProjectViewer))
+	http.HandleFunc(ProjectPathGetViewerByUser, makeHandler(restController.getProjectViewersByUserID))
+	http.HandleFunc(ProjectPathGetViewerByViewer, makeHandler(restController.getProjectViewersByViewerID))
+	http.HandleFunc(ProjectPathDeleteViewerByUser, makeHandler(restController.deleteProjectViewerByUserID))
+	http.HandleFunc(ProjectPathDeleteViewerByViewer, makeHandler(restController.deleteProjectViewerByViewerID))
 
 	return restController, nil
 }
