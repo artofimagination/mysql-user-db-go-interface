@@ -101,7 +101,12 @@ createTestData = [
         # Expected
         {
             'name': 'testProductGet',
-            'base_asset_path': 'testPath'
+            'assets': {
+                'datamap': {}
+            },
+            'details': {
+                'datamap': {}
+            }
         }),
 
     (
@@ -121,6 +126,35 @@ createTestData = [
 ]
 
 ids = ['Existing product', 'No existing product']
+
+
+def handleProductIDCheck(response, expected):
+    zeroID = '00000000-0000-0000-0000-000000000000'
+    if "id" in response and response["id"] != '' and response["id"] != zeroID:
+        response.pop('id', None)
+    else:
+        pytest.fail(
+            f"Test failed\nReturned: {response}\nExpected: {expected}")
+        return None
+
+    if "id" in response["assets"] and \
+            response["assets"]["id"] != '' and \
+            response["assets"]["id"] != zeroID:
+        response["assets"].pop('id', None)
+    else:
+        pytest.fail(
+            f"Test failed\nReturned: {response}\nExpected: {expected}")
+        return None
+
+    if "id" in response["details"] and \
+            response["details"]["id"] != '' and \
+            response["details"]["id"] != zeroID:
+        response["details"].pop('id', None)
+    else:
+        pytest.fail(
+            f"Test failed\nReturned: {response}\nExpected: {expected}")
+        return None
+    return True
 
 
 @pytest.mark.parametrize(dataColumns, createTestData, ids=ids)
@@ -144,13 +178,11 @@ def test_GetProduct(httpConnection, data, expected):
         return None
     if r.status_code == 200:
         try:
-            asset = response["assets"]["datamap"]
-            details = response["details"]["datamap"]
-            if response["name"] != expected["name"] or \
-                "base_asset_path" not in asset or \
-                asset["base_asset_path"] != "testPath" or \
-                "base_asset_path" not in details or \
-                    details["base_asset_path"] != "testPath":
+            status = handleProductIDCheck(response, expected)
+            if status is None:
+                return
+
+            if response != expected:
                 pytest.fail(
                     f"Test failed\nReturned: {response}\nExpected: {expected}")
             return
@@ -181,18 +213,26 @@ createTestData = [
             }
         },
         # Expected
-        [
-            {
-                'name': 'testProductGetMultiple1',
-                'base_asset_path': 'testPath'
+        [{
+            'name': 'testProductGetMultiple1',
+            'assets': {
+                'datamap': {}
             },
-            {
-                'name': 'testProductGetMultiple2',
-                'base_asset_path': 'testPath'
-            }]),
-
+            'details': {
+                'datamap': {}
+            }
+        }, {
+            'name': 'testProductGetMultiple2',
+            'assets': {
+                'datamap': {}
+            },
+            'details': {
+                'datamap': {}
+            }
+        }]),
+    (
         # Input data
-        ({
+        {
             "product": [
                 {
                     "name": "testProductGetMultipleFail"
@@ -209,7 +249,12 @@ createTestData = [
         # Expected
         [{
             'name': 'testProductGetMultipleFail',
-            'base_asset_path': 'testPath'
+            'assets': {
+                'datamap': {}
+            },
+            'details': {
+                'datamap': {}
+            }
         }]),
     (
         # Input data
@@ -277,16 +322,13 @@ def test_GetProducts(httpConnection, data, expected):
     if r.status_code == 200:
         try:
             for index, product in enumerate(response):
-                asset = product["assets"]["datamap"]
-                details = product["details"]["datamap"]
-                if product["name"] != expected[index]["name"] or \
-                    "base_asset_path" not in asset or \
-                    asset["base_asset_path"] != "testPath" or \
-                    "base_asset_path" not in details or \
-                        details["base_asset_path"] != "testPath":
+                status = handleProductIDCheck(product, expected[index])
+                if status is None:
+                    return
+                if response[index] != expected[index]:
                     pytest.fail(
-                        f"Test failed\nReturned: \
-                        {response}\nExpected: {expected}")
+                        f"Test failed\n\
+Returned: {response[index]}\nExpected: {expected[index]}")
             return
         except Exception as e:
             pytest.fail(f"Failed to compare results.\nDetails: {e}")

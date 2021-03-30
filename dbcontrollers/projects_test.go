@@ -183,10 +183,7 @@ func TestCreateProject(t *testing.T) {
 				inputData.projectData.Assets.DataMap["name"].(string),
 				inputData.projectData.Assets.DataMap["visibility"].(string),
 				&inputData.userID,
-				&inputData.projectData.ProductID,
-				func(*uuid.UUID) (string, error) {
-					return "testPath", nil
-				})
+				&inputData.projectData.ProductID)
 
 			tests.CheckResult(output, expectedData.projectData, err, expectedData.err, testCaseString, t)
 		})

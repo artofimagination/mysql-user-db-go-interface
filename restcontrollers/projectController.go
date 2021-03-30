@@ -96,10 +96,7 @@ func (c *RESTController) addProject(w ResponseWriter, r *Request) {
 		return
 	}
 
-	project, err := c.DBController.CreateProject(name, visibility, &userID, &productID,
-		func(*uuid.UUID) (string, error) {
-			return testPath, nil
-		})
+	project, err := c.DBController.CreateProject(name, visibility, &userID, &productID)
 	if err != nil {
 		duplicateProject := fmt.Errorf(dbcontrollers.ErrProjectExistsString, name)
 		if err.Error() == duplicateProject.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {

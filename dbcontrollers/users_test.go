@@ -299,12 +299,7 @@ func TestCreateUser(t *testing.T) {
 			output, err := dbController.CreateUser(
 				inputData.userData.Name,
 				inputData.userData.Email,
-				inputData.password,
-				func(*uuid.UUID) (string, error) {
-					return "testPath", nil
-				}, func([]byte) ([]byte, error) {
-					return []byte{}, nil
-				})
+				inputData.password)
 
 			if diff := pretty.Diff(output, expectedData.userData); len(diff) != 0 {
 				t.Errorf(tests.TestResultString, testCaseString, output, expectedData.userData, diff)

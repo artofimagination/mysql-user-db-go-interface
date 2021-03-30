@@ -148,6 +148,35 @@ def test_GetUser(httpConnection, data, expected):
             {r.status_code}\nReturned: {response}\nExpected: {expected}")
 
 
+def handleUserIDCheck(response, expected):
+    zeroID = '00000000-0000-0000-0000-000000000000'
+    if "id" in response and response["id"] != '' and response["id"] != zeroID:
+        response.pop('id', None)
+    else:
+        pytest.fail(
+            f"Test failed\nReturned: {response}\nExpected: {expected}")
+        return None
+
+    if "id" in response["assets"] and \
+            response["assets"]["id"] != '' and \
+            response["assets"]["id"] != zeroID:
+        response["assets"].pop('id', None)
+    else:
+        pytest.fail(
+            f"Test failed\nReturned: {response}\nExpected: {expected}")
+        return None
+
+    if "id" in response["settings"] and \
+            response["settings"]["id"] != '' and \
+            response["settings"]["id"] != zeroID:
+        response["settings"].pop('id', None)
+    else:
+        pytest.fail(
+            f"Test failed\nReturned: {response}\nExpected: {expected}")
+        return None
+    return True
+
+
 createTestData = [
     (
         # Input data
@@ -158,8 +187,15 @@ createTestData = [
         },
         # Expected
         {
-            "username": "testUserGetByEmail",
-            "email": "testEmailGetByEmail",
+            'username': 'testUserGetByEmail',
+            'email': 'testEmailGetByEmail',
+            'password': 'dGVzdFBhc3N3b3Jk',
+            'settings': {
+                'datamap': {}
+            },
+            'assets': {
+                'datamap': {}
+            }
         }),
 
     (
@@ -208,16 +244,13 @@ def test_GetUserByEmail(httpConnection, data, expected):
         return None
     if r.status_code == 200:
         try:
-            zeroID = '00000000-0000-0000-0000-000000000000'
-            if response["username"] != expected["username"] or \
-                response["email"] != expected["email"] or \
-                response["settings"]["id"] == '' or \
-                response["settings"]["id"] == zeroID or \
-                response["assets"]["id"] == '' or \
-                    response["assets"]["id"] == zeroID:
+            status = handleUserIDCheck(response, expected)
+            if status is None:
+                return
+
+            if response != expected:
                 pytest.fail(
                     f"Test failed\nReturned: {response}\nExpected: {expected}")
-            return
         except Exception as e:
             pytest.fail(f"Failed to compare results.\nDetails: {e}")
             return
@@ -242,11 +275,25 @@ createTestData = [
         }],
         # Expected
         [{
-            "username": "testUserGetMultiple1",
-            "email": "testEmailGetMultiple1"
+            'username': 'testUserGetMultiple1',
+            'email': 'testEmailGetMultiple1',
+            'password': 'dGVzdFBhc3N3b3Jk',
+            'settings': {
+                'datamap': {}
+            },
+            'assets': {
+                'datamap': {}
+            }
         }, {
-            "username": "testUserGetMultiple2",
-            "email": "testEmailGetMultiple2"
+            'username': 'testUserGetMultiple2',
+            'email': 'testEmailGetMultiple2',
+            'password': 'dGVzdFBhc3N3b3Jk',
+            'settings': {
+                'datamap': {}
+            },
+            'assets': {
+                'datamap': {}
+            }
         }]
     ),
 
@@ -261,10 +308,16 @@ createTestData = [
         }],
         # Expected
         [{
-            "username": "testUserGetMultipleFail",
-            "email": "testEmailGetMultipleFail"
+            'username': 'testUserGetMultipleFail',
+            'email': 'testEmailGetMultipleFail',
+            'password': 'dGVzdFBhc3N3b3Jk',
+            'settings': {
+                'datamap': {}
+            },
+            'assets': {
+                'datamap': {}
+            }
         }]),
-
     (
         [{
             "id": "c34a7368-344a-11eb-adc1-0242ac120002"
@@ -311,17 +364,14 @@ def test_GetUsers(httpConnection, data, expected):
     if r.status_code == 200:
         try:
             for index, user in enumerate(response):
-                asset = user["assets"]["datamap"]
-                settings = user["settings"]["datamap"]
-                if user["username"] != expected[index]["username"] or \
-                    user["email"] != expected[index]["email"] or \
-                    "base_asset_path" not in asset or \
-                    asset["base_asset_path"] != "testPath" or \
-                    "base_asset_path" not in settings or \
-                        settings["base_asset_path"] != "testPath":
+                status = handleUserIDCheck(user, expected[index])
+                if status is None:
+                    return
+
+                if response[index] != expected[index]:
                     pytest.fail(
-                        f"Test failed\nReturned: \
-                        {response}\nExpected: {expected}")
+                        f"Test failed\n\
+Returned: {response[index]}\nExpected: {expected[index]}")
             return
         except Exception as e:
             pytest.fail(f"Failed to compare results.\nDetails: {e}")

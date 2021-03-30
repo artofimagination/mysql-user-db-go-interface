@@ -12,7 +12,7 @@ const (
 )
 
 type ModelFunctionsCommon interface {
-	NewAsset(references DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*Asset, error)
+	NewAsset(references DataMap) (*Asset, error)
 	NewUser(
 		name string,
 		email string,
