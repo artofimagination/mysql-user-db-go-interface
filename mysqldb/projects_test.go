@@ -8,7 +8,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/artofimagination/mysql-user-db-go-interface/tests"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -88,10 +88,10 @@ type ProjectInputData struct {
 	privilege    int
 }
 
-func createProjectsTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := &test.OrderedTests{
-		OrderedList: make(test.OrderedTestList, 0),
-		TestDataSet: make(test.DataSet),
+func createProjectsTestData(testID int) (*tests.OrderedTests, error) {
+	dataSet := &tests.OrderedTests{
+		OrderedList: make(tests.OrderedTestList, 0),
+		TestDataSet: make(tests.DataSet),
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -148,7 +148,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectExec(AddProjectQuery).WithArgs(project.ID, project.ProductID, project.DetailsID, project.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -162,7 +162,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(AddProjectQuery).WithArgs(project.ID, project.ProductID, project.DetailsID, project.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -182,7 +182,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 			privilege := projectUsers.UserMap[userID]
 			mock.ExpectExec(AddProjectUsersQuery).WithArgs(userID, project.ID, privilege).WillReturnResult(sqlmock.NewResult(1, 1))
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -199,7 +199,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 			mock.ExpectExec(AddProjectUsersQuery).WithArgs(userID, project.ID, privilege).WillReturnError(expected)
 		}
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -215,7 +215,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 			mock.ExpectExec(AddProjectUsersQuery).WithArgs(userID, project.ID, privilege).WillReturnResult(sqlmock.NewResult(1, 0))
 		}
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -231,7 +231,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProductUsersByProductIDQuery).WithArgs(project.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -244,7 +244,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProductUsersByProductIDQuery).WithArgs(project.ID).WillReturnError(expectedData.err)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -264,7 +264,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 			AddRow(binaryProjectID, binaryProductID, binaryDetailsID, binaryAssetID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProjectByIDQuery).WithArgs(project.ID).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -277,7 +277,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProjectByIDQuery).WithArgs(project.ID).WillReturnError(sql.ErrNoRows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -298,7 +298,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProjectIDsQuery).WithArgs(userID).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -311,7 +311,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProjectIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -335,7 +335,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductProjectsQuery).WithArgs(project.ProductID).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -348,7 +348,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductProjectsQuery).WithArgs(project.ProductID).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -364,7 +364,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProjectQuery).WithArgs(project.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -377,7 +377,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProjectQuery).WithArgs(project.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -393,7 +393,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProjectsByProductIDQuery).WithArgs(project.ProductID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -406,7 +406,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProjectsByProductIDQuery).WithArgs(project.ProductID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -424,7 +424,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectExec(UpdateUsersProjectsQuery).WithArgs(inputData.privilege, userID, project.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -437,7 +437,7 @@ func createProjectsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(UpdateUsersProjectsQuery).WithArgs(inputData.privilege, userID, project.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     inputData,
 			Expected: expectedData,
 		}
@@ -479,7 +479,7 @@ func TestAddProject(t *testing.T) {
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 
 			err = DBFunctions.AddProject(inputData.project, tx)
-			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -505,7 +505,7 @@ func TestAddProjectUsers(t *testing.T) {
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 			err = DBFunctions.AddProjectUsers(&inputData.project.ID, inputData.projectUsers, tx)
-			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -531,7 +531,7 @@ func TestUpdateUsersProjects(t *testing.T) {
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 			err = DBFunctions.UpdateUsersProjects(inputData.userID, &inputData.project.ID, inputData.privilege, tx)
-			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -557,7 +557,7 @@ func TestDeleteProjectUsersByProjectID(t *testing.T) {
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 			err = DBFunctions.DeleteProductUsersByProductID(&inputData.project.ID, tx)
-			test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -584,7 +584,7 @@ func TestGetProjectByID(t *testing.T) {
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 			output, err := DBFunctions.GetProjectByID(&inputData.project.ID, tx)
-			test.CheckResult(output, expectedData.project, err, expectedData.err, testCaseString, t)
+			tests.CheckResult(output, expectedData.project, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -610,7 +610,7 @@ func TestGetUserProjectIDs(t *testing.T) {
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 			output, err := DBFunctions.GetUserProjectIDs(inputData.userID, tx)
-			test.CheckResult(output, expectedData.userProjects, err, expectedData.err, testCaseString, t)
+			tests.CheckResult(output, expectedData.userProjects, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -636,7 +636,7 @@ func TestGetProductProjects(t *testing.T) {
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 			inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 			output, err := DBFunctions.GetProductProjects(inputData.productID, tx)
-			test.CheckResult(output, expectedData.projects, err, expectedData.err, testCaseString, t)
+			tests.CheckResult(output, expectedData.projects, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -662,7 +662,7 @@ func TestDeleteProject(t *testing.T) {
 		expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 		inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 		err = DBFunctions.DeleteProject(&inputData.project.ID, tx)
-		test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
+		tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 	}
 }
 
@@ -687,6 +687,6 @@ func TestDeleteProjectByProductID(t *testing.T) {
 		expectedData := dataSet.TestDataSet[testCaseString].Expected.(ProjectExpectedData)
 		inputData := dataSet.TestDataSet[testCaseString].Data.(ProjectInputData)
 		err = DBFunctions.DeleteProjectsByProductID(&inputData.project.ProductID, tx)
-		test.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
+		tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 	}
 }

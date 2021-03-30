@@ -6,8 +6,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/test"
-	"github.com/kr/pretty"
+	"github.com/artofimagination/mysql-user-db-go-interface/tests"
 )
 
 const (
@@ -21,10 +20,10 @@ type PrivilegeExpectedData struct {
 	err        error
 }
 
-func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := &test.OrderedTests{
-		OrderedList: make(test.OrderedTestList, 0),
-		TestDataSet: make(test.DataSet),
+func createPrivilegesTestData(testID int) (*tests.OrderedTests, error) {
+	dataSet := &tests.OrderedTests{
+		OrderedList: make(tests.OrderedTestList, 0),
+		TestDataSet: make(tests.DataSet),
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -61,7 +60,7 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetPrivilegesQuery).WillReturnRows(rows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     nil,
 			Expected: expected,
 		}
@@ -75,7 +74,7 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetPrivilegesQuery).WillReturnError(sql.ErrNoRows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     nil,
 			Expected: expected,
 		}
@@ -95,7 +94,7 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetPrivilegeQuery).WithArgs(data).WillReturnRows(rows)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     data,
 			Expected: expected,
 		}
@@ -111,7 +110,7 @@ func createPrivilegesTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetPrivilegeQuery).WithArgs(data).WillReturnError(expected.err)
 		mock.ExpectCommit()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     data,
 			Expected: expected,
 		}
@@ -146,15 +145,7 @@ func TestGetPrivileges(t *testing.T) {
 			expectedData := dataSet.TestDataSet[testCaseString].Expected.(PrivilegeExpectedData)
 
 			output, err := DBFunctions.GetPrivileges()
-			if diff := pretty.Diff(output, expectedData.privileges); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.privileges, diff)
-				return
-			}
-
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(output, expectedData.privileges, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -177,15 +168,7 @@ func TestGetPrivilege(t *testing.T) {
 			inputData := dataSet.TestDataSet[testCaseString].Data.(string)
 
 			output, err := DBFunctions.GetPrivilege(inputData)
-			if diff := pretty.Diff(output, expectedData.privilege); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.privilege)
-				return
-			}
-
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err)
-				return
-			}
+			tests.CheckResult(output, expectedData.privilege, err, expectedData.err, testCaseString, t)
 		})
 	}
 }

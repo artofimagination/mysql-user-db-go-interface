@@ -8,9 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/artofimagination/mysql-user-db-go-interface/tests"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 	"github.com/pkg/errors"
 )
 
@@ -81,10 +80,10 @@ func createTestUserProductsData(quantity int) (*models.UserProductIDs, error) {
 	return userProducts, nil
 }
 
-func createProductsTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := &test.OrderedTests{
-		OrderedList: make(test.OrderedTestList, 0),
-		TestDataSet: make(test.DataSet),
+func createProductsTestData(testID int) (*tests.OrderedTests, error) {
+	dataSet := &tests.OrderedTests{
+		OrderedList: make(tests.OrderedTestList, 0),
+		TestDataSet: make(tests.DataSet),
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -128,7 +127,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		testCase := "valid_product"
 		mock.ExpectBegin()
 		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.DetailsID, product.AssetsID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -143,7 +142,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.DetailsID, product.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -158,7 +157,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(AddProductQuery).WithArgs(product.ID, product.Name, product.DetailsID, product.AssetsID).WillReturnError(expected)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -175,7 +174,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 			privilege := productUsers.UserMap[userID]
 			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnResult(sqlmock.NewResult(1, 1))
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product:      product,
 				productUsers: productUsers,
@@ -194,7 +193,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnError(expected)
 		}
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product:      product,
 				productUsers: productUsers,
@@ -212,7 +211,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 			mock.ExpectExec(AddProductUsersQuery).WithArgs(userID, product.ID, privilege).WillReturnResult(sqlmock.NewResult(1, 0))
 		}
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product:      product,
 				productUsers: productUsers,
@@ -227,7 +226,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		testCase := "valid_id"
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProductUsersByProductIDQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -241,7 +240,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProductUsersByProductIDQuery).WithArgs(product.ID).WillReturnError(ErrNoUserWithProduct)
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -258,7 +257,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 			AddRow(binaryProductID, product.Name, product.DetailsID, product.AssetsID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByIDQuery).WithArgs(product.ID).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -272,7 +271,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "missing_id"
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByIDQuery).WithArgs(product.ID).WillReturnError(sql.ErrNoRows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -289,7 +288,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 			AddRow(binaryProductID, product.Name, product.DetailsID, binaryAssetID)
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByNameQuery).WithArgs(product.Name).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -303,7 +302,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "missing_name"
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetProductByNameQuery).WithArgs(product.Name).WillReturnError(sql.ErrNoRows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -322,7 +321,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		}
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnRows(rows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				userID: &userID,
 			},
@@ -336,7 +335,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		testCase = "missing_products"
 		mock.ExpectBegin()
 		mock.ExpectQuery(GetUserProductIDsQuery).WithArgs(userID).WillReturnError(sql.ErrNoRows)
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				userID: &userID,
 			},
@@ -351,7 +350,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		testCase := "valid_id"
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProductQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -365,7 +364,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(DeleteProductQuery).WithArgs(product.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				product: product,
 			},
@@ -380,7 +379,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		privilege := 1
 		mock.ExpectBegin()
 		mock.ExpectExec(UpdateUsersProductsQuery).WithArgs(privilege, userID, product.ID).WillReturnResult(sqlmock.NewResult(1, 1))
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				userID:    &userID,
 				product:   product,
@@ -397,7 +396,7 @@ func createProductsTestData(testID int) (*test.OrderedTests, error) {
 		mock.ExpectBegin()
 		mock.ExpectExec(UpdateUsersProductsQuery).WithArgs(privilege, userID, product.ID).WillReturnResult(sqlmock.NewResult(1, 0))
 		mock.ExpectRollback()
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data: ProductInputData{
 				userID:    &userID,
 				product:   product,
@@ -446,10 +445,7 @@ func TestAddProduct(t *testing.T) {
 			inputData := testCase.Data.(ProductInputData)
 
 			err = DBFunctions.AddProduct(inputData.product, tx)
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -476,10 +472,7 @@ func TestAddProductUsers(t *testing.T) {
 			expectedData := testCase.Expected.(ProductExpectedData)
 			inputData := testCase.Data.(ProductInputData)
 			err = DBFunctions.AddProductUsers(&inputData.product.ID, inputData.productUsers, tx)
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -507,10 +500,7 @@ func TestUpdateUsersProducts(t *testing.T) {
 			inputData := testCase.Data.(ProductInputData)
 
 			err = DBFunctions.UpdateUsersProducts(inputData.userID, &inputData.product.ID, inputData.privilege, tx)
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -538,10 +528,7 @@ func TestDeleteProductUsersByProductID(t *testing.T) {
 			inputData := testCase.Data.(ProductInputData)
 
 			err = DBFunctions.DeleteProductUsersByProductID(&inputData.product.ID, tx)
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -570,15 +557,7 @@ func TestGetProductByID(t *testing.T) {
 			inputData := testCase.Data.(ProductInputData)
 
 			output, err := DBFunctions.GetProductByID(&inputData.product.ID, tx)
-			if diff := pretty.Diff(output, expectedData.product); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.product, diff)
-				return
-			}
-
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(output, expectedData.product, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -606,15 +585,7 @@ func TestGetProductByName(t *testing.T) {
 			inputData := testCase.Data.(ProductInputData)
 
 			output, err := DBFunctions.GetProductByName(inputData.product.Name, tx)
-			if diff := pretty.Diff(output, expectedData.product); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.product, diff)
-				return
-			}
-
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(output, expectedData.product, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -642,15 +613,7 @@ func TestGetUserProductIDs(t *testing.T) {
 			inputData := testCase.Data.(ProductInputData)
 
 			output, err := DBFunctions.GetUserProductIDs(inputData.userID, tx)
-			if diff := pretty.Diff(output, expectedData.userProducts); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.userProducts, diff)
-				return
-			}
-
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(output, expectedData.userProducts, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -679,10 +642,7 @@ func TestDeleteProduct(t *testing.T) {
 			inputData := testCase.Data.(ProductInputData)
 
 			err = DBFunctions.DeleteProduct(&inputData.product.ID, tx)
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }

@@ -3,7 +3,7 @@ status=$?;
 if [[ $status != 0 ]]; then 
   exit $status; 
 fi
-golangci-lint run -v .
+golangci-lint run -v ./...
 status=$?; 
 if [[ $status != 0 ]]; then 
   exit $status; 

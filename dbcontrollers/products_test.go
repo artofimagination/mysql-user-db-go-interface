@@ -5,9 +5,8 @@ import (
 	"testing"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/artofimagination/mysql-user-db-go-interface/tests"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 )
 
 type ProductExpectedData struct {
@@ -49,10 +48,10 @@ func createTestProductsUsersData() (*models.ProductUserIDs, models.Privileges) {
 	return users, privileges
 }
 
-func createProductTestData() (*test.OrderedTests, error) {
-	dataSet := &test.OrderedTests{
-		OrderedList: make(test.OrderedTestList, 0),
-		TestDataSet: make(test.DataSet),
+func createProductTestData() (*tests.OrderedTests, error) {
+	dataSet := &tests.OrderedTests{
+		OrderedList: make(tests.OrderedTestList, 0),
+		TestDataSet: make(tests.DataSet),
 	}
 
 	_, privileges := createTestProductsUsersData()
@@ -115,7 +114,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 		productData: nil,
 		privileges:  privileges,
 	}
-	dataSet.TestDataSet[testCase] = test.Data{
+	dataSet.TestDataSet[testCase] = tests.Data{
 		Data:     input,
 		Mock:     mock,
 		Expected: expected,
@@ -135,7 +134,7 @@ func createProductTestData() (*test.OrderedTests, error) {
 		product:    product,
 		privileges: privileges,
 	}
-	dataSet.TestDataSet[testCase] = test.Data{
+	dataSet.TestDataSet[testCase] = tests.Data{
 		Data:     input,
 		Mock:     mock,
 		Expected: expected,
@@ -157,10 +156,10 @@ type ValidationInputData struct {
 	productUsers *models.ProductUserIDs
 }
 
-func createValidationTestData() (*test.OrderedTests, error) {
-	dataSet := &test.OrderedTests{
-		OrderedList: make(test.OrderedTestList, 0),
-		TestDataSet: make(test.DataSet),
+func createValidationTestData() (*tests.OrderedTests, error) {
+	dataSet := &tests.OrderedTests{
+		OrderedList: make(tests.OrderedTestList, 0),
+		TestDataSet: make(tests.DataSet),
 	}
 
 	dbController = &MYSQLController{
@@ -187,7 +186,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 		privileges: privileges,
 	}
 	productUsers.UserMap[userID] = 0
-	dataSet.TestDataSet[testCase] = test.Data{
+	dataSet.TestDataSet[testCase] = tests.Data{
 		Data:     input,
 		Mock:     mock,
 		Expected: expected,
@@ -209,7 +208,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	mock = ValidationMockData{
 		privileges: privileges,
 	}
-	dataSet.TestDataSet[testCase] = test.Data{
+	dataSet.TestDataSet[testCase] = tests.Data{
 		Data:     input,
 		Mock:     mock,
 		Expected: expected,
@@ -226,7 +225,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	mock = ValidationMockData{
 		privileges: privileges,
 	}
-	dataSet.TestDataSet[testCase] = test.Data{
+	dataSet.TestDataSet[testCase] = tests.Data{
 		Data:     input,
 		Mock:     mock,
 		Expected: expected,
@@ -248,7 +247,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	mock = ValidationMockData{
 		privileges: privileges,
 	}
-	dataSet.TestDataSet[testCase] = test.Data{
+	dataSet.TestDataSet[testCase] = tests.Data{
 		Data:     input,
 		Mock:     mock,
 		Expected: expected,
@@ -276,7 +275,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	mock = ValidationMockData{
 		privileges: privileges,
 	}
-	dataSet.TestDataSet[testCase] = test.Data{
+	dataSet.TestDataSet[testCase] = tests.Data{
 		Data:     input,
 		Mock:     mock,
 		Expected: expected,
@@ -298,7 +297,7 @@ func createValidationTestData() (*test.OrderedTests, error) {
 	mock = ValidationMockData{
 		privileges: privileges,
 	}
-	dataSet.TestDataSet[testCase] = test.Data{
+	dataSet.TestDataSet[testCase] = tests.Data{
 		Data:     input,
 		Mock:     mock,
 		Expected: expected,
@@ -337,16 +336,7 @@ func TestCreateProduct(t *testing.T) {
 				func(*uuid.UUID) (string, error) {
 					return "testPath", nil
 				})
-
-			if diff := pretty.Diff(expectedData.productData, output); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.productData, diff)
-				return
-			}
-
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(output, expectedData.productData, err, expectedData.err, testCaseString, t)
 		})
 	}
 }
@@ -373,10 +363,7 @@ func TestValidateUsers(t *testing.T) {
 			}
 
 			err := dbController.validateOwnership(inputData.productUsers)
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
 		})
 	}
 }

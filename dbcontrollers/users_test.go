@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
-	"github.com/artofimagination/mysql-user-db-go-interface/test"
+	"github.com/artofimagination/mysql-user-db-go-interface/tests"
 	"github.com/google/uuid"
 	"github.com/kr/pretty"
 )
@@ -37,10 +37,10 @@ type UserInputData struct {
 	nominees map[uuid.UUID]uuid.UUID
 }
 
-func createUserTestData(testID int) (*test.OrderedTests, error) {
-	dataSet := &test.OrderedTests{
-		OrderedList: make(test.OrderedTestList, 0),
-		TestDataSet: make(test.DataSet),
+func createUserTestData(testID int) (*tests.OrderedTests, error) {
+	dataSet := &tests.OrderedTests{
+		OrderedList: make(tests.OrderedTestList, 0),
+		TestDataSet: make(tests.DataSet),
 	}
 
 	assetID, err := uuid.NewUUID()
@@ -137,7 +137,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		mock := UserMockData{
 			user: nil,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     input,
 			Mock:     mock,
 			Expected: expected,
@@ -156,7 +156,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 		mock = UserMockData{
 			user: user,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     input,
 			Mock:     mock,
 			Expected: expected,
@@ -183,7 +183,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 			usersProducts: usersProducts,
 			privileges:    privileges,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     input,
 			Mock:     mock,
 			Expected: expected,
@@ -208,7 +208,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 			usersProducts: usersProducts,
 			privileges:    privileges,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     input,
 			Mock:     mock,
 			Expected: expected,
@@ -234,7 +234,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 			privileges:    privileges,
 			err:           sql.ErrNoRows,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     input,
 			Mock:     mock,
 			Expected: expected,
@@ -262,7 +262,7 @@ func createUserTestData(testID int) (*test.OrderedTests, error) {
 			privileges:    privileges,
 			err:           nil,
 		}
-		dataSet.TestDataSet[testCase] = test.Data{
+		dataSet.TestDataSet[testCase] = tests.Data{
 			Data:     input,
 			Mock:     mock,
 			Expected: expected,
@@ -307,12 +307,12 @@ func TestCreateUser(t *testing.T) {
 				})
 
 			if diff := pretty.Diff(output, expectedData.userData); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, output, expectedData.userData, diff)
+				t.Errorf(tests.TestResultString, testCaseString, output, expectedData.userData, diff)
 				return
 			}
 
 			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
+				t.Errorf(tests.TestResultString, testCaseString, err, expectedData.err, diff)
 				return
 			}
 		})
@@ -348,25 +348,10 @@ func TestDeleteUser(t *testing.T) {
 			}
 
 			err := dbController.DeleteUser(&inputData.userData.ID, inputData.nominees)
-			if diff := pretty.Diff(err, expectedData.err); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, err, expectedData.err, diff)
-				return
-			}
-
-			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedData.userDeleted); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedData.userDeleted)
-				return
-			}
-
-			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedData.productDeleted); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedData.productDeleted)
-				return
-			}
-
-			if diff := pretty.Diff(dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedData.usersProductsUpdated); len(diff) != 0 {
-				t.Errorf(test.TestResultString, testCaseString, dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedData.usersProductsUpdated)
-				return
-			}
+			tests.CheckResult(nil, nil, err, expectedData.err, testCaseString, t)
+			tests.CheckResult(dbController.DBFunctions.(*DBFunctionMock).userDeleted, expectedData.userDeleted, nil, nil, testCaseString, t)
+			tests.CheckResult(dbController.DBFunctions.(*DBFunctionMock).productDeleted, expectedData.productDeleted, nil, nil, testCaseString, t)
+			tests.CheckResult(dbController.DBFunctions.(*DBFunctionMock).usersProductsUpdated, expectedData.usersProductsUpdated, nil, nil, testCaseString, t)
 		})
 	}
 }

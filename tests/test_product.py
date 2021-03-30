@@ -128,7 +128,7 @@ def test_GetProduct(httpConnection, data, expected):
         return
 
     try:
-        r = httpConnection.GET("/get-product", {"id": productUUID})
+        r = httpConnection.GET("/get-product-by-id", {"id": productUUID})
     except Exception:
         pytest.fail("Failed to send GET request")
         return

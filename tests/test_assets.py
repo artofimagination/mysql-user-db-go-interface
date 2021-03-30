@@ -69,7 +69,6 @@ def test_UpdateProductDetail(httpConnection, data, expected):
     except Exception:
         pytest.fail("Failed to send POST request")
         return
-
     response = common.getResponse(r.text, expected)
     if response is None:
         return None
