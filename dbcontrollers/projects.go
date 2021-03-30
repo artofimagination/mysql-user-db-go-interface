@@ -25,9 +25,13 @@ var ErrDuplicateEntrySubString = "Duplicate entry"
 var ErrMissingProductDBString = "Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`projects`, CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`products_id`) REFERENCES `products` (`id`))"
 var ErrMissingProjectDBString = "Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`users_viewers`, CONSTRAINT `users_viewers_ibfk_2` FOREIGN KEY (`projects_id`) REFERENCES `projects` (`id`))"
 
-func (c *MYSQLController) CreateProject(name string, visibility string, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
+func (c *MYSQLController) CreateProject(
+	name string,
+	visibility string,
+	owner *uuid.UUID,
+	productID *uuid.UUID) (*models.ProjectData, error) {
 	references := make(models.DataMap)
-	asset, err := c.ModelFunctions.NewAsset(references, generateAssetPath)
+	asset, err := c.ModelFunctions.NewAsset(references)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +39,7 @@ func (c *MYSQLController) CreateProject(name string, visibility string, owner *u
 	details := make(models.DataMap)
 	details["name"] = name
 	details["visibility"] = visibility
-	projectDetails, err := c.ModelFunctions.NewAsset(details, generateAssetPath)
+	projectDetails, err := c.ModelFunctions.NewAsset(details)
 	if err != nil {
 		return nil, err
 	}

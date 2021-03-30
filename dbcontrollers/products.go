@@ -52,15 +52,15 @@ func (c *MYSQLController) validateOwnership(users *models.ProductUserIDs) error 
 	return nil
 }
 
-func (c *MYSQLController) CreateProduct(name string, owner *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProductData, error) {
+func (c *MYSQLController) CreateProduct(name string, owner *uuid.UUID) (*models.ProductData, error) {
 	references := make(models.DataMap)
-	asset, err := c.ModelFunctions.NewAsset(references, generateAssetPath)
+	asset, err := c.ModelFunctions.NewAsset(references)
 	if err != nil {
 		return nil, err
 	}
 
 	details := make(models.DataMap)
-	productDetails, err := c.ModelFunctions.NewAsset(details, generateAssetPath)
+	productDetails, err := c.ModelFunctions.NewAsset(details)
 	if err != nil {
 		return nil, err
 	}

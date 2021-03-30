@@ -30,7 +30,7 @@ func (i *ModelMock) NewProduct(name string, detailsID *uuid.UUID, assetsID *uuid
 	return p, i.err
 }
 
-func (i *ModelMock) NewAsset(references models.DataMap, generatePath func(assetID *uuid.UUID) (string, error)) (*models.Asset, error) {
+func (i *ModelMock) NewAsset(references models.DataMap) (*models.Asset, error) {
 	return i.asset, i.err
 }
 

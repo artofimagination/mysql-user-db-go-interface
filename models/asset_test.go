@@ -302,12 +302,7 @@ func TestNewAsset(t *testing.T) {
 			expectedData := testCase.Expected.(AssetExpectedData)
 			inputData := testCase.Data.(AssetInputData)
 
-			output, err := ModelFunctions.NewAsset(
-				inputData.asset.DataMap,
-				func(*uuid.UUID) (string, error) {
-					return "test/path", nil
-				})
-
+			output, err := ModelFunctions.NewAsset(inputData.asset.DataMap)
 			tests.CheckResult(output, expectedData.asset, err, expectedData.err, testCaseString, t)
 		})
 	}

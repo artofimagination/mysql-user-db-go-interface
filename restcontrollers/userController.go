@@ -69,12 +69,7 @@ func (c *RESTController) addUser(w ResponseWriter, r *Request) {
 	}
 
 	// Execute function
-	user, err := c.DBController.CreateUser(name, email, []byte(password),
-		func(*uuid.UUID) (string, error) {
-			return testPath, nil
-		}, func(password []byte) ([]byte, error) {
-			return password, nil
-		})
+	user, err := c.DBController.CreateUser(name, email, []byte(password))
 	if err != nil {
 		if err.Error() == dbcontrollers.ErrDuplicateEmailEntry.Error() ||
 			err.Error() == dbcontrollers.ErrDuplicateNameEntry.Error() {

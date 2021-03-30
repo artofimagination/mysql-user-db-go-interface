@@ -332,10 +332,7 @@ func TestCreateProduct(t *testing.T) {
 
 			output, err := dbController.CreateProduct(
 				inputData.productData.Name,
-				&inputData.userID,
-				func(*uuid.UUID) (string, error) {
-					return "testPath", nil
-				})
+				&inputData.userID)
 			tests.CheckResult(output, expectedData.productData, err, expectedData.err, testCaseString, t)
 		})
 	}

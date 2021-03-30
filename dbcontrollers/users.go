@@ -26,28 +26,21 @@ var ErrMissingUserDBString = "Error 1452: Cannot add or update a child row: a fo
 func (c *MYSQLController) CreateUser(
 	name string,
 	email string,
-	passwd []byte,
-	generateAssetPath func(assetID *uuid.UUID) (string, error),
-	encryptPassword func(password []byte) ([]byte, error)) (*models.UserData, error) {
+	passwd []byte) (*models.UserData, error) {
 
 	references := make(models.DataMap)
-	asset, err := c.ModelFunctions.NewAsset(references, generateAssetPath)
+	asset, err := c.ModelFunctions.NewAsset(references)
 	if err != nil {
 		return nil, err
 	}
 
 	settings := make(models.DataMap)
-	userSettings, err := c.ModelFunctions.NewAsset(settings, generateAssetPath)
+	userSettings, err := c.ModelFunctions.NewAsset(settings)
 	if err != nil {
 		return nil, err
 	}
 
-	password, err := encryptPassword(passwd)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := c.ModelFunctions.NewUser(name, email, password, userSettings.ID, asset.ID)
+	user, err := c.ModelFunctions.NewUser(name, email, passwd, userSettings.ID, asset.ID)
 	if err != nil {
 		return nil, err
 	}

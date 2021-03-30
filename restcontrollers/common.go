@@ -56,8 +56,6 @@ const (
 	GET  = "GET"
 )
 
-var testPath = "testPath"
-
 var DataOK = "OK"
 
 type ResponseWriter struct {

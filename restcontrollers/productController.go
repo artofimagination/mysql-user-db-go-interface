@@ -78,10 +78,7 @@ func (c *RESTController) addProduct(w ResponseWriter, r *Request) {
 		return
 	}
 
-	product, err := c.DBController.CreateProduct(name, &userID,
-		func(*uuid.UUID) (string, error) {
-			return testPath, nil
-		})
+	product, err := c.DBController.CreateProduct(name, &userID)
 	if err != nil {
 		duplicateProduct := fmt.Errorf(dbcontrollers.ErrProductExistsString, name)
 		if err.Error() == duplicateProduct.Error() || err.Error() == dbcontrollers.ErrEmptyUsersList.Error() {
