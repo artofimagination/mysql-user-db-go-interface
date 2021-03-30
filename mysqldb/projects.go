@@ -12,6 +12,8 @@ import (
 var ErrNoUserWithProject = errors.New("No user is associated to this project")
 var ErrNoProjectUserAdded = errors.New("No project user relation has been added")
 var ErrNoProjectDeleted = errors.New("No project was deleted")
+var ErrNoProjectViewerDeleted = errors.New("No project viewer was deleted")
+var ErrNoViewerDeleted = errors.New("No viewer was deleted")
 var ErrNoUsersProjectUpdate = errors.New("No users project was updated")
 
 var AddProjectUsersQuery = "INSERT INTO users_projects (users_id, projects_id, privileges_id) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?)"
@@ -249,6 +251,186 @@ func (*MYSQLFunctions) DeleteProjectsByProductID(productID *uuid.UUID, tx *sql.T
 
 	if affected == 0 {
 		return ErrNoProjectDeleted
+	}
+
+	return nil
+}
+
+var AddViewerQuery = "INSERT INTO viewers (id, owner_id) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?))"
+
+func addViewer(viewerID *uuid.UUID, userID *uuid.UUID, tx *sql.Tx) error {
+	if _, err := tx.Exec(AddViewerQuery, viewerID, userID); err != nil {
+		return err
+	}
+	return nil
+}
+
+var AddProjectViewerQuery = "INSERT INTO users_viewers (users_id, viewer_id, projects_id) VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), UUID_TO_BIN(?))"
+
+func (*MYSQLFunctions) AddProjectViewer(projectViewer *models.ProjectViewer, tx *sql.Tx) error {
+	if projectViewer.IsOwner {
+		if err := addViewer(&projectViewer.ViewerID, &projectViewer.UserID, tx); err != nil {
+			return RollbackWithErrorStack(tx, err)
+		}
+	}
+
+	_, err := tx.Exec(AddProjectViewerQuery, projectViewer.UserID, projectViewer.ViewerID, projectViewer.ProjectID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+	return nil
+}
+
+var DeleteViewerByOwnerQuery = "DELETE FROM viewers where owner_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) DeleteViewerByOwnerID(userID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteViewerByOwnerQuery, userID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoViewerDeleted
+	}
+
+	return nil
+}
+
+var DeleteProjectViewerByUserIDQuery = "DELETE FROM users_viewers where users_id = UUID_TO_BIN(?)"
+
+func (f *MYSQLFunctions) DeleteProjectViewerByUserID(userID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProjectViewerByUserIDQuery, userID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		return ErrNoProjectViewerDeleted
+	}
+
+	if err := f.DeleteViewerByOwnerID(userID, tx); err != nil {
+		if err == ErrNoViewerDeleted {
+			return err
+		}
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	return nil
+}
+
+var GetProjectViewerByUserIDQuery = "SELECT BIN_TO_UUID(users_id), BIN_TO_UUID(viewer_id), BIN_TO_UUID(projects_id) FROM users_viewers WHERE users_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) GetProjectViewersByUserID(userID *uuid.UUID, tx *sql.Tx) ([]models.ProjectViewer, error) {
+	rows, err := tx.Query(GetProjectViewerByUserIDQuery, userID)
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	defer rows.Close()
+
+	projectViewers := make([]models.ProjectViewer, 0)
+	for rows.Next() {
+		projectViewer := models.ProjectViewer{}
+		err := rows.Scan(&projectViewer.UserID, &projectViewer.ViewerID, &projectViewer.ProjectID)
+		if err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		projectViewers = append(projectViewers, projectViewer)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	if len(projectViewers) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
+	return projectViewers, nil
+}
+
+var GetProjectViewerByViewerIDQuery = "SELECT BIN_TO_UUID(users_id), BIN_TO_UUID(viewer_id), BIN_TO_UUID(projects_id) FROM users_viewers WHERE viewer_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) GetProjectViewersByViewerID(viewerID *uuid.UUID, tx *sql.Tx) ([]models.ProjectViewer, error) {
+	rows, err := tx.Query(GetProjectViewerByViewerIDQuery, viewerID)
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	defer rows.Close()
+
+	projectViewers := make([]models.ProjectViewer, 0)
+	for rows.Next() {
+		projectViewer := models.ProjectViewer{}
+		err := rows.Scan(&projectViewer.UserID, &projectViewer.ViewerID, &projectViewer.ProjectID)
+		if err != nil {
+			return nil, RollbackWithErrorStack(tx, err)
+		}
+		projectViewers = append(projectViewers, projectViewer)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, RollbackWithErrorStack(tx, err)
+	}
+
+	if len(projectViewers) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
+	return projectViewers, nil
+}
+
+var DeleteProjectViewerByViewerIDQuery = "DELETE FROM users_viewers where viewer_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) DeleteProjectViewerByViewerID(viewerID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProjectViewerByViewerIDQuery, viewerID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		if errRb := tx.Rollback(); errRb != nil {
+			return err
+		}
+		return ErrNoProjectViewerDeleted
+	}
+
+	return nil
+}
+
+var DeleteProjectViewerByProjectIDQuery = "DELETE FROM users_viewers where projects_id = UUID_TO_BIN(?)"
+
+func (*MYSQLFunctions) DeleteProjectViewerByProjectID(projectID *uuid.UUID, tx *sql.Tx) error {
+	result, err := tx.Exec(DeleteProjectViewerByProjectIDQuery, projectID)
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return RollbackWithErrorStack(tx, err)
+	}
+
+	if affected == 0 {
+		return ErrNoProjectViewerDeleted
 	}
 
 	return nil

@@ -65,6 +65,14 @@ type FunctionsCommon interface {
 
 	GetUserProjectIDs(userID *uuid.UUID, tx *sql.Tx) (*models.UserProjectIDs, error)
 	UpdateUsersProjects(userID *uuid.UUID, projectID *uuid.UUID, privilege int, tx *sql.Tx) error
+	AddProjectViewer(projectViewer *models.ProjectViewer, tx *sql.Tx) error
+	DeleteProjectViewerByUserID(userID *uuid.UUID, tx *sql.Tx) error
+	GetProjectViewersByUserID(userID *uuid.UUID, tx *sql.Tx) ([]models.ProjectViewer, error)
+	GetProjectViewersByViewerID(viewerID *uuid.UUID, tx *sql.Tx) ([]models.ProjectViewer, error)
+	DeleteProjectViewerByViewerID(viewerID *uuid.UUID, tx *sql.Tx) error
+	DeleteProjectViewerByProjectID(projectID *uuid.UUID, tx *sql.Tx) error
+
+	DeleteViewerByOwnerID(userID *uuid.UUID, tx *sql.Tx) error
 
 	GetPrivileges() (models.Privileges, error)
 	GetPrivilege(name string) (*models.Privilege, error)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/artofimagination/mysql-user-db-go-interface/models"
 	"github.com/artofimagination/mysql-user-db-go-interface/mysqldb"
@@ -12,12 +13,17 @@ import (
 
 var ErrProjectExistsString = "Project with name %s already exists"
 var ErrProjectNotFound = errors.New("The selected project not found")
+var ErrProjectViewerNotFound = errors.New("The selected project viewer not found")
+var ErrUserIsNotConnectedToAnyViewer = errors.New("User is not connected to any viewer")
+var ErrViewerAlreadyExists = errors.New("Viewer already exists")
 var ErrNoProjectForProduct = errors.New("No projects for this product")
 var ErrNoProjectDetailsUpdate = errors.New("Details for the selected project not found or no change happened")
 var ErrNoProjectAssetsUpdate = errors.New("Assets for the selected project not found or no change happened")
 var ErrEmptyProjectIDList = errors.New("Request does not contain any project identifiers")
 
+var ErrDuplicateEntrySubString = "Duplicate entry"
 var ErrMissingProductDBString = "Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`projects`, CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`products_id`) REFERENCES `products` (`id`))"
+var ErrMissingProjectDBString = "Error 1452: Cannot add or update a child row: a foreign key constraint fails (`user_database`.`users_viewers`, CONSTRAINT `users_viewers_ibfk_2` FOREIGN KEY (`projects_id`) REFERENCES `projects` (`id`))"
 
 func (c *MYSQLController) CreateProject(name string, visibility string, owner *uuid.UUID, productID *uuid.UUID, generateAssetPath func(assetID *uuid.UUID) (string, error)) (*models.ProjectData, error) {
 	references := make(models.DataMap)
@@ -307,4 +313,85 @@ func (c *MYSQLController) GetProjects(projectIDs []uuid.UUID) ([]models.ProjectD
 	}
 
 	return projectDataList, c.DBConnector.Commit(tx)
+}
+
+func (c *MYSQLController) CreateProjectViewer(projectViewer *models.ProjectViewer) error {
+	tx, err := c.DBConnector.ConnectSystem()
+	if err != nil {
+		return err
+	}
+
+	if err := c.DBFunctions.AddProjectViewer(projectViewer, tx); err != nil {
+		if err.Error() == ErrMissingProjectDBString {
+			return ErrProjectNotFound
+		} else if strings.Contains(err.Error(), ErrDuplicateEntrySubString) {
+			return ErrViewerAlreadyExists
+		}
+		return err
+	}
+	return c.DBConnector.Commit(tx)
+}
+
+func (c *MYSQLController) DeleteProjectViewerByUserID(userID *uuid.UUID) error {
+	tx, err := c.DBConnector.ConnectSystem()
+	if err != nil {
+		return err
+	}
+
+	if err := c.DBFunctions.DeleteProjectViewerByUserID(userID, tx); err != nil {
+		return err
+	}
+
+	return c.DBConnector.Commit(tx)
+}
+
+func (c *MYSQLController) DeleteProjectViewerByViewerID(viewerID *uuid.UUID) error {
+	tx, err := c.DBConnector.ConnectSystem()
+	if err != nil {
+		return err
+	}
+
+	if err := c.DBFunctions.DeleteProjectViewerByViewerID(viewerID, tx); err != nil {
+		return err
+	}
+
+	return c.DBConnector.Commit(tx)
+}
+
+func (c *MYSQLController) GetProjectViewersByUserID(userID *uuid.UUID) (*[]models.ProjectViewer, error) {
+	tx, err := c.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	projectViewers, err := c.DBFunctions.GetProjectViewersByUserID(userID, tx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			if err := c.DBConnector.Rollback(tx); err != nil {
+				return nil, err
+			}
+			return nil, ErrUserIsNotConnectedToAnyViewer
+		}
+	}
+
+	return &projectViewers, c.DBConnector.Commit(tx)
+}
+
+func (c *MYSQLController) GetProjectViewersByViewerID(viewerID *uuid.UUID) (*[]models.ProjectViewer, error) {
+	tx, err := c.DBConnector.ConnectSystem()
+	if err != nil {
+		return nil, err
+	}
+
+	projectViewers, err := c.DBFunctions.GetProjectViewersByViewerID(viewerID, tx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			if err := c.DBConnector.Rollback(tx); err != nil {
+				return nil, err
+			}
+			return nil, ErrProjectViewerNotFound
+		}
+	}
+
+	return &projectViewers, c.DBConnector.Commit(tx)
 }

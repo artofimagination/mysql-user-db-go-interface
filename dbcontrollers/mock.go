@@ -222,6 +222,34 @@ func (i *DBFunctionMock) DeleteProjectsByProductID(productID *uuid.UUID, tx *sql
 	return i.err
 }
 
+func (i *DBFunctionMock) AddProjectViewer(projectViewer *models.ProjectViewer, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionMock) DeleteProjectViewerByUserID(userID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionMock) GetProjectViewersByUserID(userID *uuid.UUID, tx *sql.Tx) ([]models.ProjectViewer, error) {
+	return nil, i.err
+}
+
+func (i *DBFunctionMock) GetProjectViewersByViewerID(viewerID *uuid.UUID, tx *sql.Tx) ([]models.ProjectViewer, error) {
+	return nil, i.err
+}
+
+func (i *DBFunctionMock) DeleteProjectViewerByViewerID(viewerID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionMock) DeleteProjectViewerByProjectID(projectID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
+func (i *DBFunctionMock) DeleteViewerByOwnerID(userID *uuid.UUID, tx *sql.Tx) error {
+	return i.err
+}
+
 // DBConnectorMock overwrites the mysqldb package implementations for DB connectionwith mock code.
 type DBConnectorMock struct {
 	err error
