@@ -1,11 +1,23 @@
 import requests
 import time
 import pytest
+import os
+
+
+def getPort():
+    variables = {}
+    fileName = os.path.dirname(os.path.realpath(__file__)) + \
+        "/.env.functional_test"
+    with open(fileName) as envFile:
+        for line in envFile:
+            name, var = line.partition("=")[::2]
+            variables[name.strip()] = var
+        return variables["USERS_SERVER_PORT"]
 
 
 class HTTPConnector():
     def __init__(self):
-        self.URL = "http://127.0.0.1:8080"
+        self.URL = "http://127.0.0.1:" + getPort()
         connected = False
         timeout = 15
         while timeout > 0:
