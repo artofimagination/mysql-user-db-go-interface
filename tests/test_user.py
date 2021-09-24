@@ -8,7 +8,7 @@ createTestData = [
         {
             'username': 'testUser',
             'email': 'testEmail',
-            'password': 'testPassword'
+            'password': common.convertPasswdToBase64('testPassword')
         },
         # Expected
         {
@@ -22,7 +22,7 @@ createTestData = [
         {
             'username': 'testUserEmailExists',
             'email': 'testEmail',
-            'password': 'testPassword'
+            'password': common.convertPasswdToBase64('testPassword')
         },
         # Expected
         {
@@ -34,7 +34,7 @@ createTestData = [
         {
             'username': 'testUser',
             'email': 'testEmailUserExists',
-            'password': 'testPassword'
+            'password': common.convertPasswdToBase64('testPassword')
         },
         # Expected
         {
@@ -75,7 +75,7 @@ createTestData = [
         {
             'username': 'testUserGet',
             'email': 'testEmailGet',
-            'password': 'testPassword'
+            'password': common.convertPasswdToBase64('testPassword')
         },
         # Expected
         {
@@ -183,7 +183,7 @@ createTestData = [
         {
             'username': 'testUserGetByEmail',
             'email': 'testEmailGetByEmail',
-            'password': 'testPassword'
+            'password': common.convertPasswdToBase64('testPassword')
         },
         # Expected
         {
@@ -267,11 +267,11 @@ createTestData = [
         [{
             'username': 'testUserGetMultiple1',
             'email': 'testEmailGetMultiple1',
-            'password': 'testPassword'
+            'password': common.convertPasswdToBase64('testPassword')
         }, {
             'username': 'testUserGetMultiple2',
             'email': 'testEmailGetMultiple2',
-            'password': 'testPassword'
+            'password': common.convertPasswdToBase64('testPassword')
         }],
         # Expected
         [{
@@ -302,7 +302,7 @@ createTestData = [
         [{
             'username': 'testUserGetMultipleFail',
             'email': 'testEmailGetMultipleFail',
-            'password': 'testPassword'
+            'password': common.convertPasswdToBase64('testPassword')
         }, {
             "id": "c34a7368-344a-11eb-adc1-0242ac120002"
         }],
@@ -390,7 +390,7 @@ createTestData = [
             "user": {
                 'username': 'testUserGetPassword',
                 'email': 'testEmailGetPassword',
-                'password': 'testPassword'
+                'password': common.convertPasswdToBase64('testPassword')
             },
             "login": {
               "email": "testEmailGetPassword",
@@ -406,7 +406,7 @@ createTestData = [
             "user": {
                 'username': 'testUserGetPasswordInvalid',
                 'email': 'testEmailGetPasswordInvalid',
-                'password': 'testPassword'
+                'password': common.convertPasswdToBase64('testPassword')
             },
             "login": {
                 "email": "testEmailGetPasswordInvalid",
@@ -485,13 +485,13 @@ createTestData = [
           "user": {
               "username": "testProductUser",
               "email": "testEmailProductUser",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
           },
           "partner_user": [{
               "user": {
                 "username": "testUserPartner",
                 "email": "testEmailPartner",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
               },
               "privilege": 3
           }]
@@ -563,7 +563,7 @@ createTestData = [
           "user": {
               "username": "testProductUserDelete",
               "email": "testEmailProductUserDelete",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
           }
       },
       # Expected
@@ -608,7 +608,7 @@ createTestData = [
             "user": {
                 "username": "testUserDelete",
                 "email": "testEmailDelete",
-                'password': 'testPassword'
+                'password': common.convertPasswdToBase64('testPassword')
             },
             "products_to_delete": [{
                 "name": "testProductDelete"
@@ -616,7 +616,7 @@ createTestData = [
             "nominated_users": [{
                 "username": "testUserNominated1",
                 "email": "testEmailNominated1",
-                'password': 'testPassword'
+                'password': common.convertPasswdToBase64('testPassword')
             }]
         },
         # Expected
@@ -638,7 +638,7 @@ createTestData = [
             "user": {
                 "username": "testUserDeleteNoNominee",
                 "email": "testEmailDeleteNoNominee",
-                'password': 'testPassword'
+                'password': common.convertPasswdToBase64('testPassword')
             },
             "products_to_delete": [{
                 "name": "testProductDeleteNoNominee"

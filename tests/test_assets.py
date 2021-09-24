@@ -12,7 +12,7 @@ createTestData = [
           "user": {
               "username": "testUserOwnerUpdateDetails",
               "email": "testEmailOwnerUpdateDetails",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
           },
           "details_entry": {
               "test_entry": "test_data"
@@ -88,7 +88,7 @@ createTestData = [
             "user": {
                 "username": "testUserOwnerUpdateAssets",
                 "email": "testEmailOwnerUpdateAssets",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             },
             "details_entry": {
                 "test_entry": "test_data"
@@ -165,7 +165,7 @@ createTestData = [
             "user": {
                 "username": "testUserProjectUpdateDetails",
                 "email": "testEmailProjectUpdateDetails",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             },
             "project": {
                 "name": "testProjectUpdateProjectDetails",
@@ -240,7 +240,7 @@ createTestData = [
             "user": {
                 "username": "testUserProjectUpdateAssets",
                 "email": "testEmailProjectUpdateAssets",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             },
             "project": {
                 "name": "testProjectUpdateProjectAssets",
@@ -312,7 +312,7 @@ createTestData = [
             "user": {
                 "username": "testUserUpdateSettings",
                 "email": "testEmailUpdateSettings",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             },
             "details_entry": {
                 "test_entry": "test_data"
@@ -342,9 +342,10 @@ def test_UpdateUserSettings(httpConnection, data, expected):
         response = common.getResponse(r.text, expected)
         if response is None:
             return None
-        dataToSend["user"] = response
+        dataToSend["user-id"] = response["id"]
+        dataToSend["user-data"] = response["settings"]
         for k, v in data["details_entry"].items():
-            dataToSend["user"]["settings"]["datamap"][k] = v
+            dataToSend["user-data"]["datamap"][k] = v
 
     try:
         r = httpConnection.POST("/update-user-settings", dataToSend)
@@ -368,7 +369,7 @@ createTestData = [
           "user": {
               "username": "testUserUpdateUserAssets",
               "email": "testEmailUpdateUserAssets",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
           },
           "details_entry": {
               "test_entry": "test_data"
@@ -398,9 +399,10 @@ def test_UpdateUserAsset(httpConnection, data, expected):
         response = common.getResponse(r.text, expected)
         if response is None:
             return None
-        dataToSend["user"] = response
+        dataToSend["user-id"] = response["id"]
+        dataToSend["user-data"] = response["assets"]
         for k, v in data["details_entry"].items():
-            dataToSend["user"]["assets"]["datamap"][k] = v
+            dataToSend["user-data"]["datamap"][k] = v
 
     try:
         r = httpConnection.POST("/update-user-assets", dataToSend)

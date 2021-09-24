@@ -1,5 +1,6 @@
 import pytest
 import json
+import base64
 
 
 def addUser(data, httpConnection):
@@ -140,8 +141,13 @@ def getResponse(responseText, expected=None):
     response = json.loads(responseText)
     if "error" in response and response["error"] != "":
         error = response["error"]
-        if expected is None or \
-                (expected is not None and error != expected["error"]):
+        if "error" not in expected or \
+                ("error" in expected and error != expected["error"]):
             pytest.fail(f"Failed to run test.\nReturned: {error}\n")
         return None
     return response["data"]
+
+
+def convertPasswdToBase64(passwdString):
+    message_bytes = passwdString.encode('ascii')
+    return base64.b64encode(message_bytes)

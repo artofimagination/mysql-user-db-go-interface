@@ -12,7 +12,7 @@ createTestData = [
             "user": {
                 "username": "testUserOwner",
                 "email": "testEmailOwner",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             }
         },
         # Expected
@@ -29,7 +29,7 @@ createTestData = [
             "user": {
               "username": "testUserOwner2",
               "email": "testEmailOwner2",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             }
         },
         # Expected
@@ -95,7 +95,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerGet",
               "email": "testEmailOwnerGet",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             }
         },
         # Expected
@@ -115,7 +115,7 @@ createTestData = [
           "user": {
             "username": "testUserOwnerGet1",
             "email": "testEmailOwnerGet1",
-            "password": "testPassword"
+            "password": common.convertPasswdToBase64("testPassword")
           },
           "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
       },
@@ -209,7 +209,7 @@ createTestData = [
             "user": {
                 "username": "testUserOwnerGetMultiple",
                 "email": "testEmailOwnerGetMultiple",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             }
         },
         # Expected
@@ -243,7 +243,7 @@ createTestData = [
             "user": {
                 "username": "testUserOwnerGetMultipleFail",
                 "email": "testEmailOwnerGetMultipleFail",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             }
         },
         # Expected
@@ -265,7 +265,7 @@ createTestData = [
             "user": {
                 "username": "testUserOwnerGetMultipleNoProduct",
                 "email": "testEmailOwnerGetMultipleNoProduct",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             }
         },
         # Expected
@@ -350,7 +350,7 @@ createTestData = [
             "user": {
                 "username": "testUserOwnerDeleteProduct",
                 "email": "testEmailOwnerDeleteProduct",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             }
         },
         # Expected
@@ -362,7 +362,7 @@ createTestData = [
           "user": {
             "username": "testUserOwnerDeleteProduct1",
             "email": "testEmailOwnerDeleteProduct1",
-            "password": "testPassword"
+            "password": common.convertPasswdToBase64("testPassword")
           },
           "product_id": "c34a7368-344a-11eb-adc1-0242ac120002"
         },

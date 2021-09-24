@@ -15,7 +15,7 @@ func (c *RESTController) updateUserSettings(w ResponseWriter, r *Request) {
 		return
 	}
 
-	userData, err := parseUserData(data)
+	userData, err := parseUserDataSettings(data)
 	if err != nil {
 		w.writeError(err.Error(), http.StatusBadRequest)
 		return
@@ -31,13 +31,7 @@ func (c *RESTController) updateUserSettings(w ResponseWriter, r *Request) {
 		return
 	}
 
-	statusCode, err := c.validateUser(userData)
-	if err != nil {
-		w.writeError(err.Error(), statusCode)
-		return
-	}
-
-	w.writeData(DataOK, statusCode)
+	w.writeData(DataOK, http.StatusOK)
 }
 
 func (c *RESTController) updateUserAssets(w ResponseWriter, r *Request) {
@@ -48,7 +42,7 @@ func (c *RESTController) updateUserAssets(w ResponseWriter, r *Request) {
 		return
 	}
 
-	userData, err := parseUserData(data)
+	userData, err := parseUserDataAssets(data)
 	if err != nil {
 		w.writeError(err.Error(), http.StatusBadRequest)
 	}
@@ -63,13 +57,7 @@ func (c *RESTController) updateUserAssets(w ResponseWriter, r *Request) {
 		return
 	}
 
-	statusCode, err := c.validateUser(userData)
-	if err != nil {
-		w.writeError(err.Error(), statusCode)
-		return
-	}
-
-	w.writeData(DataOK, statusCode)
+	w.writeData(DataOK, http.StatusOK)
 }
 
 func (c *RESTController) updateProductDetails(w ResponseWriter, r *Request) {

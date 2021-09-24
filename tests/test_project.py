@@ -13,7 +13,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerAddProject",
               "email": "testEmailOwnerAddProject",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "project": {
               "name": "testProjectAddProject",
@@ -93,7 +93,7 @@ createTestData = [
           "user": {
               "username": "testUserOwnerGetProject",
               "email": "testEmailOwnerGetProject",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
           },
           "project": {
               "name": "testProjectGetProject",
@@ -115,7 +115,7 @@ createTestData = [
             "user": {
                 "username": "testUserOwnerGetProjectMissing",
                 "email": "testEmailOwnerGetProjectMissing",
-                "password": "testPassword"
+                "password": common.convertPasswdToBase64("testPassword")
             },
             "id": "c34a7368-344a-11eb-adc1-0242ac120002"
         },
@@ -182,7 +182,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerGetProjectMultiple",
               "email": "testEmailOwnerGetProjectMultiple",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "project": [
                 {
@@ -214,7 +214,7 @@ createTestData = [
           "user": {
             "username": "testUserOwnerGetProjectMultiple2",
             "email": "testEmailOwnerGetProjectMultiple2",
-            "password": "testPassword"
+            "password": common.convertPasswdToBase64("testPassword")
           },
           "project": [
               {
@@ -240,7 +240,7 @@ createTestData = [
           "user": {
               "username": "testUserOwnerGetProjectMultiple3",
               "email": "testEmailOwnerGetProjectMultiple3",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
           },
           "project": [{
               "id": "c34a7368-344a-11eb-adc1-0242ac120002"
@@ -303,7 +303,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerGetProductProjects",
               "email": "testEmailOwnerGetProductProjects",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "project": [
                 {
@@ -333,7 +333,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerGetProductProjects2",
               "email": "testEmailOwnerGetProductProjects2",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "project": [{
                 "name": "testProjectGetProductProjects2",
@@ -355,7 +355,7 @@ createTestData = [
           "user": {
               "username": "testUserOwnerGetProductProjects3",
               "email": "testEmailOwnerGetProductProjects3",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
           },
           "product": {
               "name": "testProductGetProductProjects3"
@@ -421,7 +421,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerDeleteProject",
               "email": "testEmailOwnerDeleteProject",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "project": {
               "name": "testProjectDeleteProject",
@@ -440,7 +440,7 @@ createTestData = [
           "user": {
               "username": "testUserOwnerDeleteProjectMissing",
               "email": "testEmailOwnerDeleteProjectMissing",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
           },
           "id": "c34a7368-344a-11eb-adc1-0242ac120002"
       },
@@ -498,7 +498,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerAddProjectViewer1",
               "email": "testEmailOwnerAddProjectViewer1",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "product": {
               "name": "testProductAddProjectViewer1",
@@ -524,7 +524,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerAddProjectViewer2",
               "email": "testEmailOwnerAddProjectViewer2",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "id": "c34a7368-344a-11eb-adc1-0242ac120002",
             "is_owner": True
@@ -544,7 +544,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerAddProjectViewer3",
               "email": "testEmailOwnerAddProjectViewer3",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "project": {
               "name": "testProjectAddProjectViewer3",
@@ -587,7 +587,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerGetProjectViewer1",
               "email": "testEmailOwnerGetProjectViewer1",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "product": {
               "name": "testProductGetProjectViewer1",
@@ -657,7 +657,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerGetProjectViewer2",
               "email": "testEmailOwnerGetProjectViewer2",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "product": {
               "name": "testProductGetProjectViewer2",
@@ -684,7 +684,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerGetProjectViewer3",
               "email": "testEmailOwnerGetProjectViewer3",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
         },
         # Expected
@@ -750,7 +750,7 @@ createTestData = [
             "user": {
               "username": "testUserOwnerDeleteProjectViewer1",
               "email": "testEmailOwnerDeleteProjectViewer1",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "product": {
               "name": "testProductDeleteProjectViewer1",
@@ -820,7 +820,7 @@ createTestData = [
             "user": {
               "username": "testUserDeleteProjectViewer2",
               "email": "testEmailDeleteProjectViewer2",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
             "product": {
               "name": "testProductDeleteProjectViewer2",
@@ -842,7 +842,7 @@ createTestData = [
             "user": {
               "username": "testUserDeleteProjectViewer3",
               "email": "testEmailDeleteProjectViewer3",
-              "password": "testPassword"
+              "password": common.convertPasswdToBase64("testPassword")
             },
         },
         # Expected
