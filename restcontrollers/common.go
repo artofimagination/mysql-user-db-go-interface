@@ -7,6 +7,7 @@ import (
 
 	"github.com/artofimagination/mysql-user-db-go-interface/dbcontrollers"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 )
 
@@ -150,7 +151,7 @@ func makeHandler(fn func(ResponseWriter, *Request)) http.HandlerFunc {
 	}
 }
 
-func NewRESTController() (*RESTController, error) {
+func NewRESTController() (*mux.Router, error) {
 	dbController, err := dbcontrollers.NewDBController()
 	if err != nil {
 		return nil, err
@@ -159,39 +160,39 @@ func NewRESTController() (*RESTController, error) {
 	restController := &RESTController{
 		DBController: dbController,
 	}
+	r := mux.NewRouter()
+	r.HandleFunc("/", sayHello)
+	r.HandleFunc(UserPathAdd, makeHandler(restController.addUser))
+	r.HandleFunc(UserPathGetByID, makeHandler(restController.getUser))
+	r.HandleFunc(UserPathGetByEmail, makeHandler(restController.getUserByEmail))
+	r.HandleFunc(UserPathGetMultiple, makeHandler(restController.getUsers))
+	r.HandleFunc(UserPathUpdateSettings, makeHandler(restController.updateUserSettings))
+	r.HandleFunc(UserPathUpdateAssets, makeHandler(restController.updateUserAssets))
+	r.HandleFunc(UserPathDeleteByID, makeHandler(restController.deleteUser))
+	r.HandleFunc(UserPathAuthenticate, makeHandler(restController.authenticate))
 
-	http.HandleFunc("/", sayHello)
-	http.HandleFunc(UserPathAdd, makeHandler(restController.addUser))
-	http.HandleFunc(UserPathGetByID, makeHandler(restController.getUser))
-	http.HandleFunc(UserPathGetByEmail, makeHandler(restController.getUserByEmail))
-	http.HandleFunc(UserPathGetMultiple, makeHandler(restController.getUsers))
-	http.HandleFunc(UserPathUpdateSettings, makeHandler(restController.updateUserSettings))
-	http.HandleFunc(UserPathUpdateAssets, makeHandler(restController.updateUserAssets))
-	http.HandleFunc(UserPathDeleteByID, makeHandler(restController.deleteUser))
-	http.HandleFunc(UserPathAuthenticate, makeHandler(restController.authenticate))
+	r.HandleFunc(UserPathAddProductUser, makeHandler(restController.addProductUser))
+	r.HandleFunc(UserPathDeleteProductUser, makeHandler(restController.deleteProductUser))
 
-	http.HandleFunc(UserPathAddProductUser, makeHandler(restController.addProductUser))
-	http.HandleFunc(UserPathDeleteProductUser, makeHandler(restController.deleteProductUser))
+	r.HandleFunc(ProductPathAdd, makeHandler(restController.addProduct))
+	r.HandleFunc(ProductPathGetByID, makeHandler(restController.getProduct))
+	r.HandleFunc(ProductPathGetMultiple, makeHandler(restController.getProducts))
+	r.HandleFunc(ProductPathUpdateDetails, makeHandler(restController.updateProductDetails))
+	r.HandleFunc(ProductPathUpdateAssets, makeHandler(restController.updateProductAssets))
+	r.HandleFunc(ProductPathDeleteByID, makeHandler(restController.deleteProduct))
 
-	http.HandleFunc(ProductPathAdd, makeHandler(restController.addProduct))
-	http.HandleFunc(ProductPathGetByID, makeHandler(restController.getProduct))
-	http.HandleFunc(ProductPathGetMultiple, makeHandler(restController.getProducts))
-	http.HandleFunc(ProductPathUpdateDetails, makeHandler(restController.updateProductDetails))
-	http.HandleFunc(ProductPathUpdateAssets, makeHandler(restController.updateProductAssets))
-	http.HandleFunc(ProductPathDeleteByID, makeHandler(restController.deleteProduct))
+	r.HandleFunc(ProjectPathAdd, makeHandler(restController.addProject))
+	r.HandleFunc(ProjectPathGetByID, makeHandler(restController.getProject))
+	r.HandleFunc(ProjectPathGetMultiple, makeHandler(restController.getProjects))
+	r.HandleFunc(ProjectPathUpdateDetails, makeHandler(restController.updateProjectDetails))
+	r.HandleFunc(ProjectPathUpdateAssets, makeHandler(restController.updateProjectAssets))
+	r.HandleFunc(ProjectPathGetProductProject, makeHandler(restController.getProductProjects))
+	r.HandleFunc(ProjectPathDelete, makeHandler(restController.deleteProject))
+	r.HandleFunc(ProjectPathAddViewer, makeHandler(restController.addProjectViewer))
+	r.HandleFunc(ProjectPathGetViewerByUser, makeHandler(restController.getProjectViewersByUserID))
+	r.HandleFunc(ProjectPathGetViewerByViewer, makeHandler(restController.getProjectViewersByViewerID))
+	r.HandleFunc(ProjectPathDeleteViewerByUser, makeHandler(restController.deleteProjectViewerByUserID))
+	r.HandleFunc(ProjectPathDeleteViewerByViewer, makeHandler(restController.deleteProjectViewerByViewerID))
 
-	http.HandleFunc(ProjectPathAdd, makeHandler(restController.addProject))
-	http.HandleFunc(ProjectPathGetByID, makeHandler(restController.getProject))
-	http.HandleFunc(ProjectPathGetMultiple, makeHandler(restController.getProjects))
-	http.HandleFunc(ProjectPathUpdateDetails, makeHandler(restController.updateProjectDetails))
-	http.HandleFunc(ProjectPathUpdateAssets, makeHandler(restController.updateProjectAssets))
-	http.HandleFunc(ProjectPathGetProductProject, makeHandler(restController.getProductProjects))
-	http.HandleFunc(ProjectPathDelete, makeHandler(restController.deleteProject))
-	http.HandleFunc(ProjectPathAddViewer, makeHandler(restController.addProjectViewer))
-	http.HandleFunc(ProjectPathGetViewerByUser, makeHandler(restController.getProjectViewersByUserID))
-	http.HandleFunc(ProjectPathGetViewerByViewer, makeHandler(restController.getProjectViewersByViewerID))
-	http.HandleFunc(ProjectPathDeleteViewerByUser, makeHandler(restController.deleteProjectViewerByUserID))
-	http.HandleFunc(ProjectPathDeleteViewerByViewer, makeHandler(restController.deleteProjectViewerByViewerID))
-
-	return restController, nil
+	return r, nil
 }
