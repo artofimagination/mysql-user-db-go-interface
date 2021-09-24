@@ -1,6 +1,7 @@
 package restcontrollers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -12,32 +13,66 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (c *RESTController) validateUser(expected *models.UserData) (int, error) {
-	user, err := c.DBController.GetUser(&expected.ID)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-
-	if diff := pretty.Diff(user, expected); len(diff) != 0 {
-		return http.StatusAccepted, errors.New("Failed to update user details")
-	}
-	return http.StatusOK, nil
-}
-
-func parseUserData(data map[string]interface{}) (*models.UserData, error) {
+func parseUserDataSettings(data map[string]interface{}) (*models.UserData, error) {
 	userData := models.UserData{}
-	userDataMap, ok := data["user"]
+	userID, ok := data["user-id"]
 	if !ok {
-		return nil, errors.New("Missing 'user'")
+		return nil, errors.New("Missing 'user-id'")
+	}
+
+	userIDByte, err := json.Marshal(userID)
+	if err != nil {
+		return nil, errors.New("Invalid 'user-id' json")
+	}
+
+	if err := json.Unmarshal(userIDByte, &userData.ID); err != nil {
+		return nil, errors.New("Invalid 'user-id'")
+	}
+
+	userDataMap, ok := data["user-data"]
+	if !ok {
+		return nil, errors.New("Missing 'user-data'")
 	}
 
 	userDataByte, err := json.Marshal(userDataMap)
 	if err != nil {
-		return nil, errors.New("Invalid 'user json'")
+		return nil, errors.New("Invalid 'user-data' json")
 	}
 
-	if err := json.Unmarshal(userDataByte, &userData); err != nil {
-		return nil, errors.New("Invalid 'user'")
+	if err := json.Unmarshal(userDataByte, &userData.Settings); err != nil {
+		return nil, errors.New("Invalid 'user-data'")
+	}
+	return &userData, nil
+}
+
+func parseUserDataAssets(data map[string]interface{}) (*models.UserData, error) {
+	userData := models.UserData{}
+	userID, ok := data["user-id"]
+	if !ok {
+		return nil, errors.New("Missing 'user-id'")
+	}
+
+	userIDByte, err := json.Marshal(userID)
+	if err != nil {
+		return nil, errors.New("Invalid 'user-id' json")
+	}
+
+	if err := json.Unmarshal(userIDByte, &userData.ID); err != nil {
+		return nil, errors.New("Invalid 'user-id'")
+	}
+
+	userDataMap, ok := data["user-data"]
+	if !ok {
+		return nil, errors.New("Missing 'user-data'")
+	}
+
+	userDataByte, err := json.Marshal(userDataMap)
+	if err != nil {
+		return nil, errors.New("Invalid 'user-data' json")
+	}
+
+	if err := json.Unmarshal(userDataByte, &userData.Assets); err != nil {
+		return nil, errors.New("Invalid 'user-data'")
 	}
 	return &userData, nil
 }
@@ -68,8 +103,14 @@ func (c *RESTController) addUser(w ResponseWriter, r *Request) {
 		return
 	}
 
+	pwd, err := base64.URLEncoding.DecodeString(password)
+	if err != nil {
+		w.writeError("Failed to encode password to bytes", http.StatusAccepted)
+		return
+	}
+
 	// Execute function
-	user, err := c.DBController.CreateUser(name, email, []byte(password))
+	user, err := c.DBController.CreateUser(name, email, pwd)
 	if err != nil {
 		if err.Error() == dbcontrollers.ErrDuplicateEmailEntry.Error() ||
 			err.Error() == dbcontrollers.ErrDuplicateNameEntry.Error() {
@@ -138,7 +179,6 @@ func (c *RESTController) getUserByEmail(w ResponseWriter, r *Request) {
 		w.writeError(err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	w.writeData(userData, http.StatusOK)
 }
 

@@ -11,8 +11,8 @@ def getPort():
     with open(fileName) as envFile:
         for line in envFile:
             name, var = line.partition("=")[::2]
-            variables[name.strip()] = var
-        return variables["USERS_SERVER_PORT"]
+            variables[name.strip()] = var.strip()
+        return variables["USER_DB_PORT"]
 
 
 class HTTPConnector():

@@ -9,7 +9,7 @@ networks:
 
 services:
   user-mysql:
-    container_name: ${USERS_MYSQL_DB_ADDRESS}
+    container_name: ${USER_DB_NAME}
     image: mysql:8.0.21
     ports:
       - ${USERS_MYSQL_DB_EXPOSED_PORT}:${USERS_MYSQL_DB_PORT}
@@ -23,18 +23,18 @@ services:
       context: ./
       dockerfile: Dockerfile
       args:
-        SERVER_PORT: ${USERS_SERVER_PORT}
+        SERVER_PORT: ${USER_DB_PORT}
     container_name: user-db-server
     image: artofimagination/user-db-server
     ports:
-      - ${USERS_SERVER_PORT}:${USERS_SERVER_PORT}
+      - ${USER_DB_PORT}:${USER_DB_PORT}
     networks:
       - development
     depends_on: 
-      - ${USERS_MYSQL_DB_ADDRESS}
+      - user-mysql
     environment:
-      SERVER_PORT: ${USERS_SERVER_PORT}
-      MYSQL_DB_ADDRESS: ${USERS_MYSQL_DB_ADDRESS}
+      SERVER_PORT: ${USER_DB_PORT}
+      MYSQL_DB_ADDRESS: ${USER_DB_NAME}
       MYSQL_DB_USER: ${USERS_MYSQL_DB_USER-root}
       MYSQL_DB_PORT: ${USERS_MYSQL_DB_PORT}
       MYSQL_DB_PASSWORD: ${USERS_MYSQL_DB_PASSWORD-123secure}
