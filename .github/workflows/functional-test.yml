@@ -13,7 +13,7 @@ jobs:
       - name: Setup Python Env
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8.5'
+          python-version: '3.8.10'
           
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
